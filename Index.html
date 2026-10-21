@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipe Traffic - ĐH Khoa học Tự nhiên (HCMUS)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                        accent: '#06b6d4'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0c4a6e 100%);
+        }
+        .text-gradient {
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 28px;
+            width: 4px;
+            background: #334155;
+            z-index: 0;
+        }
+        @media (min-width: 768px) {
+            .timeline-line::before {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+        }
+    </style>
+</head>
+<body class="font-sans text-slate-800 bg-slate-50 antialiased w-full min-h-screen overflow-x-hidden">
+
+    <!-- 1. NAVIGATION BAR (FULL WIDTH) -->
+    <nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-slate-200/80 shadow-sm w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-12">
+            <div class="flex justify-between h-20 items-center w-full">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-3 group shrink-0">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-sky-500/20 group-hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-route text-2xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-extrabold tracking-tight text-slate-900 block leading-none">PIPE TRAFFIC</span>
+                        <span class="text-[10px] font-bold text-sky-600 tracking-wider uppercase">Dự Án Nghiên Cứu HCMUS</span>
+                    </div>
+                </a>
+
+                <!-- Desktop Navigation Menu -->
+                <div class="hidden lg:flex items-center gap-8 font-medium text-sm text-slate-600">
+                    <a href="#journey" class="hover:text-sky-600 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-timeline text-xs text-sky-500"></i> Journey</a>
+                    <a href="#team" class="hover:text-sky-600 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-users text-xs text-sky-500"></i> Team Members</a>
+                    <a href="#problems" class="hover:text-sky-600 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-microchip text-xs text-sky-500"></i> Problems</a>
+                    <a href="#video" class="hover:text-sky-600 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-circle-play text-xs text-sky-500"></i> Video</a>
+                    <a href="#faq" class="hover:text-sky-600 transition-colors flex items-center gap-1.5"><i class="fa-solid fa-circle-question text-xs text-sky-500"></i> FAQ & Reviews</a>
+                    <a href="#comments" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 font-bold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200"><i class="fa-solid fa-comments text-xs text-sky-500"></i> Bình Luận</a>
+                </div>
+
+                <!-- CTA Button -->
+                <div class="hidden lg:block shrink-0">
+                    <a href="#cta" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm px-6 py-2.5 rounded-full shadow-lg shadow-sky-600/25 transition-all hover:shadow-xl hover:scale-105 inline-flex items-center gap-2">
+                        <span>Trải Nghiệm Ngay</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </a>
+                </div>
+
+                <!-- Mobile menu button -->
+                <div class="lg:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 rounded-lg bg-slate-100">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobile-menu" class="hidden lg:hidden border-t border-slate-200 bg-white px-6 pt-4 pb-6 space-y-3 shadow-xl">
+            <a href="#journey" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-timeline text-sky-500 mr-2"></i> Hành Trình (Journey)</a>
+            <a href="#team" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-users text-sky-500 mr-2"></i> Thành Viên & Quy Tắc</a>
+            <a href="#problems" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
+            <a href="#video" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-play text-sky-500 mr-2"></i> Video Demo</a>
+            <a href="#faq" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-question text-sky-500 mr-2"></i> Đánh Giá & FAQ</a>
+            <a href="#comments" class="block py-2 text-sky-600 font-bold border-b border-slate-100"><i class="fa-solid fa-comments text-sky-500 mr-2"></i> Bình Luận Tương Tác</a>
+            <a href="#cta" class="block text-center bg-sky-600 text-white py-3 rounded-xl font-bold mt-4 shadow-lg shadow-sky-600/30">Trải Nghiệm Dự Án Ngay</a>
+        </div>
+    </nav>
+
+    <!-- 2. HOME / HERO SECTION (FULL WIDTH 100%) -->
+    <section class="pt-32 pb-20 md:pt-40 md:pb-28 gradient-bg text-white relative overflow-hidden w-full">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(56,189,248,0.18),transparent)] pointer-events-none"></div>
+        <div class="w-full px-4 sm:px-8 lg:px-16 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
+                <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sky-500/10 border border-sky-400/20 text-sky-300 text-xs font-bold uppercase tracking-wider">
+                        <i class="fa-solid fa-bolt text-yellow-400"></i> Dự Án Nghiên Cứu HCMUS - ĐH Khoa Học Tự Nhiên
+                    </div>
+                    <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+                        Pipe Traffic – Hệ Thống Giao Thông <span class="text-gradient">Đường Ống Từ Trường</span>
+                    </h1>
+                    <p class="text-sky-300 text-lg sm:text-2xl font-semibold italic">
+                        "Kết nối không giới hạn – Giải pháp giao thông xanh và thông minh cho tương lai."
+                    </p>
+                    <p class="text-slate-300 text-base sm:text-lg font-normal leading-relaxed max-w-4xl mx-auto lg:mx-0">
+                        Đề xuất giải pháp di chuyển và vận chuyển thế hệ mới dựa trên công nghệ đường ống từ tính, giúp giải quyết triệt để vấn đề ùn tắc giao thông, không gian hẹp và chi phí hạ tầng đô thị.
+                    </p>
+                    
+                    <!-- Branding Badge -->
+                    <div class="p-4 rounded-2xl bg-slate-800/90 border border-slate-700/80 backdrop-blur-md text-left max-w-2xl mx-auto lg:mx-0 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-pen-nib text-lg"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Nhận diện thương hiệu</h4>
+                                <p class="text-sm font-bold text-white mt-0.5">Logo nhóm được thiết kế chính thức bởi <span class="text-sky-400">Nguyễn Giàu</span></p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 rounded-lg bg-sky-500/20 text-sky-300 text-xs font-bold hidden sm:inline-block">Design Lead</span>
+                    </div>
+
+                    <div class="pt-2 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <a href="#problems" class="px-8 py-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-base shadow-lg shadow-sky-500/30 transition-all text-center">
+                            Khám Phá Giải Pháp
+                        </a>
+                        <a href="#video" class="px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-play text-xs text-sky-400"></i> Xem Video Demo
+                        </a>
+                        <a href="#comments" class="px-8 py-4 rounded-xl bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-500/40 font-bold text-base transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-comments text-xs text-cyan-300"></i> Đóng Góp Ý Kiến
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Hero Interactive Panel -->
+                <div class="lg:col-span-5 relative w-full">
+                    <div class="relative w-full rounded-3xl bg-slate-800/90 border border-slate-700 p-6 shadow-2xl backdrop-blur-xl">
+                        <div class="flex items-center justify-between pb-4 border-b border-slate-700">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                                <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                            </div>
+                            <span class="text-xs font-mono text-slate-400">HCMUS_Maglev_Pipe_v1.0</span>
+                        </div>
+                        <div class="py-6 space-y-4">
+                            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid fa-magnet text-2xl text-sky-400"></i>
+                                    <div>
+                                        <p class="text-xs text-slate-400">Động cơ truyền động</p>
+                                        <p class="text-sm font-bold text-white">Lực Từ Trường Không Ma Sát</p>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] bg-emerald-500/20 text-emerald-400 font-bold">Maglev Core</span>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid fa-brain text-2xl text-indigo-400"></i>
+                                    <div>
+                                        <p class="text-xs text-slate-400">Trí tuệ nhân tạo (AI)</p>
+                                        <p class="text-sm font-bold text-white">Đo khoảng cách & Ưu tiên Khẩn cấp</p>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] bg-sky-500/20 text-sky-400 font-bold">Auto-Routing</span>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <i class="fa-solid fa-house-circle-check text-2xl text-cyan-400"></i>
+                                    <div>
+                                        <p class="text-xs text-slate-400">Điểm kết nối hạ tầng</p>
+                                        <p class="text-sm font-bold text-white">Lắp đặt Tận hộ gia đình & Tòa nhà</p>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-[10px] bg-indigo-500/20 text-indigo-400 font-bold">Tận Cửa</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. HIGHLIGHT FEATURES / UTILITIES (FULL WIDTH 100%) -->
+    <section class="py-20 bg-white w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-16">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đặc Điểm Kỹ Thuật</h2>
+                <p class="text-3xl sm:text-4xl font-extrabold text-slate-900">Tính Năng & Tiện Ích Nổi Bật</p>
+                <p class="text-slate-600 mt-3">Sự đổi mới toàn diện trong phương thức di chuyển đô thị thế hệ mới.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
+                <!-- Bullet Feature 1 -->
+                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
+                    <div class="w-14 h-14 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl mb-6">
+                        <i class="fa-solid fa-magnet"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Đệm Từ Trường Maglev</h3>
+                    <ul class="text-xs sm:text-sm text-slate-600 space-y-2.5">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-sky-500"></i> Lực đẩy từ tính không ma sát</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-sky-500"></i> Di chuyển cực nhanh và êm ái</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-sky-500"></i> Tối ưu tuổi thọ thiết bị</li>
+                    </ul>
+                </div>
+
+                <!-- Bullet Feature 2 -->
+                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
+                    <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mb-6">
+                        <i class="fa-solid fa-house-laptop"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Kết Nối Tận Hộ Gia Đình</h3>
+                    <ul class="text-xs sm:text-sm text-slate-600 space-y-2.5">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-indigo-500"></i> Lắp đặt linh hoạt tận cửa nhà</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-indigo-500"></i> Kết nối trực tiếp tòa nhà cao tầng</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-indigo-500"></i> Loại bỏ thời gian chờ đợi trạm bến</li>
+                    </ul>
+                </div>
+
+                <!-- Bullet Feature 3 -->
+                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
+                    <div class="w-14 h-14 rounded-2xl bg-cyan-100 text-cyan-600 flex items-center justify-center text-2xl mb-6">
+                        <i class="fa-solid fa-microchip"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">AI Điều Hướng Khẩn Cấp</h3>
+                    <ul class="text-xs sm:text-sm text-slate-600 space-y-2.5">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-cyan-500"></i> Tự đo khoảng cách an toàn thời gian thực</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-cyan-500"></i> Giải phóng làn cho xe cấp cứu, cứu hỏa</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-cyan-500"></i> Điều phối luồng cabin liên tục không tắc</li>
+                    </ul>
+                </div>
+
+                <!-- Bullet Feature 4 -->
+                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mb-6">
+                        <i class="fa-solid fa-leaf"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 mb-3">Môi Trường & Đô Thị Xanh</h3>
+                    <ul class="text-xs sm:text-sm text-slate-600 space-y-2.5">
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500"></i> Không phát thải khí Carbon</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500"></i> Giảm thiểu tối đa tiếng ồn đô thị</li>
+                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500"></i> Tiết kiệm diện tích giải phóng mặt bằng</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. COMPARISON TABLE: PIPE TRAFFIC VS METRO (FULL WIDTH 100%) -->
+    <section class="py-20 bg-slate-100/80 w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-14">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đánh Giá Hạ Tầng</h2>
+                <p class="text-3xl font-extrabold text-slate-900">Bảng So Sánh Pipe Traffic & Dự Án Metro Truyền Thống</p>
+                <p class="text-slate-600 mt-2">Phân tích chi tiết ưu thế vượt trội của hệ thống đường ống từ trường trong đô thị nén.</p>
+            </div>
+
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden w-full">
+                <div class="overflow-x-auto w-full">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 text-white text-base">
+                                <th class="py-5 px-8 font-bold uppercase tracking-wider w-1/3">Tiêu Chí Đánh Giá</th>
+                                <th class="py-5 px-8 font-bold uppercase tracking-wider bg-sky-600 text-white w-1/3">Pipe Traffic (Đề Xuất Dự Án)</th>
+                                <th class="py-5 px-8 font-bold uppercase tracking-wider w-1/3">Dự Án Metro Đô Thị Truyền Thống</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 text-sm sm:text-base">
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-5 px-8 font-semibold text-slate-800">Khả năng kết nối tận nhà</td>
+                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Trực tiếp tại cổng hộ gia đình / tòa nhà</td>
+                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Chỉ đi qua các ga lớn trung tâm cố định</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-5 px-8 font-semibold text-slate-800">Diện tích & Không gian chiếm dụng</td>
+                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Nhỏ gọn, lắp đường ống treo/ngầm đa tầng</td>
+                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Cực lớn, đòi hỏi hành lang an toàn đường sắt riêng</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-5 px-8 font-semibold text-slate-800">Chi phí đền bù mặt bằng</td>
+                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Tiết kiệm tối đa nhờ thiết kế mô-đun hóa</td>
+                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Chi phí giải tỏa đền bù vô cùng đắt đỏ</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-5 px-8 font-semibold text-slate-800">Tính linh hoạt & AI Khẩn cấp</td>
+                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> AI tự động chuyển làn & ưu tiên cứu hộ</td>
+                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-minus text-amber-500 mr-2"></i> Tuyến cố định, khó giải phóng làn tức thì</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50 transition-colors">
+                                <td class="py-5 px-8 font-semibold text-slate-800">Tốc độ điều phối & Vận hành</td>
+                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Vận hành liên tục, không ma sát, cực êm</td>
+                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Chạy theo giờ cố định, tần suất hạn chế</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. 3-STEP USER GUIDE (FULL WIDTH 100%) -->
+    <section class="py-20 bg-white w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-16">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Quy Trình Hoạt Động</h2>
+                <p class="text-3xl sm:text-4xl font-extrabold text-slate-900">Hướng Dẫn Sử Dụng Pipe Traffic Trong 3 Bước</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-10 w-full">
+                <!-- Step 1 -->
+                <div class="text-center p-8 rounded-3xl bg-slate-50 border border-slate-100 shadow-sm relative z-10 hover:border-sky-300 transition-all">
+                    <div class="w-20 h-20 mx-auto rounded-3xl bg-sky-600 text-white font-extrabold text-3xl flex items-center justify-center shadow-lg shadow-sky-600/30 mb-8">
+                        1
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Đặt Chuyến & Chọn Điểm Đến</h3>
+                    <p class="text-slate-600 text-base leading-relaxed">Người dùng chọn hành trình trên Ứng dụng Pipe Traffic. Cabin trượt từ trường tự động di chuyển đến trạm đường ống tại nhà bạn.</p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="text-center p-8 rounded-3xl bg-slate-50 border border-slate-100 shadow-sm relative z-10 hover:border-indigo-300 transition-all">
+                    <div class="w-20 h-20 mx-auto rounded-3xl bg-indigo-600 text-white font-extrabold text-3xl flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-8">
+                        2
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Vào Cabin & Khởi Hành</h3>
+                    <p class="text-slate-600 text-base leading-relaxed">Bước vào cabin trượt tại cổng kết nối. Động cơ từ tính tăng tốc êm ái vào mạng lưới ống trượt đa tầng kết nối các khu vực.</p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="text-center p-8 rounded-3xl bg-slate-50 border border-slate-100 shadow-sm relative z-10 hover:border-emerald-300 transition-all">
+                    <div class="w-20 h-20 mx-auto rounded-3xl bg-emerald-600 text-white font-extrabold text-3xl flex items-center justify-center shadow-lg shadow-emerald-600/30 mb-8">
+                        3
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-4">Tự Động Đến Nơi An Toàn</h3>
+                    <p class="text-slate-600 text-base leading-relaxed">AI liên tục tính toán khoảng cách an toàn, đưa cabin cập bến chính xác tại điểm đến target mà không lo kẹt xe.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. JOURNEY / TIMELINE SECTION (FULL WIDTH 100%) -->
+    <section id="journey" class="py-20 bg-slate-900 text-white relative w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-16">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-400 mb-2">Nhật Ký Thực Hiện</h2>
+                <p class="text-3xl sm:text-4xl font-extrabold">Nhật Ký Hành Trình (Journey Timeline)</p>
+                <p class="text-slate-400 mt-2">Tiến trình triển khai dự án theo từng tuần của nhóm nghiên cứu Pipe Traffic HCMUS</p>
+            </div>
+
+            <!-- Vertical Detailed Timeline -->
+            <div class="max-w-6xl mx-auto relative timeline-line">
+                
+                <!-- Timeline Week 1 -->
+                <div class="mb-12 relative z-10 flex flex-col md:flex-row items-center">
+                    <div class="flex items-center justify-start md:justify-end w-full md:w-1/2 md:pr-12 mb-4 md:mb-0">
+                        <div class="bg-slate-800/90 p-8 rounded-3xl border border-slate-700 shadow-xl w-full text-left backdrop-blur-md">
+                            <div class="inline-block px-3.5 py-1 rounded-full bg-sky-500/20 text-sky-300 text-xs font-bold mb-3">
+                                Tuần 1
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Khởi Tạo & Định Hình Dự Án</h3>
+                            <ul class="text-sm text-slate-300 space-y-2.5">
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-sky-400 mt-1"></i> Họp nhóm phân công vai trò, thành lập <strong>Hợp đồng nhóm</strong>.</li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-sky-400 mt-1"></i> Thống nhất quy tắc làm việc và kênh giao tiếp chung.</li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-sky-400 mt-1"></i> <strong>Nguyễn Giàu</strong> đảm nhận thiết kế Logo nhóm.</li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-sky-400 mt-1"></i> Brainstorming ý tưởng giải pháp giao thông đường ống từ trường.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="w-14 h-14 rounded-full bg-sky-500 text-white font-extrabold text-base flex items-center justify-center border-4 border-slate-900 shrink-0 shadow-lg shadow-sky-500/50 my-2 md:my-0">
+                        T1
+                    </div>
+                    <div class="w-full md:w-1/2 md:pl-12"></div>
+                </div>
+
+                <!-- Timeline Week 2 -->
+                <div class="mb-12 relative z-10 flex flex-col md:flex-row items-center">
+                    <div class="w-full md:w-1/2 md:pr-12"></div>
+                    <div class="w-14 h-14 rounded-full bg-indigo-500 text-white font-extrabold text-base flex items-center justify-center border-4 border-slate-900 shrink-0 shadow-lg shadow-indigo-500/50 my-2 md:my-0">
+                        T2
+                    </div>
+                    <div class="flex items-center justify-start w-full md:w-1/2 md:pl-12 mt-4 md:mt-0">
+                        <div class="bg-slate-800/90 p-8 rounded-3xl border border-slate-700 shadow-xl w-full text-left backdrop-blur-md">
+                            <div class="inline-block px-3.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-bold mb-3">
+                                Tuần 2
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Nghiên Cứu & Thiết Kế Giải Pháp</h3>
+                            <ul class="text-sm text-slate-300 space-y-2.5">
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-indigo-400 mt-1"></i> Phân tích bài toán giao thông urban/không gian hẹp đô thị.</li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-indigo-400 mt-1"></i> Hoàn thiện cấu trúc nội dung 4 phần: <strong>Abstract, Solution, Methods, Conclusions</strong>.</li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-indigo-400 mt-1"></i> Phác thảo sơ đồ đường ống nhiều tầng và tích hợp AI điều hướng.</li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-indigo-400 mt-1"></i> Thu thập tư liệu và lên kịch bản kịch tính dựng Video giới thiệu.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline Week 3 -->
+                <div class="relative z-10 flex flex-col md:flex-row items-center">
+                    <div class="flex items-center justify-start md:justify-end w-full md:w-1/2 md:pr-12 mb-4 md:mb-0">
+                        <div class="bg-slate-800/90 p-8 rounded-3xl border border-slate-700 shadow-xl w-full text-left backdrop-blur-md">
+                            <div class="inline-block px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold mb-3">
+                                Tuần 3
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Xây Dựng Website & Dựng Video</h3>
+                            <ul class="text-sm text-slate-300 space-y-2.5">
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> Tạo và hoàn thiện cấu trúc Website nhóm mã nguồn chuẩn trên nền tảng Web.</li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> Dựng và edit hoàn chỉnh Video demo / giới thiệu dự án.</li>
+                                <li class="flex items-start gap-2.5"><i class="fa-solid fa-check text-emerald-400 mt-1"></i> Kiểm thử tính năng, rà soát toàn bộ nội dung và chuẩn bị báo cáo hoàn thành.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="w-14 h-14 rounded-full bg-emerald-500 text-white font-extrabold text-base flex items-center justify-center border-4 border-slate-900 shrink-0 shadow-lg shadow-emerald-500/50 my-2 md:my-0">
+                        T3
+                    </div>
+                    <div class="w-full md:w-1/2 md:pl-12"></div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. PROBLEMS SECTION (FULL WIDTH 100%) -->
+    <section id="problems" class="py-20 bg-slate-50 w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-12">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Nội Dung Chuyên Môn</h2>
+                <p class="text-3xl sm:text-4xl font-extrabold text-slate-900">Bài Toán & Giải Pháp (Problems)</p>
+            </div>
+
+            <!-- Tab Buttons -->
+            <div class="flex flex-wrap justify-center gap-3 mb-10 w-full">
+                <button onclick="switchTab('abstract')" id="tab-btn-abstract" class="tab-btn px-8 py-3.5 rounded-2xl font-bold text-sm transition-all bg-sky-600 text-white shadow-lg shadow-sky-600/30">4.1 Abstract</button>
+                <button onclick="switchTab('solution')" id="tab-btn-solution" class="tab-btn px-8 py-3.5 rounded-2xl font-bold text-sm transition-all bg-white text-slate-600 hover:text-sky-600 border border-slate-200">4.2 Solution</button>
+                <button onclick="switchTab('methods')" id="tab-btn-methods" class="tab-btn px-8 py-3.5 rounded-2xl font-bold text-sm transition-all bg-white text-slate-600 hover:text-sky-600 border border-slate-200">4.3 Methods</button>
+                <button onclick="switchTab('conclusions')" id="tab-btn-conclusions" class="tab-btn px-8 py-3.5 rounded-2xl font-bold text-sm transition-all bg-white text-slate-600 hover:text-sky-600 border border-slate-200">4.4 Conclusions</button>
+            </div>
+
+            <!-- Tab Content Display -->
+            <div class="w-full bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 shadow-sm min-h-[300px]">
+                
+                <!-- 4.1 Abstract -->
+                <div id="tab-abstract" class="tab-content space-y-6">
+                    <div class="flex items-center gap-3 text-sky-600 text-xl font-extrabold border-b border-slate-100 pb-4">
+                        <i class="fa-solid fa-file-contract"></i> 4.1 Tóm Tắt Đề Tài (Abstract)
+                    </div>
+                    <p class="text-slate-700 text-lg leading-relaxed">
+                        Hiện nay, các đô thị lớn phải đối mặt với tình trạng tắc nghẽn giao thông nghiêm trọng và quỹ đất hạ tầng vô cùng hạn hẹp. <strong class="text-slate-900">Pipe Traffic</strong> là đề xuất về một hệ thống phương tiện giao thông chạy bằng <strong class="text-sky-600">từ trường (magnetic levitation/propulsion)</strong> được lắp đặt trực tiếp tại các hộ gia đình và tòa nhà.
+                    </p>
+                    <p class="text-slate-600 text-base leading-relaxed">
+                        Hệ thống giúp di chuyển nhanh chóng, an toàn, không phát thải và tối ưu hóa diện tích không gian đô thị nén.
+                    </p>
+                </div>
+
+                <!-- 4.2 Solution -->
+                <div id="tab-solution" class="tab-content hidden space-y-6">
+                    <div class="flex items-center gap-3 text-indigo-600 text-xl font-extrabold border-b border-slate-100 pb-4">
+                        <i class="fa-solid fa-lightbulb"></i> 4.2 Giải Pháp Đột Phá (Solution)
+                    </div>
+                    <ul class="space-y-4 text-slate-700 text-base">
+                        <li class="flex items-start gap-4">
+                            <i class="fa-solid fa-circle-check text-sky-500 text-xl mt-1"></i>
+                            <span><strong class="text-slate-900">Cấu trúc ống trượt đa tầng:</strong> Đường ống trượt chạy bằng lực từ tính được chia thành nhiều tầng riêng biệt, kết nối linh hoạt từ nhà này sang nhà khác hoặc từ hộ gia đình đến các trục chính đô thị.</span>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <i class="fa-solid fa-circle-check text-sky-500 text-xl mt-1"></i>
+                            <span><strong class="text-slate-900">Tối ưu không gian hẹp & Chi phí:</strong> Không tốn diện tích giải phóng mặt bằng hay chi phí xây dựng đường ray/đường nhựa truyền thống đắt đỏ.</span>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <i class="fa-solid fa-circle-check text-sky-500 text-xl mt-1"></i>
+                            <span><strong class="text-slate-900">Tích hợp Trí tuệ nhân tạo (AI):</strong> Tự động tính toán khoảng cách an toàn, điều phối luồng xe chạy liên tục. Đồng thời tự động ưu tiên làn đường và giải phóng lộ trình trong trường hợp khẩn cấp (cấp cứu, cứu hỏa, lực lượng chức năng).</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 4.3 Methods -->
+                <div id="tab-methods" class="tab-content hidden space-y-6">
+                    <div class="flex items-center gap-3 text-emerald-600 text-xl font-extrabold border-b border-slate-100 pb-4">
+                        <i class="fa-solid fa-gears"></i> 4.3 Phương Pháp Triển Khai (Methods)
+                    </div>
+                    <ul class="space-y-4 text-slate-700 text-base">
+                        <li class="flex items-start gap-4">
+                            <i class="fa-solid fa-shield-halved text-emerald-500 text-xl mt-1"></i>
+                            <span><strong class="text-slate-900">Quy hoạch & Xây dựng:</strong> Tiến hành đào và thi công hệ thống đường ống ngầm/trên cao dưới sự giám sát và cấp phép của <strong>Bộ Xây dựng</strong> và các cơ quan quản lý giao thông.</span>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <i class="fa-solid fa-piggy-bank text-emerald-500 text-xl mt-1"></i>
+                            <span><strong class="text-slate-900">Tiết kiệm chi phí:</strong> Sử dụng vật liệu mô-đun hóa hiện đại, sản xuất hàng loạt giúp giảm giá thành lắp đặt.</span>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <i class="fa-solid fa-triangle-exclamation text-emerald-500 text-xl mt-1"></i>
+                            <span><strong class="text-slate-900">An toàn & Luật định:</strong> Tuân thủ chặt chẽ các nguyên tắc và quy chuẩn an toàn giao thông hiện hành, tích hợp hệ thống hãm từ tính khẩn cấp và cảm biến đa điểm.</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- 4.4 Conclusions -->
+                <div id="tab-conclusions" class="tab-content hidden space-y-6">
+                    <div class="flex items-center gap-3 text-cyan-600 text-xl font-extrabold border-b border-slate-100 pb-4">
+                        <i class="fa-solid fa-flag-checkered"></i> 4.4 Kết Luận (Conclusions)
+                    </div>
+                    <p class="text-slate-700 text-lg leading-relaxed">
+                        Dự án <strong class="text-slate-900">Pipe Traffic</strong> đem đến một góc nhìn đột phá cho tương lai hạ tầng giao thông đô thị.
+                    </p>
+                    <p class="text-slate-600 text-base leading-relaxed">
+                        Việc ứng dụng công nghệ từ trường kết hợp cùng AI quản lý luồng chạy không chỉ giải quyết triệt để bài toán kẹt xe và diện tích đô thị hẹp, mà còn tạo ra phương thức di chuyển xanh, bền vững và tiết kiệm tối đa chi phí xây dựng cho xã hội.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 8. TEAM MEMBERS & GROUP CHARTER (FULL WIDTH 100%) -->
+    <section id="team" class="py-20 bg-white w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-16">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đội Ngũ Phát Triển</h2>
+                <p class="text-3xl font-extrabold text-slate-900">Thành Viên Nhóm & Hợp Đồng Quy Tắc</p>
+                <p class="text-slate-600 mt-2">Đại học Khoa học Tự nhiên - ĐHQG TP.HCM (HCMUS)</p>
+            </div>
+
+            <!-- Members Cards Grid -->
+            <!-- Members Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-16 w-full">
+                <!-- Member 1 -->
+                <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
+                    <div>
+                        <img src="https://i.postimg.cc/qqd6Sfps/Anh-Giau.jpg" alt="Nguyễn Giàu" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-sky-400">
+                        <h3 class="font-bold text-slate-900 text-base">Nguyễn Giàu</h3>
+                        <p class="text-xs font-semibold text-sky-600 mt-1">Design Lead & Graphic</p>
+                        <p class="text-[11px] text-slate-500 mt-2 line-clamp-2">Thiết kế Logo nhóm, nhận diện thương hiệu, giao diện đồ họa.</p>
+                    </div>
+                    <button onclick="openMemberModal('Nguyễn Giàu', 'Design Lead & Graphic Specialist', 'Thiết kế Logo nhóm, nhận diện thương hiệu, chịu trách nhiệm thiết kế giao diện đồ họa cho dự án Pipe Traffic.')" class="mt-4 text-xs font-bold text-sky-600 hover:underline flex items-center justify-center gap-1 mx-auto">
+                        Chi tiết <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+
+                <!-- Member 2 -->
+                <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
+                    <div>
+                        <img src="https://i.postimg.cc/x1sHCF3s/Hoang-Quan.jpg" alt="Huỳnh Hoàng Quân" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-indigo-400">
+                        <h3 class="font-bold text-slate-900 text-base">Huỳnh Hoàng Quân</h3>
+                        <p class="text-xs font-semibold text-indigo-600 mt-1">Technical & Web Dev</p>
+                        <p class="text-[11px] text-slate-500 mt-2 line-clamp-2">Cấu hình & dựng cấu trúc Website, tích hợp nội dung công nghệ.</p>
+                    </div>
+                    <button onclick="openMemberModal('Huỳnh Hoàng Quân', 'Technical & Web Developer', 'Cấu hình và dựng cấu trúc Website nhóm, tích hợp các nội dung công nghệ và tương tác.')" class="mt-4 text-xs font-bold text-indigo-600 hover:underline flex items-center justify-center gap-1 mx-auto">
+                        Chi tiết <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+
+                <!-- Member 3 -->
+                <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
+                    <div>
+                        <img src="https://i.postimg.cc/h4x9rsKh/Khanh.jpg" alt="Gia Khánh" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-cyan-400">
+                        <h3 class="font-bold text-slate-900 text-base">Gia Khánh</h3>
+                        <p class="text-xs font-semibold text-cyan-600 mt-1">Research & Content</p>
+                        <p class="text-[11px] text-slate-500 mt-2 line-clamp-2">Thu thập tài liệu chuyên môn, biên soạn Abstract, Solution, Methods.</p>
+                    </div>
+                    <button onclick="openMemberModal('Gia Khánh', 'Research & Content Specialist', 'Thu thập tài liệu chuyên môn, biên soạn nội dung 4 phần: Abstract, Solution, Methods và Conclusions.')" class="mt-4 text-xs font-bold text-cyan-600 hover:underline flex items-center justify-center gap-1 mx-auto">
+                        Chi tiết <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+
+                <!-- Member 4 -->
+                <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
+                    <div>
+                        <img src="https://i.postimg.cc/x8rLQJ32/Thuy-Lam.jpg" alt="Thùy Lâm" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-rose-400">
+                        <h3 class="font-bold text-slate-900 text-base">Thùy Lâm</h3>
+                        <p class="text-xs font-semibold text-rose-600 mt-1">Media & Video Producer</p>
+                        <p class="text-[11px] text-slate-500 mt-2 line-clamp-2">Lên kịch bản chi tiết, dựng video demo và hậu kỳ truyền thông.</p>
+                    </div>
+                    <button onclick="openMemberModal('Thùy Lâm', 'Media & Video Producer', 'Lên kịch bản chi tiết phân cảnh, dựng video demo và thực hiện công tác hậu kỳ nội dung truyền thông dự án.')" class="mt-4 text-xs font-bold text-rose-600 hover:underline flex items-center justify-center gap-1 mx-auto">
+                        Chi tiết <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+
+                <!-- Member 5 -->
+                <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
+                    <div>
+                        <img src="https://i.postimg.cc/TPCbKNqv/Trong-Phuc.png" alt="Trọng Phúc" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-emerald-400">
+                        <h3 class="font-bold text-slate-900 text-base">Trọng Phúc</h3>
+                        <p class="text-xs font-semibold text-emerald-600 mt-1">Project Manager</p>
+                        <p class="text-[11px] text-slate-500 mt-2 line-clamp-2">Điều phối tiến độ, Hợp đồng nhóm, Quy tắc & tổng hợp tài liệu.</p>
+                    </div>
+                    <button onclick="openMemberModal('Trọng Phúc', 'Project Manager & Documentation', 'Điều phối tiến độ công việc, xây dựng Hợp đồng thành lập nhóm, Quy tắc giao tiếp và tổng hợp toàn bộ tài liệu dự án.')" class="mt-4 text-xs font-bold text-emerald-600 hover:underline flex items-center justify-center gap-1 mx-auto">
+                        Chi tiết <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- TEAM CHARTER, RULES & COMMUNICATION -->
+            <div class="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 shadow-2xl space-y-8 w-full">
+                <div class="border-b border-slate-800 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-2xl font-extrabold text-white">3.2 Hợp Đồng Thành Lập, Quy Tắc & Kế Hoạch Giao Tiếp Nhóm</h3>
+                        <p class="text-slate-400 text-sm mt-1">Cam kết làm việc chuyên nghiệp của sinh viên Trường Đại học Khoa học Tự nhiên.</p>
+                    </div>
+                    <span class="px-4 py-2 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/30 text-xs font-bold self-start md:self-auto">HCMUS Pipe Traffic Charter</span>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
+                    <!-- A. Team Charter -->
+                    <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/80 space-y-3">
+                        <div class="flex items-center gap-2 text-sky-400 font-bold text-sm uppercase tracking-wider">
+                            <i class="fa-solid fa-file-contract text-base"></i> A. Hợp Đồng Thành Lập Nhóm
+                        </div>
+                        <ul class="text-xs text-slate-300 space-y-2">
+                            <li><strong>Tên dự án:</strong> Pipe Traffic - HCMUS</li>
+                            <li><strong>Mục tiêu chung:</strong> Hoàn thành xuất sắc bài tập nhóm, xây dựng nguyên mẫu ý tưởng dự án thực tế, đúng thời hạn 100%.</li>
+                            <li class="pt-1"><strong>Cam kết thành viên:</strong></li>
+                            <li class="pl-2 flex items-start gap-1.5"><i class="fa-solid fa-circle text-[6px] text-sky-400 mt-1.5"></i> Tham gia đầy đủ các buổi họp online & offline.</li>
+                            <li class="pl-2 flex items-start gap-1.5"><i class="fa-solid fa-circle text-[6px] text-sky-400 mt-1.5"></i> Tôn trọng ý kiến đóng góp, thảo luận tinh thần xây dựng.</li>
+                            <li class="pl-2 flex items-start gap-1.5"><i class="fa-solid fa-circle text-[6px] text-sky-400 mt-1.5"></i> Đảm bảo chất lượng công việc đúng cam kết deadline.</li>
+                        </ul>
+                    </div>
+
+                    <!-- B. Working Rules -->
+                    <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/80 space-y-3">
+                        <div class="flex items-center gap-2 text-indigo-400 font-bold text-sm uppercase tracking-wider">
+                            <i class="fa-solid fa-gavel text-base"></i> B. Quy Tắc Làm Việc Nhóm
+                        </div>
+                        <ol class="text-xs text-slate-300 space-y-2 list-decimal pl-4">
+                            <li><strong>Đúng hạn (Punctuality):</strong> Nộp sản phẩm trước deadline ít nhất 6 tiếng để kiểm tra chéo.</li>
+                            <li><strong>Minh bạch (Transparency):</strong> Khó khăn phát sinh phải thông báo ngay lên kênh chung trong vòng 12 tiếng.</li>
+                            <li><strong>Đóng góp tích cực:</strong> Mỗi thành viên bắt buộc đưa ra ít nhất 1 ý kiến đóng góp trong mỗi buổi họp.</li>
+                            <li><strong>Thẩm quyền quyết định:</strong> Đa số bỏ phiếu; trường hợp hòa, Project Manager ra quyết định cuối cùng.</li>
+                        </ol>
+                    </div>
+
+                    <!-- C. Communication Plan -->
+                    <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/80 space-y-3">
+                        <div class="flex items-center gap-2 text-emerald-400 font-bold text-sm uppercase tracking-wider">
+                            <i class="fa-solid fa-comments text-base"></i> C. Kế Hoạch Giao Tiếp
+                        </div>
+                        <ul class="text-xs text-slate-300 space-y-2">
+                            <li><strong>Kênh trao đổi chính:</strong> Zalo / Discord Group (Nhắn tin hàng ngày, thông báo gấp).</li>
+                            <li><strong>Quản lý tài liệu & Task:</strong> Google Drive (Lưu trữ), Trello / Notion (Theo dõi tiến độ).</li>
+                            <li class="pt-1"><strong>Lịch họp định kỳ:</strong></li>
+                            <li class="pl-2 flex items-start gap-1.5"><i class="fa-solid fa-clock text-emerald-400 mt-1"></i> <em>Check-in Online:</em> 21:00 Thứ Tư hàng tuần (30 phút).</li>
+                            <li class="pl-2 flex items-start gap-1.5"><i class="fa-solid fa-clock text-emerald-400 mt-1"></i> <em>Họp Tổng kết:</em> 14:00 Chủ Nhật hàng tuần.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 9. VIDEO DEMO & SCRIPT SECTION (FULL WIDTH 100%) -->
+    <section id="video" class="py-20 bg-slate-100 w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-12">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Truyền Thông Dự Án</h2>
+                <p class="text-3xl font-extrabold text-slate-900">Video Giới Thiệu & Kịch Bản Đô Thị</p>
+            </div>
+
+            <!-- Video Player Box -->
+            <div class="w-full rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-slate-800 aspect-video relative flex items-center justify-center group mb-12">
+                <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80" alt="Video Cover" class="w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity">
+                <div class="absolute text-center p-6">
+                    <button class="w-20 h-20 rounded-full bg-sky-600 text-white text-2xl flex items-center justify-center shadow-lg shadow-sky-600/50 hover:scale-110 transition-transform mx-auto mb-4">
+                        <i class="fa-solid fa-play ml-1"></i>
+                    </button>
+                    <p class="text-white font-bold text-xl">Xem Video Demo Nguyên Lý Hoạt Động Pipe Traffic</p>
+                    <p class="text-slate-300 text-sm mt-1">Sản phẩm truyền thông nhóm sinh viên HCMUS</p>
+                </div>
+            </div>
+
+            <!-- Detailed Video Script Table -->
+            <div class="w-full bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+                <h4 class="font-bold text-slate-900 text-lg mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-clapperboard text-sky-600"></i> Kịch Bản Phân Cảnh Video (5 Scenes)
+                </h4>
+                <div class="space-y-4 text-sm text-slate-700 divide-y divide-slate-100">
+                    <div class="pt-3 flex flex-col sm:flex-row gap-4 justify-between">
+                        <span class="font-bold text-slate-900 shrink-0 w-40">Scene 1 (0:00 - 0:25)</span>
+                        <p class="grow">Cảnh tắc đường đô thị giờ cao điểm. <em>"Tắc nghẽn giao thông, diện tích đất hạn hẹp và ô nhiễm – bài toán chưa có lời giải."</em></p>
+                    </div>
+                    <div class="pt-3 flex flex-col sm:flex-row gap-4 justify-between">
+                        <span class="font-bold text-slate-900 shrink-0 w-40">Scene 2 (0:25 - 0:55)</span>
+                        <p class="grow">Logo Pipe Traffic xuất hiện (Giàu thiết kế). Mô hình 3D đường ống kết nối giữa các tòa nhà đô thị.</p>
+                    </div>
+                    <div class="pt-3 flex flex-col sm:flex-row gap-4 justify-between">
+                        <span class="font-bold text-slate-900 shrink-0 w-40">Scene 3 (0:55 - 1:40)</span>
+                        <p class="grow">Mô phỏng đường ống đa tầng, cabin trượt đệm từ tính và thuật toán AI tự động điều phối khoảng cách khẩn cấp.</p>
+                    </div>
+                    <div class="pt-3 flex flex-col sm:flex-row gap-4 justify-between">
+                        <span class="font-bold text-slate-900 shrink-0 w-40">Scene 4 (1:40 - 2:15)</span>
+                        <p class="grow">Sơ đồ thi công chuẩn quy chuẩn Bộ Xây dựng và hình ảnh 5 thành viên nhóm HCMUS thảo luận làm việc.</p>
+                    </div>
+                    <div class="pt-3 flex flex-col sm:flex-row gap-4 justify-between">
+                        <span class="font-bold text-slate-900 shrink-0 w-40">Scene 5 (2:15 - 2:30)</span>
+                        <p class="grow">Slide kết thúc: Logo nhóm + Tên 5 thành viên + Thông điệp <em>"Pipe Traffic – Kết nối không giới hạn"</em>.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 10. REVIEWS & FAQ SECTION (FULL WIDTH 100%) -->
+    <section id="faq" class="py-20 bg-white w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-16">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đánh Giá & Giải Đáp</h2>
+                <p class="text-3xl font-extrabold text-slate-900">Review Chuyên Gia & Câu Hỏi Thường Gặp</p>
+            </div>
+
+            <!-- Reviews -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 w-full">
+                <div class="p-8 rounded-3xl bg-slate-50 border border-slate-200">
+                    <div class="flex text-amber-400 gap-1 text-base mb-4">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <p class="text-slate-700 text-sm sm:text-base leading-relaxed mb-6">"Ý tưởng lắp đặt đường ống trượt từ trường tận hộ gia đình mang tính tiên phong rất cao cho không gian hẹp đô thị."</p>
+                    <div class="font-bold text-slate-900 text-base">TS. Trần Minh Tuấn</div>
+                    <p class="text-xs text-slate-500">Chuyên gia Quy hoạch Hạ tầng</p>
+                </div>
+
+                <div class="p-8 rounded-3xl bg-slate-50 border border-slate-200">
+                    <div class="flex text-amber-400 gap-1 text-base mb-4">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <p class="text-slate-700 text-sm sm:text-base leading-relaxed mb-6">"Việc kết hợp AI điều hướng khẩn cấp giúp loại bỏ hoàn toàn hiện tượng ùn tắc và đảm bảo an toàn tuyệt đối."</p>
+                    <div class="font-bold text-slate-900 text-base">Nguyễn Phương Thảo</div>
+                    <p class="text-xs text-slate-500">Kỹ sư Giao thông Đô thị</p>
+                </div>
+
+                <div class="p-8 rounded-3xl bg-slate-50 border border-slate-200">
+                    <div class="flex text-amber-400 gap-1 text-base mb-4">
+                        <i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i>
+                    </div>
+                    <p class="text-slate-700 text-sm sm:text-base leading-relaxed mb-6">"Tiết kiệm chi phí đền bù giải phóng mặt bằng so với dự án Metro truyền thống là điểm cộng lớn nhất."</p>
+                    <div class="font-bold text-slate-900 text-base">Lê Hoàng Nam</div>
+                    <p class="text-xs text-slate-500">Đại diện Quỹ Đầu Tư Công Nghệ</p>
+                </div>
+            </div>
+
+            <!-- FAQ Accordion List -->
+            <div class="w-full max-w-5xl mx-auto space-y-4">
+                <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-900 text-lg mb-2">1. Hệ thống đường ống trượt từ trường hoạt động như thế nào tại nhà?</h3>
+                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed">Đường ống trượt từ tính được lắp đặt mô-đun hóa nối trực tiếp tới cổng hộ gia đình hoặc tầng kỹ thuật tòa nhà. Cabin di chuyển nhờ lực đẩy đệm từ không ma sát.</p>
+                </div>
+
+                <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-900 text-lg mb-2">2. Thuật toán AI xử lý tình huống khẩn cấp ra sao?</h3>
+                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed">AI liên tục đo khoảng cách an toàn thời gian thực giữa các cabin. Khi có tín hiệu ưu tiên (cấp cứu, cứu hỏa), AI tự động di chuyển các cabin thường sang tầng ống phụ để mở lộ trình trống ngay lập tức.</p>
+                </div>
+
+                <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6">
+                    <h3 class="font-bold text-slate-900 text-lg mb-2">3. Dự án tuân thủ theo cơ quan quản lý nào?</h3>
+                    <p class="text-slate-600 text-sm sm:text-base leading-relaxed">Toàn bộ phương pháp triển khai thi công đường ống ngầm/trên cao đều được thiết kế tuân thủ nghiêm ngặt theo các quy chuẩn an toàn do <strong>Bộ Xây dựng</strong> cấp phép.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 11. INTERACTIVE COMMENTS SECTION (FULL WIDTH 100%) -->
+    <section id="comments" class="py-20 bg-slate-900 text-white w-full border-t border-slate-800">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-14">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-3">
+                    <i class="fa-solid fa-comments"></i> Tương Tác Cùng Nhóm Nghiên Cứu
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Góp Ý & Bình Luận Cho Dự Án Pipe Traffic</h2>
+                <p class="text-slate-400 mt-2">Mọi nhận xét của bạn sẽ đóng góp quan trọng cho sự phát triển của giải pháp giao thông đường ống.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 w-full items-start">
+                
+                <!-- COMMENT FORM (Left Column on Large Screen) -->
+                <div class="lg:col-span-5 bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-pen-to-square text-sky-400"></i> Bảng Đóng Góp Ý Kiến
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Công khai / Ẩn danh</span>
+                    </div>
+
+                    <form id="commentForm" onsubmit="handleCommentSubmit(event)" class="space-y-5">
+                        
+                        <!-- Identity Mode Selector -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-2">Chế độ danh tính</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-700 bg-slate-900/60 cursor-pointer hover:border-sky-500 transition-all">
+                                    <input type="radio" name="identityMode" value="real" checked onchange="toggleIdentityFields()" class="accent-sky-500">
+                                    <span class="text-xs font-bold text-white"><i class="fa-solid fa-user text-sky-400 mr-1"></i> Tên Thật</span>
+                                </label>
+                                <label class="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-700 bg-slate-900/60 cursor-pointer hover:border-sky-500 transition-all">
+                                    <input type="radio" name="identityMode" value="anonymous" onchange="toggleIdentityFields()" class="accent-sky-500">
+                                    <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-user-ninja text-indigo-400 mr-1"></i> Ẩn Danh</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Real Name Fields -->
+                        <div id="realNameInputs" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Họ & Tên <span class="text-red-400">*</span></label>
+                                <input type="text" id="commenterName" placeholder="Nhập tên của bạn..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Email / Vai trò (Tùy chọn)</label>
+                                <input type="text" id="commenterRole" placeholder="Ví dụ: Sinh viên HCMUS, Kỹ sư, Khách..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors">
+                            </div>
+                        </div>
+
+                        <!-- Rating selection -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-2">Đánh giá mức độ khả thi</label>
+                            <div class="flex items-center gap-2 bg-slate-900/80 p-3 rounded-xl border border-slate-700 text-amber-400 text-xl cursor-pointer">
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(1)"></i>
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(2)"></i>
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(3)"></i>
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(4)"></i>
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(5)"></i>
+                                <span id="ratingValueText" class="text-xs font-bold text-slate-300 ml-auto">5/5 Sao</span>
+                            </div>
+                        </div>
+
+                        <!-- Comment Textarea -->
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-semibold text-slate-300">Nội dung bình luận <span class="text-red-400">*</span></label>
+                                <span id="charCount" class="text-[11px] text-slate-400 font-mono">0/500</span>
+                            </div>
+                            <textarea id="commentText" rows="4" maxlength="500" oninput="updateCharCount()" placeholder="Nhập nhận xét, câu hỏi hoặc ý kiến đóng góp cho Pipe Traffic..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors resize-none"></textarea>
+                        </div>
+
+                        <!-- Emojis & Quick Tags -->
+                        <div class="flex flex-wrap gap-2 pt-1">
+                            <button type="button" onclick="addEmoji('🚀')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs hover:border-sky-500">🚀 Đột phá</button>
+                            <button type="button" onclick="addEmoji('💡')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs hover:border-sky-500">💡 Ý tưởng hay</button>
+                            <button type="button" onclick="addEmoji('👏')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs hover:border-sky-500">👏 Ủng hộ</button>
+                            <button type="button" onclick="addEmoji('❓')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs hover:border-sky-500">❓ Thắc mắc</button>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-white font-extrabold text-sm shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Gửi Bình Luận Ngay
+                        </button>
+                    </form>
+                </div>
+
+                <!-- COMMENTS LIST (Right Column on Large Screen) -->
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                            <i class="fa-solid fa-comments text-sky-400"></i> Ý Kiến Đóng Góp Từ Cộng Đồng
+                            <span id="commentBadgeCount" class="text-xs font-bold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">0</span>
+                        </h3>
+                        <button onclick="clearAllUserComments()" class="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                            <i class="fa-solid fa-rotate-left mr-1"></i> Khôi phục mặc định
+                        </button>
+                    </div>
+
+                    <!-- Dynamic Comments Container -->
+                    <div id="commentsContainer" class="space-y-4 max-h-[750px] overflow-y-auto pr-2 custom-scrollbar">
+                        <!-- Items rendered via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 12. CTA & FOOTER (FULL WIDTH 100%) -->
+    <section id="cta" class="py-20 gradient-bg text-white w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16 text-center space-y-6">
+            <h2 class="text-3xl sm:text-5xl font-extrabold">Cùng Tiên Phong Tương Lai Giao Thông Thông Minh</h2>
+            <p class="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto">
+                Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) nghiên cứu và phát triển.
+            </p>
+            <div class="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#team" class="px-8 py-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-base shadow-lg shadow-sky-500/30 transition-all">
+                    Liên Hệ Nhóm Dự Án
+                </a>
+                <a href="#problems" class="px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all">
+                    Xem Đồ Án Chi Tiết
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-950 text-slate-400 py-12 border-t border-slate-800 w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center text-white text-base font-extrabold">
+                        PT
+                    </div>
+                    <div>
+                        <span class="font-extrabold text-white text-base block leading-none">Pipe Traffic - HCMUS</span>
+                        <span class="text-[10px] text-slate-500">Trường Đại học Khoa học Tự nhiên TP.HCM</span>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 text-center">
+                    &copy; 2026 Pipe Traffic Team. Tất cả quyền được bảo lưu.
+                </p>
+                <div class="flex gap-4 text-slate-400">
+                    <a href="https://github.com/google" class="hover:text-sky-400"><i class="fa-brands fa-github text-lg"></i></a>
+                    <a href="https://www.facebook.com/hoang.quan.693528?locale=vi_VN" class="hover:text-sky-400" class="hover:text-sky-400"><i class="fa-brands fa-facebook text-lg"></i></a>
+                    <a href="https://www.youtube.com/watch?v=al_L4F2ac9c&t=1s" class="hover:text-sky-400"><i class="fa-brands fa-youtube text-lg"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MEMBER DETAILS MODAL -->
+    <div id="member-modal" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div>
+                    <h3 id="modal-name" class="font-extrabold text-lg text-slate-900">Thành Viên</h3>
+                    <p id="modal-role" class="text-xs font-bold text-sky-600 mt-0.5">Vai trò</p>
+                </div>
+                <button onclick="closeMemberModal()" class="text-slate-400 hover:text-slate-600 p-2">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <p id="modal-desc" class="text-slate-600 text-sm leading-relaxed"></p>
+            <div class="pt-2 text-right">
+                <button onclick="closeMemberModal()" class="px-5 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs shadow-md">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Mobile Navigation Toggle
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Tab Switching Logic for Problems Section
+        function switchTab(tabId) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(el => el.classList.add('hidden'));
+
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-sky-600', 'text-white', 'shadow-lg', 'shadow-sky-600/30');
+                btn.classList.add('bg-white', 'text-slate-600');
+            });
+
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+
+            const activeBtn = document.getElementById('tab-btn-' + tabId);
+            activeBtn.classList.remove('bg-white', 'text-slate-600');
+            activeBtn.classList.add('bg-sky-600', 'text-white', 'shadow-lg', 'shadow-sky-600/30');
+        }
+
+        // Member Modal Handlers
+        function openMemberModal(name, role, desc) {
+            document.getElementById('modal-name').innerText = name;
+            document.getElementById('modal-role').innerText = role;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('member-modal').classList.remove('hidden');
+        }
+
+        function closeMemberModal() {
+            document.getElementById('member-modal').classList.add('hidden');
+        }
+
+        // ==========================================
+        // INTERACTIVE COMMENT SYSTEM WITH LOCALSTORAGE
+        // ==========================================
+        let selectedRating = 5;
+
+        // Default Comments Data
+        const initialComments = [
+            {
+                id: 1,
+                name: "PGS.TS Nguyễn Văn Hải",
+                role: "Giảng viên Khoa Công Nghệ HCMUS",
+                isAnonymous: false,
+                rating: 5,
+                time: "10 phút trước",
+                content: "Ý tưởng ứng dụng đệm từ trường kết hợp AI điều hướng cho không gian hẹp đô thị rất sáng tạo và mang tính thực tiễn cao. Rất tự hào về nhóm nghiên cứu!",
+                likes: 12,
+                replies: [
+                    { name: "Trọng Phúc (HCMUS)", text: "Dạ em cảm ơn Thầy ạ! Nhóm sẽ tiếp thu ý kiến để hoàn thiện mô hình toán học.", time: "5 phút trước" }
+                ]
+            },
+            {
+                id: 2,
+                name: "Ẩn danh",
+                role: "Chuyên gia Giao thông",
+                isAnonymous: true,
+                rating: 5,
+                time: "30 phút trước",
+                content: "Giải pháp chuyển làn khẩn cấp cho xe cứu hỏa/cấp cứu rất thông minh. Cần tính toán thêm công suất điện tiêu thụ của động cơ từ tính.",
+                likes: 8,
+                replies: []
+            },
+            {
+                id: 3,
+                name: "Trần Minh Hoàng",
+                role: "Sinh viên ĐH Khoa Học Tự Nhiên",
+                isAnonymous: false,
+                rating: 4,
+                time: "2 giờ trước",
+                content: "Website thiết kế giao diện cực kỳ mượt và chuyên nghiệp! Logo do bạn Giàu làm nhìn nét và hợp chủ đề Pipe Traffic ghê 🚀",
+                likes: 5,
+                replies: []
+            }
+        ];
+
+        let commentsList = [];
+
+        // Load comments on page ready
+        window.addEventListener('DOMContentLoaded', () => {
+            const stored = localStorage.getItem('pipetraffic_comments');
+            if (stored) {
+                try {
+                    commentsList = JSON.parse(stored);
+                } catch(e) {
+                    commentsList = initialComments;
+                }
+            } else {
+                commentsList = initialComments;
+                localStorage.setItem('pipetraffic_comments', JSON.stringify(commentsList));
+            }
+            renderComments();
+            setRating(5);
+        });
+
+        function toggleIdentityFields() {
+            const isAnon = document.querySelector('input[name="identityMode"]:checked').value === 'anonymous';
+            const realInputs = document.getElementById('realNameInputs');
+            if (isAnon) {
+                realInputs.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                realInputs.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function setRating(stars) {
+            selectedRating = stars;
+            const starElements = document.querySelectorAll('.star-btn');
+            starElements.forEach((el, index) => {
+                if (index < stars) {
+                    el.classList.remove('text-slate-600');
+                    el.classList.add('text-amber-400');
+                } else {
+                    el.classList.remove('text-amber-400');
+                    el.classList.add('text-slate-600');
+                }
+            });
+            document.getElementById('ratingValueText').innerText = `${stars}/5 Sao`;
+        }
+
+        function updateCharCount() {
+            const len = document.getElementById('commentText').value.length;
+            document.getElementById('charCount').innerText = `${len}/500`;
+        }
+
+        function addEmoji(emoji) {
+            const textarea = document.getElementById('commentText');
+            textarea.value += ' ' + emoji;
+            updateCharCount();
+        }
+
+        function handleCommentSubmit(e) {
+            e.preventDefault();
+            const isAnon = document.querySelector('input[name="identityMode"]:checked').value === 'anonymous';
+            const nameInput = document.getElementById('commenterName').value.trim();
+            const roleInput = document.getElementById('commenterRole').value.trim();
+            const contentText = document.getElementById('commentText').value.trim();
+
+            if (!contentText) {
+                alert("Vui lòng nhập nội dung bình luận!");
+                return;
+            }
+
+            if (!isAnon && !nameInput) {
+                alert("Vui lòng nhập Họ & Tên hoặc chọn chế độ Ẩn danh!");
+                return;
+            }
+
+            const newComment = {
+                id: Date.now(),
+                name: isAnon ? "Thành viên Ẩn danh" : nameInput,
+                role: isAnon ? "Người dùng ẩn danh" : (roleInput || "Thành viên cộng đồng"),
+                isAnonymous: isAnon,
+                rating: selectedRating,
+                time: "Vừa xong",
+                content: contentText,
+                likes: 0,
+                replies: []
+            };
+
+            commentsList.unshift(newComment);
+            localStorage.setItem('pipetraffic_comments', JSON.stringify(commentsList));
+
+            // Reset Form
+            document.getElementById('commentText').value = '';
+            document.getElementById('commenterName').value = '';
+            document.getElementById('commenterRole').value = '';
+            updateCharCount();
+            renderComments();
+        }
+
+        function renderComments() {
+            const container = document.getElementById('commentsContainer');
+            document.getElementById('commentBadgeCount').innerText = commentsList.length;
+
+            if (commentsList.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 bg-slate-800/40 rounded-2xl border border-slate-800">
+                        <i class="fa-solid fa-comments-question text-4xl text-slate-600 mb-3"></i>
+                        <p class="text-slate-400 text-sm">Chưa có bình luận nào. Hãy là người đầu tiên đóng góp ý kiến!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = commentsList.map(item => {
+                const avatarInitial = item.isAnonymous ? '?' : item.name.charAt(0).toUpperCase();
+                const avatarBg = item.isAnonymous ? 'bg-indigo-600' : 'bg-gradient-to-tr from-sky-500 to-cyan-500';
+
+                let starsHtml = '';
+                for (let i = 1; i <= 5; i++) {
+                    starsHtml += `<i class="fa-solid fa-star ${i <= item.rating ? 'text-amber-400' : 'text-slate-700'}"></i>`;
+                }
+
+                let repliesHtml = item.replies.map(r => `
+                    <div class="mt-3 pl-4 border-l-2 border-sky-500/40 space-y-1 text-xs">
+                        <div class="flex items-center gap-2 font-bold text-sky-400">
+                            <span>${r.name}</span>
+                            <span class="text-[10px] text-slate-500 font-normal">${r.time}</span>
+                        </div>
+                        <p class="text-slate-300">${r.text}</p>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/80 space-y-3 transition-all hover:border-slate-600">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl ${avatarBg} text-white font-extrabold flex items-center justify-center shrink-0 shadow-md">
+                                    ${avatarInitial}
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                                        ${item.name}
+                                        ${item.isAnonymous ? '<span class="text-[10px] px-2 py-0.5 rounded bg-slate-700 text-slate-300">Ẩn danh</span>' : ''}
+                                    </h4>
+                                    <p class="text-xs text-slate-400">${item.role}</p>
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <div class="text-xs flex gap-0.5 mb-0.5">${starsHtml}</div>
+                                <span class="text-[10px] text-slate-500">${item.time}</span>
+                            </div>
+                        </div>
+
+                        <p class="text-slate-200 text-sm leading-relaxed">${item.content}</p>
+
+                        <div class="flex items-center gap-4 pt-2 border-t border-slate-700/60 text-xs">
+                            <button onclick="likeComment(${item.id})" class="text-slate-400 hover:text-sky-400 flex items-center gap-1.5 font-semibold">
+                                <i class="fa-regular fa-thumbs-up"></i> Thích (${item.likes})
+                            </button>
+                            <button onclick="promptReply(${item.id})" class="text-slate-400 hover:text-sky-400 flex items-center gap-1.5 font-semibold">
+                                <i class="fa-regular fa-comment"></i> Phản hồi
+                            </button>
+                        </div>
+
+                        ${repliesHtml ? `<div class="pt-1">${repliesHtml}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function likeComment(id) {
+            const comment = commentsList.find(c => c.id === id);
+            if (comment) {
+                comment.likes += 1;
+                localStorage.setItem('pipetraffic_comments', JSON.stringify(commentsList));
+                renderComments();
+            }
+        }
+
+        function promptReply(id) {
+            const replyText = prompt("Nhập câu trả lời / phản hồi của bạn:");
+            if (replyText && replyText.trim()) {
+                const comment = commentsList.find(c => c.id === id);
+                if (comment) {
+                    comment.replies.push({
+                        name: "Bạn (Cộng đồng)",
+                        text: replyText.trim(),
+                        time: "Vừa xong"
+                    });
+                    localStorage.setItem('pipetraffic_comments', JSON.stringify(commentsList));
+                    renderComments();
+                }
+            }
+        }
+
+        function clearAllUserComments() {
+            if (confirm("Khôi phục danh sách bình luận về mẫu ban đầu?")) {
+                commentsList = [...initialComments];
+                localStorage.setItem('pipetraffic_comments', JSON.stringify(commentsList));
+                renderComments();
+            }
+        }
+    </script>
+</body>
+</html>
