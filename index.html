@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <title>Pipe Traffic</title>
     <link rel="icon" type="image/png" href="https://i.postimg.cc/tgyk09xn/logo2.jpg">
     <script>
         tailwind.config = {
@@ -73,8 +72,7 @@
         <div class="w-full px-4 sm:px-8 lg:px-12">
             <div class="flex justify-between h-20 items-center w-full">
                 <!-- Logo -->
-                <a href="https://i.postimg.cc/tgyk09xn/logo2.jpg" class="flex items-center gap-3 group shrink-0">
-                    <!-- Thay icon bằng thẻ ảnh -->
+                <a href="#" class="flex items-center gap-3 group shrink-0">
                     <img src="https://i.postimg.cc/tgyk09xn/logo2.jpg" alt="Logo" class="w-11 h-11 rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform">
                     <div>
                         <span class="text-xl font-extrabold tracking-tight text-slate-900 block leading-none">PIPE TRAFFIC</span>
@@ -102,26 +100,26 @@
 
                 <!-- Mobile menu button -->
                 <div class="lg:hidden flex items-center">
-                    <button id="mobile-menu-btn" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 rounded-lg bg-slate-100">
-                        <i class="fa-solid fa-bars text-xl"></i>
+                    <button id="mobile-menu-btn" onclick="toggleMobileMenu()" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 rounded-lg bg-slate-100">
+                        <i id="mobile-menu-icon" class="fa-solid fa-bars text-xl"></i>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Mobile Menu Dropdown -->
+        <!-- Mobile Menu Dropdown (Clean JS toggle) -->
         <div id="mobile-menu" class="hidden lg:hidden border-t border-slate-200 bg-white px-6 pt-4 pb-6 space-y-3 shadow-xl">
-            <a href="#journey" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-timeline text-sky-500 mr-2"></i> Hành Trình (Journey)</a>
-            <a href="#team" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-users text-sky-500 mr-2"></i> Thành Viên & Quy Tắc</a>
-            <a href="#problems" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
-            <a href="#video" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-play text-sky-500 mr-2"></i> Video Demo</a>
-            <a href="#faq" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-question text-sky-500 mr-2"></i> Đánh Giá & FAQ</a>
-            <a href="#comments" class="block py-2 text-sky-600 font-bold border-b border-slate-100"><i class="fa-solid fa-comments text-sky-500 mr-2"></i> Bình Luận Tương Tác</a>
-            <a href="#cta" class="block text-center bg-sky-600 text-white py-3 rounded-xl font-bold mt-4 shadow-lg shadow-sky-600/30">Trải Nghiệm Dự Án Ngay</a>
+            <a href="#journey" onclick="toggleMobileMenu()" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-timeline text-sky-500 mr-2"></i> Hành Trình (Journey)</a>
+            <a href="#team" onclick="toggleMobileMenu()" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-users text-sky-500 mr-2"></i> Thành Viên & Quy Tắc</a>
+            <a href="#problems" onclick="toggleMobileMenu()" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
+            <a href="#video" onclick="toggleMobileMenu()" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-play text-sky-500 mr-2"></i> Video Demo</a>
+            <a href="#faq" onclick="toggleMobileMenu()" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-question text-sky-500 mr-2"></i> Đánh Giá & FAQ</a>
+            <a href="#comments" onclick="toggleMobileMenu()" class="block py-2 text-sky-600 font-bold border-b border-slate-100"><i class="fa-solid fa-comments text-sky-500 mr-2"></i> Bình Luận Tương Tác</a>
+            <a href="#cta" onclick="toggleMobileMenu()" class="block text-center bg-sky-600 text-white py-3 rounded-xl font-bold mt-4 shadow-lg shadow-sky-600/30">Trải Nghiệm Dự Án Ngay</a>
         </div>
     </nav>
 
-    <!-- 2. HOME / HERO SECTION (FULL WIDTH 100%) -->
+    <!-- 2. HOME / HERO SECTION -->
     <section class="pt-32 pb-20 md:pt-40 md:pb-28 gradient-bg text-white relative overflow-hidden w-full">
         <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(56,189,248,0.18),transparent)] pointer-events-none"></div>
         <div class="w-full px-4 sm:px-8 lg:px-16 relative z-10">
@@ -140,7 +138,6 @@
                         Đề xuất giải pháp di chuyển và vận chuyển thế hệ mới dựa trên công nghệ đường ống từ tính, giúp giải quyết triệt để vấn đề ùn tắc giao thông, không gian hẹp và chi phí hạ tầng đô thị.
                     </p>
                     
-                    <!-- Branding Badge -->
                     <div class="p-4 rounded-2xl bg-slate-800/90 border border-slate-700/80 backdrop-blur-md text-left max-w-2xl mx-auto lg:mx-0 flex items-center justify-between gap-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-xl bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
@@ -218,7 +215,7 @@
         </div>
     </section>
 
-    <!-- 3. HIGHLIGHT FEATURES / UTILITIES (FULL WIDTH 100%) -->
+    <!-- 3. HIGHLIGHT FEATURES -->
     <section class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
@@ -228,7 +225,6 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
-                <!-- Bullet Feature 1 -->
                 <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
                     <div class="w-14 h-14 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl mb-6">
                         <i class="fa-solid fa-magnet"></i>
@@ -241,7 +237,6 @@
                     </ul>
                 </div>
 
-                <!-- Bullet Feature 2 -->
                 <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
                     <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mb-6">
                         <i class="fa-solid fa-house-laptop"></i>
@@ -254,7 +249,6 @@
                     </ul>
                 </div>
 
-                <!-- Bullet Feature 3 -->
                 <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
                     <div class="w-14 h-14 rounded-2xl bg-cyan-100 text-cyan-600 flex items-center justify-center text-2xl mb-6">
                         <i class="fa-solid fa-microchip"></i>
@@ -267,7 +261,6 @@
                     </ul>
                 </div>
 
-                <!-- Bullet Feature 4 -->
                 <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
                     <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mb-6">
                         <i class="fa-solid fa-leaf"></i>
@@ -283,7 +276,7 @@
         </div>
     </section>
 
-    <!-- 4. COMPARISON TABLE: PIPE TRAFFIC VS METRO (FULL WIDTH 100%) -->
+    <!-- 4. COMPARISON TABLE -->
     <section class="py-20 bg-slate-100/80 w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-14">
@@ -335,7 +328,7 @@
         </div>
     </section>
 
-    <!-- 5. 3-STEP USER GUIDE (FULL WIDTH 100%) -->
+    <!-- 5. 3-STEP USER GUIDE -->
     <section class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
@@ -344,7 +337,6 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-10 w-full">
-                <!-- Step 1 -->
                 <div class="text-center p-8 rounded-3xl bg-slate-50 border border-slate-100 shadow-sm relative z-10 hover:border-sky-300 transition-all">
                     <div class="w-20 h-20 mx-auto rounded-3xl bg-sky-600 text-white font-extrabold text-3xl flex items-center justify-center shadow-lg shadow-sky-600/30 mb-8">
                         1
@@ -353,7 +345,6 @@
                     <p class="text-slate-600 text-base leading-relaxed">Người dùng chọn hành trình trên Ứng dụng Pipe Traffic. Cabin trượt từ trường tự động di chuyển đến trạm đường ống tại nhà bạn.</p>
                 </div>
 
-                <!-- Step 2 -->
                 <div class="text-center p-8 rounded-3xl bg-slate-50 border border-slate-100 shadow-sm relative z-10 hover:border-indigo-300 transition-all">
                     <div class="w-20 h-20 mx-auto rounded-3xl bg-indigo-600 text-white font-extrabold text-3xl flex items-center justify-center shadow-lg shadow-indigo-600/30 mb-8">
                         2
@@ -362,7 +353,6 @@
                     <p class="text-slate-600 text-base leading-relaxed">Bước vào cabin trượt tại cổng kết nối. Động cơ từ tính tăng tốc êm ái vào mạng lưới ống trượt đa tầng kết nối các khu vực.</p>
                 </div>
 
-                <!-- Step 3 -->
                 <div class="text-center p-8 rounded-3xl bg-slate-50 border border-slate-100 shadow-sm relative z-10 hover:border-emerald-300 transition-all">
                     <div class="w-20 h-20 mx-auto rounded-3xl bg-emerald-600 text-white font-extrabold text-3xl flex items-center justify-center shadow-lg shadow-emerald-600/30 mb-8">
                         3
@@ -374,7 +364,7 @@
         </div>
     </section>
 
-    <!-- 6. JOURNEY / TIMELINE SECTION (FULL WIDTH 100%) -->
+    <!-- 6. JOURNEY / TIMELINE SECTION -->
     <section id="journey" class="py-20 bg-slate-900 text-white relative w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
@@ -383,10 +373,7 @@
                 <p class="text-slate-400 mt-2">Tiến trình triển khai dự án theo từng tuần của nhóm nghiên cứu Pipe Traffic HCMUS</p>
             </div>
 
-            <!-- Vertical Detailed Timeline -->
             <div class="max-w-6xl mx-auto relative timeline-line">
-                
-                <!-- Timeline Week 1 -->
                 <div class="mb-12 relative z-10 flex flex-col md:flex-row items-center">
                     <div class="flex items-center justify-start md:justify-end w-full md:w-1/2 md:pr-12 mb-4 md:mb-0">
                         <div class="bg-slate-800/90 p-8 rounded-3xl border border-slate-700 shadow-xl w-full text-left backdrop-blur-md">
@@ -408,7 +395,6 @@
                     <div class="w-full md:w-1/2 md:pl-12"></div>
                 </div>
 
-                <!-- Timeline Week 2 -->
                 <div class="mb-12 relative z-10 flex flex-col md:flex-row items-center">
                     <div class="w-full md:w-1/2 md:pr-12"></div>
                     <div class="w-14 h-14 rounded-full bg-indigo-500 text-white font-extrabold text-base flex items-center justify-center border-4 border-slate-900 shrink-0 shadow-lg shadow-indigo-500/50 my-2 md:my-0">
@@ -430,7 +416,6 @@
                     </div>
                 </div>
 
-                <!-- Timeline Week 3 -->
                 <div class="relative z-10 flex flex-col md:flex-row items-center">
                     <div class="flex items-center justify-start md:justify-end w-full md:w-1/2 md:pr-12 mb-4 md:mb-0">
                         <div class="bg-slate-800/90 p-8 rounded-3xl border border-slate-700 shadow-xl w-full text-left backdrop-blur-md">
@@ -450,12 +435,11 @@
                     </div>
                     <div class="w-full md:w-1/2 md:pl-12"></div>
                 </div>
-
             </div>
         </div>
     </section>
 
-    <!-- 7. PROBLEMS SECTION (FULL WIDTH 100%) -->
+    <!-- 7. PROBLEMS SECTION -->
     <section id="problems" class="py-20 bg-slate-50 w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-12">
@@ -463,7 +447,6 @@
                 <p class="text-3xl sm:text-4xl font-extrabold text-slate-900">Bài Toán & Giải Pháp (Problems)</p>
             </div>
 
-            <!-- Tab Buttons -->
             <div class="flex flex-wrap justify-center gap-3 mb-10 w-full">
                 <button onclick="switchTab('abstract')" id="tab-btn-abstract" class="tab-btn px-8 py-3.5 rounded-2xl font-bold text-sm transition-all bg-sky-600 text-white shadow-lg shadow-sky-600/30">4.1 Abstract</button>
                 <button onclick="switchTab('solution')" id="tab-btn-solution" class="tab-btn px-8 py-3.5 rounded-2xl font-bold text-sm transition-all bg-white text-slate-600 hover:text-sky-600 border border-slate-200">4.2 Solution</button>
@@ -471,10 +454,7 @@
                 <button onclick="switchTab('conclusions')" id="tab-btn-conclusions" class="tab-btn px-8 py-3.5 rounded-2xl font-bold text-sm transition-all bg-white text-slate-600 hover:text-sky-600 border border-slate-200">4.4 Conclusions</button>
             </div>
 
-            <!-- Tab Content Display -->
             <div class="w-full bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 shadow-sm min-h-[300px]">
-                
-                <!-- 4.1 Abstract -->
                 <div id="tab-abstract" class="tab-content space-y-6">
                     <div class="flex items-center gap-3 text-sky-600 text-xl font-extrabold border-b border-slate-100 pb-4">
                         <i class="fa-solid fa-file-contract"></i> 4.1 Tóm Tắt Đề Tài (Abstract)
@@ -487,7 +467,6 @@
                     </p>
                 </div>
 
-                <!-- 4.2 Solution -->
                 <div id="tab-solution" class="tab-content hidden space-y-6">
                     <div class="flex items-center gap-3 text-indigo-600 text-xl font-extrabold border-b border-slate-100 pb-4">
                         <i class="fa-solid fa-lightbulb"></i> 4.2 Giải Pháp Đột Phá (Solution)
@@ -508,7 +487,6 @@
                     </ul>
                 </div>
 
-                <!-- 4.3 Methods -->
                 <div id="tab-methods" class="tab-content hidden space-y-6">
                     <div class="flex items-center gap-3 text-emerald-600 text-xl font-extrabold border-b border-slate-100 pb-4">
                         <i class="fa-solid fa-gears"></i> 4.3 Phương Pháp Triển Khai (Methods)
@@ -529,7 +507,6 @@
                     </ul>
                 </div>
 
-                <!-- 4.4 Conclusions -->
                 <div id="tab-conclusions" class="tab-content hidden space-y-6">
                     <div class="flex items-center gap-3 text-cyan-600 text-xl font-extrabold border-b border-slate-100 pb-4">
                         <i class="fa-solid fa-flag-checkered"></i> 4.4 Kết Luận (Conclusions)
@@ -541,12 +518,11 @@
                         Việc ứng dụng công nghệ từ trường kết hợp cùng AI quản lý luồng chạy không chỉ giải quyết triệt để bài toán kẹt xe và diện tích đô thị hẹp, mà còn tạo ra phương thức di chuyển xanh, bền vững và tiết kiệm tối đa chi phí xây dựng cho xã hội.
                     </p>
                 </div>
-
             </div>
         </div>
     </section>
 
-    <!-- 8. TEAM MEMBERS & GROUP CHARTER (FULL WIDTH 100%) -->
+    <!-- 8. TEAM MEMBERS & GROUP CHARTER -->
     <section id="team" class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
@@ -555,9 +531,7 @@
                 <p class="text-slate-600 mt-2">Đại học Khoa học Tự nhiên - ĐHQG TP.HCM (HCMUS)</p>
             </div>
 
-            <!-- Members Cards Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-16 w-full">
-                <!-- Member 1 -->
                 <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
                     <div>
                         <img src="https://i.postimg.cc/qqd6Sfps/Anh-Giau.jpg" alt="Nguyễn Giàu" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-sky-400">
@@ -570,7 +544,6 @@
                     </button>
                 </div>
 
-                <!-- Member 2 -->
                 <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
                     <div>
                         <img src="https://i.postimg.cc/x1sHCF3s/Hoang-Quan.jpg" alt="Huỳnh Hoàng Quân" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-indigo-400">
@@ -583,7 +556,6 @@
                     </button>
                 </div>
 
-                <!-- Member 3 -->
                 <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
                     <div>
                         <img src="https://i.postimg.cc/h4x9rsKh/Khanh.jpg" alt="Gia Khánh" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-cyan-400">
@@ -596,7 +568,6 @@
                     </button>
                 </div>
 
-                <!-- Member 4 -->
                 <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
                     <div>
                         <img src="https://i.postimg.cc/x8rLQJ32/Thuy-Lam.jpg" alt="Thùy Lâm" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-rose-400">
@@ -609,7 +580,6 @@
                     </button>
                 </div>
 
-                <!-- Member 5 -->
                 <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
                     <div>
                         <img src="https://i.postimg.cc/TPCbKNqv/Trong-Phuc.png" alt="Trọng Phúc" class="w-20 h-20 mx-auto rounded-full object-cover mb-4 shadow-md group-hover:scale-105 transition-transform border-2 border-emerald-400">
@@ -623,7 +593,6 @@
                 </div>
             </div>
 
-            <!-- TEAM CHARTER, RULES & COMMUNICATION -->
             <div class="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 shadow-2xl space-y-8 w-full">
                 <div class="border-b border-slate-800 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -634,7 +603,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
-                    <!-- A. Team Charter -->
                     <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/80 space-y-3">
                         <div class="flex items-center gap-2 text-sky-400 font-bold text-sm uppercase tracking-wider">
                             <i class="fa-solid fa-file-contract text-base"></i> A. Hợp Đồng Thành Lập Nhóm
@@ -649,7 +617,6 @@
                         </ul>
                     </div>
 
-                    <!-- B. Working Rules -->
                     <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/80 space-y-3">
                         <div class="flex items-center gap-2 text-indigo-400 font-bold text-sm uppercase tracking-wider">
                             <i class="fa-solid fa-gavel text-base"></i> B. Quy Tắc Làm Việc Nhóm
@@ -662,7 +629,6 @@
                         </ol>
                     </div>
 
-                    <!-- C. Communication Plan -->
                     <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700/80 space-y-3">
                         <div class="flex items-center gap-2 text-emerald-400 font-bold text-sm uppercase tracking-wider">
                             <i class="fa-solid fa-comments text-base"></i> C. Kế Hoạch Giao Tiếp
@@ -680,7 +646,7 @@
         </div>
     </section>
 
-    <!-- 9. VIDEO DEMO & SCRIPT SECTION (FULL WIDTH 100%) -->
+    <!-- 9. VIDEO DEMO & SCRIPT SECTION -->
     <section id="video" class="py-20 bg-slate-100 w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-12">
@@ -688,7 +654,6 @@
                 <p class="text-3xl font-extrabold text-slate-900">Video Giới Thiệu & Kịch Bản Đô Thị</p>
             </div>
 
-            <!-- Video Player Box -->
             <div class="w-full rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-slate-800 aspect-video relative flex items-center justify-center group mb-12">
                 <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80" alt="Video Cover" class="w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity">
                 <div class="absolute text-center p-6">
@@ -700,7 +665,6 @@
                 </div>
             </div>
 
-            <!-- Detailed Video Script Table -->
             <div class="w-full bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
                 <h4 class="font-bold text-slate-900 text-lg mb-6 flex items-center gap-2">
                     <i class="fa-solid fa-clapperboard text-sky-600"></i> Kịch Bản Phân Cảnh Video (5 Scenes)
@@ -731,7 +695,7 @@
         </div>
     </section>
 
-    <!-- 10. REVIEWS & FAQ SECTION (FULL WIDTH 100%) -->
+    <!-- 10. REVIEWS & FAQ SECTION -->
     <section id="faq" class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
@@ -739,7 +703,6 @@
                 <p class="text-3xl font-extrabold text-slate-900">Review Chuyên Gia & Câu Hỏi Thường Gặp</p>
             </div>
 
-            <!-- Reviews -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 w-full">
                 <div class="p-8 rounded-3xl bg-slate-50 border border-slate-200">
                     <div class="flex text-amber-400 gap-1 text-base mb-4">
@@ -769,7 +732,6 @@
                 </div>
             </div>
 
-            <!-- FAQ Accordion List -->
             <div class="w-full max-w-5xl mx-auto space-y-4">
                 <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6">
                     <h3 class="font-bold text-slate-900 text-lg mb-2">1. Hệ thống đường ống trượt từ trường hoạt động như thế nào tại nhà?</h3>
@@ -787,7 +749,7 @@
         </div>
     </section>
 
-    <!-- 11. INTERACTIVE COMMENTS SECTION (FULL WIDTH 100%) -->
+    <!-- 11. INTERACTIVE COMMENTS SECTION -->
     <section id="comments" class="py-20 bg-slate-900 text-white w-full border-t border-slate-800">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-14">
@@ -799,8 +761,6 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 w-full items-start">
-                
-                <!-- COMMENT FORM -->
                 <div class="lg:col-span-5 bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
                     <div class="flex items-center justify-between border-b border-slate-700 pb-4">
                         <h3 class="text-xl font-bold text-white flex items-center gap-2">
@@ -868,7 +828,6 @@
                     </form>
                 </div>
 
-                <!-- COMMENTS LIST -->
                 <div class="lg:col-span-7 space-y-6">
                     <div class="flex items-center justify-between border-b border-slate-800 pb-4">
                         <h3 class="text-xl font-bold text-white flex items-center gap-3">
@@ -888,7 +847,7 @@
         </div>
     </section>
 
-    <!-- 12. CTA & FOOTER (FULL WIDTH 100%) -->
+    <!-- 12. CTA & FOOTER -->
     <section id="cta" class="py-20 gradient-bg text-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16 text-center space-y-6">
             <h2 class="text-3xl sm:text-5xl font-extrabold">Cùng Tiên Phong Tương Lai Giao Thông Thông Minh</h2>
@@ -912,7 +871,7 @@
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center text-white text-base font-extrabold overflow-hidden">
-                        <img src = "https://i.postimg.cc/tgyk09xn/logo2.jpg" alt = "logo-PT-HCMUS" class="w-full h-full object-cover">
+                        <img src="https://i.postimg.cc/tgyk09xn/logo2.jpg" alt="logo-PT-HCMUS" class="w-full h-full object-cover">
                     </div>
                     <div>
                         <span class="font-extrabold text-white text-base block leading-none">Pipe Traffic - HCMUS</span>
@@ -924,7 +883,7 @@
                 </p>
                 <div class="flex gap-4 text-slate-400">
                     <a href="https://github.com/huynhhoangquan204-bot/pipetraffic-devteam-hcmus" class="hover:text-sky-400"><i class="fa-brands fa-github text-lg"></i></a>
-                    <a href="https://www.facebook.com/hoang.quan.693528?locale=vi_VN" class="hover:text-sky-400" class="hover:text-sky-400"><i class="fa-brands fa-facebook text-lg"></i></a>
+                    <a href="https://www.facebook.com/hoang.quan.693528?locale=vi_VN" class="hover:text-sky-400"><i class="fa-brands fa-facebook text-lg"></i></a>
                     <a href="https://www.youtube.com/watch?v=al_L4F2ac9c&t=1s" class="hover:text-sky-400"><i class="fa-brands fa-youtube text-lg"></i></a>
                 </div>
             </div>
@@ -932,7 +891,7 @@
     </footer>
 
     <!-- MEMBER DETAILS MODAL -->
-    <div id="member-modal" class="fixed inset-0 z-50 hidden bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div id="member-modal" class="fixed inset-0 z-50 hidden bg-slate-900/85 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div class="flex justify-between items-center pb-3 border-b border-slate-100">
                 <div>
@@ -951,37 +910,48 @@
     </div>
 
     <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // 1. Mobile Hamburger Menu Toggle (Clean & Fixed)
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            const icon = document.getElementById('mobile-menu-icon');
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-xmark');
+            } else {
+                menu.classList.add('hidden');
+                icon.classList.remove('fa-xmark');
+                icon.classList.add('fa-bars');
+            }
+        }
 
-<script>
-        // Hàm chuyển đổi qua lại giữa các tab nội dung
+        // 2. Tab switching logic for Problems section
         function switchTab(tabId) {
-            // 1. Ẩn tất cả nội dung tab
             const contents = document.querySelectorAll('.tab-content');
             contents.forEach(content => {
                 content.classList.add('hidden');
             });
 
-            // 2. Reset style của tất cả các nút tab về mặc định (nền trắng, chữ xám)
             const buttons = document.querySelectorAll('.tab-btn');
             buttons.forEach(btn => {
                 btn.classList.remove('bg-sky-600', 'text-white', 'shadow-lg', 'shadow-sky-600/30');
                 btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
             });
 
-            // 3. Hiện nội dung tab được chọn
             const selectedContent = document.getElementById('tab-' + tabId);
             if (selectedContent) {
                 selectedContent.classList.remove('hidden');
             }
 
-            // 4. Bật style active cho nút được bấm (nền xanh, chữ trắng)
             const selectedBtn = document.getElementById('tab-btn-' + tabId);
             if (selectedBtn) {
                 selectedBtn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
                 selectedBtn.classList.add('bg-sky-600', 'text-white', 'shadow-lg', 'shadow-sky-600/30');
             }
         }
-        // Hàm mở Modal thông tin thành viên
+
+        // 3. Member Modal Functions
         function openMemberModal(name, role, description) {
             document.getElementById('modal-name').innerText = name;
             document.getElementById('modal-role').innerText = role;
@@ -989,37 +959,11 @@
             document.getElementById('member-modal').classList.remove('hidden');
         }
 
-        // Hàm đóng Modal thông tin thành viên
         function closeMemberModal() {
             document.getElementById('member-modal').classList.add('hidden');
         }
 
-
-        // ngăn chặn spam tin nhắn
-        function doPost(e) {
-        try {
-            var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-            var data = JSON.parse(e.postData.contents);
-            
-            var name = (data.name || "Ẩn danh").toString().trim();
-            var comment = (data.content || "").toString().trim();
-            
-            // 1. Chặn nếu bình luận quá dài (tránh spam ký tự) hoặc quá ngắn
-            if (comment.length === 0 || comment.length > 500) {
-            return ContentService.createTextOutput(JSON.stringify({ "status": "error", "message": "Nội dung không hợp lệ" })).setMimeType(ContentService.MimeType.JSON);
-            }
-            
-            // 2. Ghi vào sheet nếu hợp lệ
-            var timestamp = new Date().toLocaleString('vi-VN');
-            sheet.appendRow([timestamp, name, data.role || "", data.rating || 5, comment]);
-            
-            return ContentService.createTextOutput(JSON.stringify({ "status": "success" })).setMimeType(ContentService.MimeType.JSON);
-                
-        } catch (error) {
-            return ContentService.createTextOutput(JSON.stringify({ "status": "error" })).setMimeType(ContentService.MimeType.JSON);
-        }
-        }
-        // Cấu hình URL Google Apps Script Web App của bạn tại đây sau khi deploy
+        // 4. Comments & Google Apps Script Integration
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7bBnFX5uQovgErBOXZiBJ3AbW0vOxfQ6J5J5b0ugYgK4qyZwscN39m7N6kz8wAm_0/exec';
 
         let selectedRating = 5;
@@ -1066,7 +1010,6 @@
             updateCharCount();
         }
 
-        // Tải danh sách bình luận từ Google Sheets thông qua Web App GET request
         async function loadCommentsFromSheet() {
             const container = document.getElementById('commentsContainer');
             container.innerHTML = `
@@ -1080,7 +1023,7 @@
                 const response = await fetch(SCRIPT_URL);
                 const data = await response.json();
                 if (data && Array.isArray(data)) {
-                    commentsList = data.reverse(); // Đảo ngược để bình luận mới nhất hiển thị lên trên
+                    commentsList = data.reverse();
                 } else {
                     commentsList = [];
                 }
@@ -1096,7 +1039,6 @@
             }
         }
 
-        // Gửi bình luận mới lên Google Sheets thông qua Web App POST/GET request
         async function handleCommentSubmit(e) {
             e.preventDefault();
             const isAnon = document.querySelector('input[name="identityMode"]:checked').value === 'anonymous';
@@ -1130,12 +1072,11 @@
             try {
                 await fetch(SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Cần thiết khi gọi Google Apps Script từ tên miền khác
+                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                // Reset Form
                 document.getElementById('commentText').value = '';
                 document.getElementById('commenterName').value = '';
                 document.getElementById('commenterRole').value = '';
@@ -1143,7 +1084,7 @@
                 setRating(5);
 
                 alert("Gửi bình luận thành công vào Google Sheets!");
-                loadCommentsFromSheet(); // Tải lại danh sách
+                loadCommentsFromSheet();
             } catch (error) {
                 console.error("Lỗi khi gửi:", error);
                 alert("Đã xảy ra lỗi khi gửi bình luận.");
