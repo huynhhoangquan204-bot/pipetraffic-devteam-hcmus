@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Pipe Traffic</title>
+    <link rel="icon" type="image/png" href="https://i.postimg.cc/tgyk09xn/logo2.jpg">
     <script>
         tailwind.config = {
             theme: {
@@ -952,6 +954,21 @@
     <!-- JAVASCRIPT LOGIC -->
 
 <script>
+        // Hàm mở Modal thông tin thành viên
+        function openMemberModal(name, role, description) {
+            document.getElementById('modal-name').innerText = name;
+            document.getElementById('modal-role').innerText = role;
+            document.getElementById('modal-desc').innerText = description;
+            document.getElementById('member-modal').classList.remove('hidden');
+        }
+
+        // Hàm đóng Modal thông tin thành viên
+        function closeMemberModal() {
+            document.getElementById('member-modal').classList.add('hidden');
+        }
+
+
+        // ngăn chặn spam tin nhắn
         function doPost(e) {
         try {
             var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
