@@ -556,7 +556,6 @@
             </div>
 
             <!-- Members Cards Grid -->
-            <!-- Members Cards Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-16 w-full">
                 <!-- Member 1 -->
                 <div class="bg-slate-50 rounded-2xl p-6 border border-slate-200 text-center hover:shadow-xl transition-all group flex flex-col justify-between">
@@ -954,6 +953,34 @@
     <!-- JAVASCRIPT LOGIC -->
 
 <script>
+        // Hàm chuyển đổi qua lại giữa các tab nội dung
+        function switchTab(tabId) {
+            // 1. Ẩn tất cả nội dung tab
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // 2. Reset style của tất cả các nút tab về mặc định (nền trắng, chữ xám)
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('bg-sky-600', 'text-white', 'shadow-lg', 'shadow-sky-600/30');
+                btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+            });
+
+            // 3. Hiện nội dung tab được chọn
+            const selectedContent = document.getElementById('tab-' + tabId);
+            if (selectedContent) {
+                selectedContent.classList.remove('hidden');
+            }
+
+            // 4. Bật style active cho nút được bấm (nền xanh, chữ trắng)
+            const selectedBtn = document.getElementById('tab-btn-' + tabId);
+            if (selectedBtn) {
+                selectedBtn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+                selectedBtn.classList.add('bg-sky-600', 'text-white', 'shadow-lg', 'shadow-sky-600/30');
+            }
+        }
         // Hàm mở Modal thông tin thành viên
         function openMemberModal(name, role, description) {
             document.getElementById('modal-name').innerText = name;
