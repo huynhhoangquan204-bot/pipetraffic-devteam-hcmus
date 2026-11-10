@@ -10,8 +10,8 @@ window.APP_CONFIG = {
 
   // 2) TÀI KHOẢN NGƯỜI DÙNG + TIN NHẮN (Firebase). Để trống = chế độ thử.
   firebase: {
-    apiKey: "",
-    authDomain: "",
+    apiKey: "AIzaSyAx-93r4CMaVhMlQggy4U9PMdN7MqcGSn4",
+    authDomain: "pipetraffic-devteam-hcmus.firebaseapp.com",
     projectId: "pipetraffic-devteam-hcmus",
     appId: "1:925073186465:web:ea4ab666bff77c18431ae0"
   },
