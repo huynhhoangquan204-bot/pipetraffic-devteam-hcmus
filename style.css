@@ -2862,3 +2862,7 @@ body>footer,.foot{margin-top:auto}
 .pt-app .mi img{width:100%;height:100%;object-fit:cover}
 .pt-app .mv{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:4px;text-align:center;font-size:.8rem;font-weight:700;color:#0369a1;word-break:break-all}
 .pt-app .mi button{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(15,23,42,.8);color:#fff;cursor:pointer;line-height:1}
+
+/* ---------- 8. KHÔNG ĐỂ MENU CHE NỘI DUNG KHI TRÌNH DUYỆT TỰ CUỘN ---------- */
+html{scroll-padding-top:104px}
+.pt-app h1:first-child{margin-top:0}
