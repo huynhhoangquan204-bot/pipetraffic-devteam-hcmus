@@ -5,6 +5,7 @@ const tpl = id => document.getElementById(id).innerHTML;
 const wrap = h => { app.innerHTML = `<div class="pt-app max-w-5xl mx-auto px-4 pt-28 pb-20 min-h-[70vh]">${h}</div>`; };
 const badge = s => `<span class="tag ${s === 'Hoàn thành' ? 'done' : s === 'Đang làm' ? 'run' : ''}">${esc(s)}</span>`;
 let me = Store.me();
+const linkify = s => esc(s).replace(/https?:\/\/[^\s<]+/g, u => { const t = u.match(/[.,;:!?)]+$/); const tail = t ? t[0] : ''; const l = tail ? u.slice(0, -tail.length) : u; return `<a class="plink" href="${l}" target="_blank" rel="noopener noreferrer">${l}</a>${tail}`; });
 const mediaHtml = a => (a && a.length) ? `<div class="media">${a.map(m => {
   if (m.type === 'image' && /^(data:image\/|https:\/\/)/.test(m.src)) return `<img src="${esc(m.src)}" alt="" loading="lazy">`;
   if (m.type === 'video') {
@@ -40,10 +41,11 @@ async function home() {
   ${Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : ''}
   <div class="pgrid">${ps.map(p => {
     const last = us.filter(u => u.projectId === p.id).pop();
-    return `<a class="card" href="#/p/${p.id}"><div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
+    const mm = (last && last.media) || [], im = mm.find(m => m.type === 'image' && /^(data:image\/|https:\/\/)/.test(m.src)), nv = mm.filter(m => m.type === 'video').length;
+    return `<a class="card" href="#/p/${p.id}">${im ? `<img class="cover" src="${esc(im.src)}" alt="" loading="lazy">` : ''}<div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
     <p class="muted" style="margin:0">${esc(p.desc)}</p>
     <div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small>
-    ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}</p>` : ''}</a>`;
+    ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}${nv ? ' <span class="muted">· 🎬 ' + nv + ' video</span>' : ''}</p>` : ''}</a>`;
   }).join('') || '<p class="muted">Chưa có dự án nào.</p>'}</div></div></section>`;
 }
 
@@ -56,7 +58,7 @@ async function project(id) {
   <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${esc(p.owner)}</p>
   <div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
   <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2><a class="btn sm" href="#/chat/${p.id}">Nhắn chủ dự án</a></div>
-  <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${esc(u.content)}</p>${mediaHtml(u.media)}</div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
+  <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${linkify(u.content)}</p>${mediaHtml(u.media)}</div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
 }
 
 /* --- Đăng nhập: Google (bắt buộc) -> tên / giới tính / mật khẩu --- */
