@@ -5,6 +5,14 @@ const tpl = id => document.getElementById(id).innerHTML;
 const wrap = h => { app.innerHTML = `<div class="pt-app max-w-5xl mx-auto px-4 pt-28 pb-20 min-h-[70vh]">${h}</div>`; };
 const badge = s => `<span class="tag ${s === 'Hoàn thành' ? 'done' : s === 'Đang làm' ? 'run' : ''}">${esc(s)}</span>`;
 let me = Store.me();
+const mediaHtml = a => (a && a.length) ? `<div class="media">${a.map(m => {
+  if (m.type === 'image' && /^(data:image\/|https:\/\/)/.test(m.src)) return `<img src="${esc(m.src)}" alt="" loading="lazy">`;
+  if (m.type === 'video') {
+    const v = Store.embed(m.src); if (!v) return '';
+    return `<div class="vid">${v.kind === 'iframe' ? `<iframe src="${esc(v.src)}" allowfullscreen loading="lazy"></iframe>` : `<video src="${esc(v.src)}" controls preload="metadata"></video>`}</div>`;
+  }
+  return '';
+}).join('')}</div>` : '';
 
 /* --- Nút đăng nhập trên menu --- */
 function renderAuth() {
@@ -15,6 +23,9 @@ function renderAuth() {
   $('#authSlotM').innerHTML = me
     ? `<a href="#/chat" onclick="toggleMobileMenu(true)" class="block text-center bg-sky-600 text-white py-3 rounded-xl font-bold mt-2">Nhắn tin với chủ dự án</a><button data-out class="block w-full text-center py-2 text-slate-500 font-medium">${esc(me.name)} · Thoát</button>`
     : `<a href="#/login" onclick="toggleMobileMenu(true)" class="block text-center bg-sky-600 text-white py-3 rounded-xl font-bold mt-2 shadow-lg shadow-sky-600/30">Đăng nhập</a>`;
+  $('#authSlotQ').innerHTML = me
+    ? `<a href="#/chat" class="m-chat" aria-label="Nhắn tin"><i class="fa-solid fa-comment-dots"></i><span>Nhắn tin</span></a>`
+    : `<a href="#/login" class="m-chat" aria-label="Đăng nhập"><i class="fa-solid fa-right-to-bracket"></i><span>Đăng nhập</span></a>`;
   document.querySelectorAll('[data-out]').forEach(b => b.onclick = () => { Store.setMe(null); me = null; location.hash = '#/'; route(); });
 }
 function setActive(key) {
@@ -45,7 +56,7 @@ async function project(id) {
   <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${esc(p.owner)}</p>
   <div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
   <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2><a class="btn sm" href="#/chat/${p.id}">Nhắn chủ dự án</a></div>
-  <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${esc(u.content)}</p></div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
+  <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${esc(u.content)}</p>${mediaHtml(u.media)}</div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
 }
 
 /* --- Đăng nhập: Google (bắt buộc) -> tên / giới tính / mật khẩu --- */
