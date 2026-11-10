@@ -33,6 +33,15 @@
   window.Store = {
     get mode() { return useFb ? 'firebase' : 'demo'; },
     sha,
+    // Link video -> {kind:'iframe'|'video', src} hoặc null nếu không hỗ trợ
+    embed(u) {
+      u = String(u || '').trim(); let m;
+      if (!/^https:\/\//i.test(u)) return null;
+      if ((m = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/))) return { kind: 'iframe', src: 'https://www.youtube.com/embed/' + m[1] };
+      if ((m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/))) return { kind: 'iframe', src: 'https://drive.google.com/file/d/' + m[1] + '/preview' };
+      if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(u)) return { kind: 'video', src: u };
+      return null;
+    },
     async list(col) {
       await ready;
       const a = useFb ? (await fdb.collection(col).get()).docs.map(x => x.data()) : (db()[col] || []);
