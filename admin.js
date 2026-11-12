@@ -24,11 +24,12 @@ const shrink = file => new Promise((ok, no) => {
 
 function login() {
   $('#nav').innerHTML = '';
-  app.innerHTML = `<div class="card narrow"><h2>Đăng nhập quản trị</h2><form id="f"><label>Tên tài khoản</label><input name="u" required autofocus autocomplete="username">
+  app.innerHTML = `<div class="card narrow"><h2>Đăng nhập quản trị</h2><form id="f"><label>${Store.mode === 'firebase' ? 'Email quản trị' : 'Tên tài khoản'}</label><input name="u" ${Store.mode === 'firebase' ? 'type="email"' : ''} required autofocus autocomplete="username">
   <label>Mật khẩu</label><input type="password" name="p" required autocomplete="current-password"><button class="btn">Đăng nhập</button></form><div class="err" id="err"></div></div>`;
   $('#f').onsubmit = async e => {
     e.preventDefault(); const f = new FormData(e.target);
-    if (await Store.adminLogin(f.get('u').trim(), f.get('p'))) render(); else $('#err').textContent = 'Sai tên tài khoản hoặc mật khẩu.';
+    try { if (await Store.adminLogin(f.get('u').trim(), f.get('p'))) render(); else $('#err').textContent = 'Sai tài khoản hoặc mật khẩu, hoặc tài khoản này không phải admin.'; }
+    catch (x) { $('#err').textContent = x.message; }
   };
 }
 
@@ -67,7 +68,7 @@ function bindMedia() {
 }
 
 function nav() {
-  const t = [['projects', 'Dự án'], ['updates', 'Cập nhật tuần'], ['messages', 'Tin nhắn'], ['users', 'Người dùng']];
+  const t = [['projects', 'Dự án'], ['updates', 'Cập nhật tuần'], ['messages', 'Tin nhắn'], ['users', 'Người dùng'], ['backup', 'Sao lưu']];
   $('#nav').innerHTML = t.map(([k, v]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}">${v}</a>`).join('') + '<button id="out">Thoát</button>';
   document.querySelectorAll('[data-t]').forEach(a => a.onclick = e => { e.preventDefault(); tab = a.dataset.t; editing = null; thread = null; L.show(); render(); });
   $('#out').onclick = () => { Store.adminLogout(); login(); };
@@ -80,9 +81,10 @@ function isoWeek() {
 }
 
 async function render() {
+  await Store.authReady;
   if (!Store.isAdmin()) { L.hide(0); return login(); }
   nav();
-  try { await ({ projects, updates, messages, users })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
+  try { await ({ projects, updates, messages, users, backup })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
   L.hide(300);
 }
 
@@ -149,6 +151,20 @@ async function messages() {
 async function users() {
   const us = await Store.list('users');
   app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký.</p><div class="card">${us.map(u => `<div class="item"><div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
-  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này?')) { await Store.del('users', b.dataset.d); render(); } });
+  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này và toàn bộ tin nhắn của họ?\n(Tài khoản đăng nhập vẫn còn trong Firebase → Authentication, cần xoá thêm ở đó.)')) { const id = b.dataset.d; for (const m of (await Store.list('messages')).filter(m => m.userId === id)) await Store.del('messages', m.id); await Store.del('users', id); render(); } });
+}
+
+async function backup() {
+  app.innerHTML = `<h1>Sao lưu</h1><p class="sub">Tải toàn bộ dữ liệu (dự án, cập nhật, người dùng, tin nhắn) về máy thành một file JSON. Nên làm trước khi xoá hàng loạt và định kỳ mỗi tuần.</p>
+  <div class="card"><button class="btn" id="bk">Xuất dữ liệu (JSON)</button><p class="muted" style="margin-top:12px">File chứa email người dùng và tin nhắn: hãy cất ở nơi an toàn, không đăng công khai.</p></div>`;
+  $('#bk').onclick = async () => {
+    try {
+      const out = { exportedAt: new Date().toISOString(), mode: Store.mode };
+      for (const c of ['projects', 'updates', 'users', 'messages']) out[c] = await Store.list(c);
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
+      a.download = 'pipetraffic-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast(`Đã xuất ${out.projects.length} dự án, ${out.updates.length} cập nhật, ${out.users.length} người dùng, ${out.messages.length} tin nhắn`);
+    } catch (e) { toast('Xuất chưa được: ' + e.message); }
+  };
 }
 render();
