@@ -18,6 +18,12 @@
     } catch (e) { console.warn('Không tải được Firebase, dùng chế độ demo.', e); }
   })();
 
+  // Chờ Firebase Auth khôi phục phiên đăng nhập (nếu có) trước khi kiểm tra quyền
+  const authReady = (async () => {
+    await ready; if (!useFb) return;
+    await new Promise(ok => { const off = fauth.onAuthStateChanged(() => { off(); ok(); }); });
+  })();
+
   function seed() {
     const d = {
       projects: [{ id: 'p1', name: 'Pipe Traffic Core', desc: 'Hệ thống giao thông đường ống từ trường: lõi điều phối và mô phỏng.', status: 'Đang làm', progress: 40, owner: 'Admin', ts: 1 }],
@@ -55,9 +61,13 @@
       let h = 'Liên kết'; try { h = new URL(u).hostname.replace(/^www\./, ''); } catch (e) {}
       return R('link', u, h);
     },
-    async list(col) {
+    get authReady() { return authReady; },
+    // list(col) lấy tất cả; list(col, 'userId', id) chỉ lấy các bản ghi khớp (bắt buộc với tin nhắn khi dùng Rules chặt)
+    async list(col, field, value) {
       await ready;
-      const a = useFb ? (await fdb.collection(col).get()).docs.map(x => x.data()) : (db()[col] || []);
+      let a;
+      if (useFb) { let q = fdb.collection(col); if (field) q = q.where(field, '==', value); a = (await q.get()).docs.map(x => x.data()); }
+      else { a = db()[col] || []; if (field) a = a.filter(x => x[field] === value); }
       return a.sort((x, y) => x.ts - y.ts);
     },
     async put(col, o) {
@@ -84,20 +94,57 @@
       if (!/^\S+@\S+\.\S+$/.test(e)) throw new Error('Email không hợp lệ');
       return e;
     },
-    async findUser(email) { return (await this.list('users')).find(u => u.email === email); },
-    async register(email, name, gender, pw) { return this.put('users', { email, name, gender, hash: await sha(pw) }); },
-    async checkPw(user, pw) { return user.hash === await sha(pw); },
-    me() { try { return JSON.parse(localStorage.getItem('pt_user')); } catch (e) { return null; } },
+    async findUser(email) {
+      if (useFb) { await ready; const u = fauth.currentUser; if (!u) return null; const d = await fdb.collection('users').doc(u.uid).get(); return d.exists ? d.data() : null; }
+      return (await this.list('users')).find(u => u.email === email);
+    },
+    // Firebase: gắn mật khẩu vào tài khoản Google (Firebase Auth tự băm + có đặt lại mật khẩu). Demo: băm SHA-256 trong trình duyệt.
+    async register(email, name, gender, pw) {
+      if (useFb) {
+        await ready; const u = fauth.currentUser;
+        if (!u || (u.email || '').toLowerCase() !== email) throw new Error('Phiên Google đã hết hạn, hãy bấm Tiếp tục với Google lại.');
+        if (!u.providerData.some(p => p.providerId === 'password')) await u.linkWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, pw));
+        return this.put('users', { id: u.uid, email, name, gender });
+      }
+      return this.put('users', { email, name, gender, hash: await sha(pw) });
+    },
+    async checkPw(user, pw) { return user.hash === await sha(pw); }, // chỉ dùng ở chế độ thử
+    async loginEmail(email, pw) {
+      await ready; if (!useFb) throw new Error('Chỉ dùng được khi đã cấu hình Firebase');
+      const r = await fauth.signInWithEmailAndPassword(email, pw);
+      const d = await fdb.collection('users').doc(r.user.uid).get();
+      if (!d.exists) { await fauth.signOut(); throw new Error('Tài khoản chưa hoàn tất đăng ký, hãy đăng nhập bằng Google để tạo hồ sơ.'); }
+      return d.data();
+    },
+    async resetPassword(email) { await ready; if (!useFb) throw new Error('Chỉ dùng được khi đã cấu hình Firebase'); await fauth.sendPasswordResetEmail(email); },
+    me() {
+      let m; try { m = JSON.parse(localStorage.getItem('pt_user')); } catch (e) { m = null; }
+      if (useFb && m && !(fauth.currentUser && fauth.currentUser.uid === m.id)) return null; // phiên Firebase đã hết/khác
+      return m;
+    },
     setMe(u) {
       u ? localStorage.setItem('pt_user', JSON.stringify({ id: u.id, name: u.name, gender: u.gender, email: u.email })) : localStorage.removeItem('pt_user');
       if (!u && useFb) fauth.signOut();
     },
-    // Admin (trang riêng)
+    // Admin (trang riêng). Firebase: đăng nhập bằng tài khoản Firebase thật, quyền ghi do Rules kiểm tra theo UID.
     async adminLogin(u, p) {
+      await ready;
+      if (useFb) {
+        if (!cfg.adminUid) throw new Error('Chưa điền adminUid trong config.js (xem README).');
+        try {
+          await fauth.setPersistence(firebase.auth.Auth.Persistence.SESSION); // đóng tab là thoát
+          const r = await fauth.signInWithEmailAndPassword(u, p);
+          if (r.user.uid === cfg.adminUid) return true;
+          await fauth.signOut(); return false;
+        } catch (e) { if (e.code === 'auth/too-many-requests') throw new Error('Thử quá nhiều lần, hãy đợi ít phút.'); return false; }
+      }
       if (u === cfg.adminUser && await sha(p) === cfg.adminHash) { sessionStorage.setItem('pt_admin', '1'); return true; }
       return false;
     },
-    isAdmin() { return sessionStorage.getItem('pt_admin') === '1'; },
-    adminLogout() { sessionStorage.removeItem('pt_admin'); }
+    isAdmin() {
+      if (useFb) { const u = fauth && fauth.currentUser; return !!(u && cfg.adminUid && u.uid === cfg.adminUid); }
+      return sessionStorage.getItem('pt_admin') === '1';
+    },
+    adminLogout() { if (useFb) fauth.signOut(); sessionStorage.removeItem('pt_admin'); }
   };
 })();
