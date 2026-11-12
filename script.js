@@ -32,7 +32,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMemberM
 document.addEventListener('click', e => { if (e.target.id === 'member-modal') closeMemberModal(); });
 
 /* --- Bình luận: lưu & đọc từ Google Sheet --- */
-let rating = 5, commentList = [];
+let rating = 5, commentList = [], pending = [], commentSource = '';
 const AVATAR = ['bg-sky-500', 'bg-indigo-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-amber-500'];
 
 function setRating(n) {
@@ -67,16 +67,17 @@ async function fetchComments() {
   const c = window.APP_CONFIG || {};
   // appsScriptUrl (JSON) được thử trước; sheetCsvUrl chỉ là phương án dự phòng
   const urls = [c.appsScriptUrl, c.sheetCsvUrl].filter((u, k, a) => u && a.indexOf(u) === k);
-  if (!urls.length) { try { return JSON.parse(localStorage.getItem('pt_comments') || '[]'); } catch (e) { return []; } }
+  if (!urls.length) { commentSource = 'local'; try { return JSON.parse(localStorage.getItem('pt_comments') || '[]'); } catch (e) { return []; } }
   let lastErr;
   for (const u of urls) {
     try {
       const r = await fetch(u + (u.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
       const txt = await r.text();
       let j = null; try { j = JSON.parse(txt); } catch (e) {}
-      if (Array.isArray(j)) return j;
+      if (Array.isArray(j)) { commentSource = u === c.appsScriptUrl ? 'apps' : 'backup'; return j; }
       if (j && j.status === 'error') throw new Error(j.message || 'Lỗi từ Apps Script');
       if (/^\s*</.test(txt)) throw new Error('Link trả về trang HTML: Apps Script chưa có doGet, chưa Deploy bản mới, hoặc chưa để quyền "Anyone"');
+      commentSource = u === c.appsScriptUrl ? 'apps' : 'backup';
       return parseCsv(txt).filter(x => x[2] && /\d/.test(x[0])).map(x => ({ time: x[0], name: x[1], comment: x[2] }));
     } catch (e) { lastErr = e; }
   }
@@ -85,10 +86,15 @@ async function fetchComments() {
 function renderComments() {
   const box = $('#commentsContainer'); if (!box) return;
   const cfg = window.APP_CONFIG || {};
-  const note = cfg.appsScriptUrl ? '' : '<div class="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">Chưa nối Google Sheet: bình luận đang chỉ lưu trên trình duyệt này. Dán link Apps Script vào <b>config.js</b> để lưu vào Sheet.</div>';
+  const warn = t => `<div class="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">${t}</div>`;
+  let note = cfg.appsScriptUrl ? '' : warn('Chưa nối Google Sheet: bình luận đang chỉ lưu trên trình duyệt này. Dán link Apps Script vào <b>config.js</b> để lưu vào Sheet.');
+  if (commentSource === 'backup') note += warn('Đang đọc từ link dự phòng (<b>sheetCsvUrl</b>), không phải link Apps Script chính. Link này có thể trỏ sang Sheet khác hoặc cập nhật chậm, nên bình luận mới có thể chưa hiện.');
+  if (pending.length) note += warn('Có bình luận đã gửi nhưng link đọc dữ liệu chưa trả về. Hãy kiểm tra link <b>appsScriptUrl</b> đã Deploy bản mới có <b>doGet</b> chưa, và có cùng Sheet với nơi bạn đang xem không.');
+  const srcLabel = { apps: 'Apps Script', backup: 'link dự phòng (sheetCsvUrl)', local: 'trình duyệt này' }[commentSource] || '';
   const list = [...commentList].reverse();
   $('#commentBadgeCount').textContent = list.length;
-  box.innerHTML = note + (list.map(m => {
+  const status = srcLabel ? `<div class="text-[11px] text-slate-500 text-right">Nguồn: ${srcLabel} · ${list.length} bình luận · ${new Date().toLocaleTimeString('vi-VN')}</div>` : '';
+  box.innerHTML = note + status + (list.map(m => {
     const p = /^⭐([1-5]) \| (.*?) \| ([\s\S]*)$/.exec(m.comment || ''), star = p ? +p[1] : 0, role = p ? p[2] : '', text = p ? p[3] : m.comment;
     const d = new Date(m.time), when = String(m.time).includes('T') && !isNaN(d) ? d.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : String(m.time || '');
     const name = m.name || 'Ẩn danh', col = AVATAR[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR.length];
@@ -96,6 +102,7 @@ function renderComments() {
       <div class="w-10 h-10 rounded-full ${col} text-white font-extrabold flex items-center justify-center shrink-0">${esc(name.trim().charAt(0).toUpperCase() || '?')}</div>
       <div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-x-2 gap-y-1"><b class="text-white text-sm">${esc(name)}</b>
       ${role ? `<span class="text-[11px] text-sky-300 bg-sky-500/10 px-2 py-0.5 rounded-full">${esc(role)}</span>` : ''}
+      ${m.pending ? '<span class="text-[11px] text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-full">⏳ chưa thấy trong Sheet</span>' : ''}
       <span class="text-[11px] text-slate-500 sm:ml-auto">${esc(when)}</span></div>
       ${star ? `<div class="text-amber-400 text-xs my-1">${'★'.repeat(star)}${'☆'.repeat(5 - star)}</div>` : ''}
       <p class="text-slate-300 text-sm mt-1 whitespace-pre-wrap break-words">${esc(text)}</p></div></div></div>`;
@@ -104,7 +111,7 @@ function renderComments() {
 async function loadCommentsFromSheet() {
   const box = $('#commentsContainer'); if (!box) return;
   if (!commentList.length) box.innerHTML = '<p class="text-slate-500 text-sm text-center py-8">Đang tải bình luận…</p>';
-  try { commentList = await fetchComments(); }
+  try { const l = await fetchComments(); pending = pending.filter(p => !l.some(x => String(x.comment) === p.comment)); commentList = [...l, ...pending.map(p => ({ ...p, pending: true }))]; }
   catch (e) { box.innerHTML = '<p class="text-red-300 text-sm text-center py-8">Không tải được bình luận: ' + esc(e.message) + '</p>'; return; }
   renderComments();
 }
@@ -139,8 +146,18 @@ async function handleCommentSubmit(ev) {
     }
     localStorage.setItem('pt_last_comment', Date.now());
     const mine = { time: new Date().toISOString(), ...payload };
-    try { const l = await fetchComments(); commentList = l.some(x => String(x.comment) === payload.comment) ? l : [...l, mine]; } catch (e) { commentList.push(mine); }
-    $('#commentText').value = ''; updateCharCount(); renderComments(); toast('Đã gửi bình luận. Cảm ơn bạn!');
+    let seen = false;
+    try {
+      const l = await fetchComments(); seen = l.some(x => String(x.comment) === payload.comment);
+      pending = pending.filter(p => !l.some(x => String(x.comment) === p.comment));
+      if (!seen) pending.push(mine);
+      commentList = [...l, ...pending.map(p => ({ ...p, pending: true }))];
+    } catch (e) {
+      pending.push(mine);
+      commentList = [...commentList.filter(x => !x.pending), ...pending.map(p => ({ ...p, pending: true }))];
+    }
+    $('#commentText').value = ''; updateCharCount(); renderComments();
+    toast(seen ? 'Đã gửi bình luận. Cảm ơn bạn!' : 'Đã gửi, nhưng chưa thấy bình luận trong dữ liệu đọc về (xem ghi chú trên bảng)');
   } catch (e) { toast('Gửi chưa được: ' + e.message); }
   btn.disabled = false; btn.style.opacity = 1; btn.innerHTML = html;
 }
