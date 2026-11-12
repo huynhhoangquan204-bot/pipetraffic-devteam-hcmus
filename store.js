@@ -33,14 +33,27 @@
   window.Store = {
     get mode() { return useFb ? 'firebase' : 'demo'; },
     sha,
-    // Link video -> {kind:'iframe'|'video', src} hoặc null nếu không hỗ trợ
+    // Link -> {kind:'iframe'|'video'|'link', src, url, label, tall}; null nếu không phải https://
     embed(u) {
       u = String(u || '').trim(); let m;
-      if (!/^https:\/\//i.test(u)) return null;
-      if ((m = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/))) return { kind: 'iframe', src: 'https://www.youtube.com/embed/' + m[1] };
-      if ((m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/))) return { kind: 'iframe', src: 'https://drive.google.com/file/d/' + m[1] + '/preview' };
-      if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(u)) return { kind: 'video', src: u };
-      return null;
+      if (!/^https:\/\/[^\s]+$/i.test(u)) return null;
+      const R = (kind, src, label, tall) => ({ kind, src, url: u, label, tall: !!tall });
+      if ((m = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/))) return R('iframe', 'https://www.youtube.com/embed/' + m[1], 'YouTube');
+      if ((m = u.match(/vimeo\.com\/(?:video\/)?(\d+)/))) return R('iframe', 'https://player.vimeo.com/video/' + m[1], 'Vimeo');
+      if ((m = u.match(/docs\.google\.com\/presentation\/d\/e\/([\w-]+)/))) return R('iframe', 'https://docs.google.com/presentation/d/e/' + m[1] + '/embed', 'Google Slides');
+      if ((m = u.match(/docs\.google\.com\/presentation\/d\/([\w-]+)/))) return R('iframe', 'https://docs.google.com/presentation/d/' + m[1] + '/embed?start=false&loop=false&delayms=3000', 'Google Slides');
+      if ((m = u.match(/docs\.google\.com\/document\/d\/e\/([\w-]+)/))) return R('iframe', 'https://docs.google.com/document/d/e/' + m[1] + '/pub?embedded=true', 'Google Docs', 1);
+      if ((m = u.match(/docs\.google\.com\/document\/d\/([\w-]+)/))) return R('iframe', 'https://docs.google.com/document/d/' + m[1] + '/preview', 'Google Docs', 1);
+      if ((m = u.match(/docs\.google\.com\/spreadsheets\/d\/e\/([\w-]+)/))) return R('iframe', 'https://docs.google.com/spreadsheets/d/e/' + m[1] + '/pubhtml?widget=true&headers=false', 'Google Sheets', 1);
+      if ((m = u.match(/docs\.google\.com\/spreadsheets\/d\/([\w-]+)/))) return R('iframe', 'https://docs.google.com/spreadsheets/d/' + m[1] + '/preview', 'Google Sheets', 1);
+      if ((m = u.match(/docs\.google\.com\/forms\/d\/e\/([\w-]+)/))) return R('iframe', 'https://docs.google.com/forms/d/e/' + m[1] + '/viewform?embedded=true', 'Google Forms', 1);
+      if ((m = u.match(/drive\.google\.com\/drive\/(?:u\/\d+\/)?folders\/([\w-]+)/))) return R('iframe', 'https://drive.google.com/embeddedfolderview?id=' + m[1] + '#list', 'Thư mục Drive', 1);
+      if ((m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/)) || (m = u.match(/drive\.google\.com\/(?:open|uc)\?(?:.*&)?id=([\w-]+)/))) return R('iframe', 'https://drive.google.com/file/d/' + m[1] + '/preview', 'Google Drive', 1);
+      if (/\.(mp4|webm|ogg)(\?.*)?$/i.test(u)) return R('video', u, 'Video');
+      if (/\.pdf(\?.*)?$/i.test(u)) return R('iframe', 'https://docs.google.com/gview?embedded=1&url=' + encodeURIComponent(u), 'PDF', 1);
+      if (/\.(pptx?|docx?|xlsx?)(\?.*)?$/i.test(u)) return R('iframe', 'https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(u), 'Office', 1);
+      let h = 'Liên kết'; try { h = new URL(u).hostname.replace(/^www\./, ''); } catch (e) {}
+      return R('link', u, h);
     },
     async list(col) {
       await ready;
