@@ -66,37 +66,65 @@ async function project(id) {
   <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${linkify(u.content)}</p>${mediaHtml(u.media)}</div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
 }
 
-/* --- Đăng nhập: Google (bắt buộc) -> tên / giới tính / mật khẩu --- */
+/* --- Đăng nhập. Firebase: email + mật khẩu (có đặt lại mật khẩu) hoặc Google; tài khoản mới phải xác thực Google trước --- */
+const authMsg = e => ({
+  'auth/wrong-password': 'Sai email hoặc mật khẩu.', 'auth/user-not-found': 'Sai email hoặc mật khẩu.',
+  'auth/invalid-credential': 'Sai email hoặc mật khẩu.', 'auth/invalid-login-credentials': 'Sai email hoặc mật khẩu.',
+  'auth/too-many-requests': 'Thử quá nhiều lần, hãy đợi ít phút hoặc đặt lại mật khẩu.',
+  'auth/weak-password': 'Mật khẩu quá yếu (cần từ 8 ký tự).', 'auth/popup-closed-by-user': 'Bạn đã đóng cửa sổ Google.',
+  'auth/email-already-in-use': 'Email này đã có mật khẩu, hãy đăng nhập bằng email và mật khẩu.'
+}[e.code] || e.message || e.code);
+const finish = u => { Store.setMe(u); me = Store.me(); renderAuth(); toast('Xin chào ' + me.name); location.hash = '#/chat'; };
 async function login() {
   if (me) { location.hash = '#/chat'; return; }
-  wrap(`<div class="card narrow"><h2>Đăng nhập</h2><p class="muted">Bước 1: đăng nhập Google (bắt buộc).</p>
+  await Store.authReady;
+  const fb = Store.mode === 'firebase', err = t => { $('#err').textContent = t; };
+  wrap(`<div class="card narrow"><h2>Đăng nhập</h2>${fb
+    ? `<form id="fe"><label>Email</label><input type="email" name="email" required autocomplete="username"><label>Mật khẩu</label><input type="password" name="pw" required autocomplete="current-password">
+       <button class="btn">Đăng nhập</button> <button type="button" class="btn ghost sm" id="rs">Quên mật khẩu?</button></form>
+       <p class="muted" style="margin:18px 0 8px">Chưa có tài khoản? Xác thực email bằng Google để tạo tài khoản:</p>`
+    : '<p class="muted">Bước 1: đăng nhập Google (bắt buộc).</p>'}
   <button class="btn g" id="g">Tiếp tục với Google</button><div id="step"></div><div class="err" id="err"></div></div>`);
+  if (fb) {
+    $('#fe').onsubmit = async e => {
+      e.preventDefault(); err(''); const f = new FormData(e.target);
+      try { finish(await Store.loginEmail(f.get('email').trim().toLowerCase(), f.get('pw'))); } catch (x) { err(authMsg(x)); }
+    };
+    $('#rs').onclick = async () => {
+      const em = $('#fe [name=email]').value.trim().toLowerCase(); if (!em) return err('Nhập email trước rồi bấm Quên mật khẩu.');
+      try { await Store.resetPassword(em); } catch (x) { if (x.code === 'auth/too-many-requests') return err(authMsg(x)); }
+      err(''); toast('Nếu email đã đăng ký, thư đặt lại mật khẩu đã được gửi.');
+    };
+  }
   $('#g').onclick = async () => {
-    $('#err').textContent = '';
-    try { const email = await Store.google(); step(email, await Store.findUser(email)); }
-    catch (e) { $('#err').textContent = 'Đăng nhập Google chưa thành công: ' + (e.message || e.code); }
+    err('');
+    try { const email = await Store.google(), u = await Store.findUser(email); if (fb && u) finish(u); else step(email, u); }
+    catch (x) { err('Đăng nhập Google chưa thành công: ' + authMsg(x)); }
   };
 }
 function step(email, u) {
-  $('#g').style.display = 'none';
+  $('#g').style.display = 'none'; if ($('#fe')) $('#fe').style.display = 'none';
   $('#step').innerHTML = `<p><b>${esc(email)}</b></p>` + (u
     ? `<form id="f"><label>Mật khẩu</label><input type="password" name="pw" required autofocus><button class="btn">Đăng nhập</button></form>`
     : `<p class="muted">Tài khoản mới. Bước 2: điền thông tin.</p><form id="f"><label>Tên hiển thị</label><input name="name" required maxlength="40">
-       <label>Giới tính</label><select name="gender"><option>Nam</option><option>Nữ</option><option>Khác</option></select>
-       <label>Mật khẩu (từ 4 ký tự)</label><input type="password" name="pw" minlength="4" required><button class="btn">Tạo tài khoản</button></form>`);
+       <label>Giới tính (không bắt buộc)</label><select name="gender"><option>Không nêu</option><option>Nam</option><option>Nữ</option><option>Khác</option></select>
+       <label>Mật khẩu (từ 8 ký tự)</label><input type="password" name="pw" minlength="8" required autocomplete="new-password">
+       <p class="muted" style="font-size:.82rem;margin:4px 0 10px">Chúng tôi chỉ lưu tên, email, giới tính và tin nhắn của bạn để trao đổi về dự án. Muốn xoá dữ liệu, hãy nhắn cho chủ dự án trong mục Nhắn tin.</p>
+       <button class="btn">Tạo tài khoản</button></form>`);
   $('#f').onsubmit = async e => {
     e.preventDefault(); const f = new FormData(e.target);
-    if (u) { if (!await Store.checkPw(u, f.get('pw'))) { $('#err').textContent = 'Sai mật khẩu.'; return; } }
-    else u = await Store.register(email, f.get('name').trim(), f.get('gender'), f.get('pw'));
-    Store.setMe(u); me = Store.me(); toast('Xin chào ' + me.name); location.hash = '#/chat';
+    try {
+      if (u) { if (!await Store.checkPw(u, f.get('pw'))) { $('#err').textContent = 'Sai mật khẩu.'; return; } }
+      else u = await Store.register(email, f.get('name').trim(), f.get('gender'), f.get('pw'));
+      finish(u);
+    } catch (x) { $('#err').textContent = authMsg(x); }
   };
 }
 
 /* --- Nhắn tin với chủ dự án --- */
 async function chat(pid) {
   if (!me) { location.hash = '#/login'; return; }
-  const [ps, all] = await Promise.all([Store.list('projects'), Store.list('messages')]);
-  const ms = all.filter(m => m.userId === me.id);
+  const [ps, ms] = await Promise.all([Store.list('projects'), Store.list('messages', 'userId', me.id)]);
   wrap(`<h1>Nhắn tin với chủ dự án</h1><p class="sub">Cuộc trò chuyện được lưu lại để admin trả lời.</p>
   <div class="card"><div class="chat" id="log">${ms.map(m => `<div class="msg ${m.from === 'user' ? 'me' : ''}"><small>${m.from === 'user' ? 'Bạn' : 'Admin'}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small><span>${esc(m.text)}</span></div>`).join('') || '<p class="muted">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</p>'}</div>
   <form id="f"><label>Về dự án</label><select name="p"><option value="">Chung</option>${ps.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
@@ -114,6 +142,7 @@ const routes = { '': home, p: project, login, chat };
 const PAGES = ['journey', 'problems', 'team', 'video', 'faq', 'comments']; // mỗi mục là một trang riêng: #/about/<mục>
 async function route() {
   L.show();
+  await Store.authReady; me = Store.me();
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   const key = r === 'about' ? (PAGES.includes(id) ? id : 'features') : '';
   renderAuth(); toggleMobileMenu(true);
