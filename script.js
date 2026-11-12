@@ -127,6 +127,7 @@ async function handleCommentSubmit(ev) {
   if (Date.now() - (+localStorage.getItem('pt_last_comment') || 0) < 15000) return toast('Bạn gửi hơi nhanh, đợi vài giây nhé');
   const payload = { name, comment: `⭐${rating} | ${role} | ${text}` };
   const html = btn.innerHTML; btn.disabled = true; btn.style.opacity = .6; btn.textContent = 'Đang gửi…';
+  let moderated = false;
   try {
     if (cfg.appsScriptUrl) {
       let unread = false;
@@ -134,8 +135,9 @@ async function handleCommentSubmit(ev) {
         const r = await fetch(cfg.appsScriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
         const txt = await r.text(); let j; try { j = JSON.parse(txt); } catch (e) { throw new Error('Apps Script trả về trang HTML (chưa Deploy với quyền "Anyone", hoặc sai link /exec)'); }
         if (j.status !== 'success') throw new Error(j.message || 'Lỗi từ Apps Script');
+        if (j.pendingApproval) moderated = true;
       } catch (e) { if (!(e instanceof TypeError)) throw e; unread = true; /* trình duyệt chặn đọc phản hồi: phải kiểm tra lại bên dưới */ }
-      if (unread) { // chưa biết đã lưu chưa -> đọc lại Sheet để xác nhận
+      if (unread && !moderated) { // chưa biết đã lưu chưa -> đọc lại Sheet để xác nhận
         await new Promise(ok => setTimeout(ok, 1500));
         let l; try { l = await fetchComments(); } catch (e) { throw new Error('Không xác nhận được bình luận đã lưu: ' + e.message); }
         if (!l.some(x => String(x.comment) === payload.comment)) throw new Error('Chưa lưu được vào Google Sheet. Kiểm tra Deploy (Who has access = Anyone) và link /exec trong config.js');
@@ -145,6 +147,7 @@ async function handleCommentSubmit(ev) {
       localStorage.setItem('pt_comments', JSON.stringify(l));
     }
     localStorage.setItem('pt_last_comment', Date.now());
+    if (moderated) { $('#commentText').value = ''; updateCharCount(); toast('Đã gửi! Bình luận sẽ hiện sau khi quản trị viên duyệt.'); } else {
     const mine = { time: new Date().toISOString(), ...payload };
     let seen = false;
     try {
@@ -158,6 +161,7 @@ async function handleCommentSubmit(ev) {
     }
     $('#commentText').value = ''; updateCharCount(); renderComments();
     toast(seen ? 'Đã gửi bình luận. Cảm ơn bạn!' : 'Đã gửi, nhưng chưa thấy bình luận trong dữ liệu đọc về (xem ghi chú trên bảng)');
+    }
   } catch (e) { toast('Gửi chưa được: ' + e.message); }
   btn.disabled = false; btn.style.opacity = 1; btn.innerHTML = html;
 }
