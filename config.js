@@ -1,8 +1,8 @@
 // ===== CẤU HÌNH — chỉ cần sửa file này =====
 window.APP_CONFIG = {
 
-  appsScriptUrl: "https://script.google.com/macros/s/AKfycbw14V3XKOd6tjeaX1RUj5wg1yjSNG_o_YN5xptU2Wa1bH3N2u-pZtn-BBnMAh6DE84k/exec",
-  sheetCsvUrl: "https://script.google.com/macros/s/AKfycbxNO4gZPzD4kZVkR4AVtQxkyYhINSnd92DK9pPvZ2uWMEIfUSbM7Amj0f4Aifpx9w4r/exec",
+  appsScriptUrl: "https://script.google.com/macros/s/AKfycbxNO4gZPzD4kZVkR4AVtQxkyYhINSnd92DK9pPvZ2uWMEIfUSbM7Amj0f4Aifpx9w4r/exec",
+  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTuqzdtnLK_v9EiQgKoWpoGvIcmNYwaHGhhjtTOrryi_kR8EMmHI44LnFAC0CBJcV3CQ3MZ7e-23BbB/pubhtml",
 
   firebase: {
     apiKey: "AIzaSyAx-93r4CMaVhMlQggy4U9PMdN7MqcGSn4",
