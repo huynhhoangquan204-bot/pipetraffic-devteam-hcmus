@@ -65,12 +65,22 @@ function parseCsv(txt) {
 }
 async function fetchComments() {
   const c = window.APP_CONFIG || {};
-  if (c.sheetCsvUrl) {
-    const rows = parseCsv(await (await fetch(c.sheetCsvUrl, { cache: 'no-store' })).text());
-    return rows.filter(r => r[2] && /\d/.test(r[0])).map(r => ({ time: r[0], name: r[1], comment: r[2] }));
+  // appsScriptUrl (JSON) được thử trước; sheetCsvUrl chỉ là phương án dự phòng
+  const urls = [c.appsScriptUrl, c.sheetCsvUrl].filter((u, k, a) => u && a.indexOf(u) === k);
+  if (!urls.length) { try { return JSON.parse(localStorage.getItem('pt_comments') || '[]'); } catch (e) { return []; } }
+  let lastErr;
+  for (const u of urls) {
+    try {
+      const r = await fetch(u + (u.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
+      const txt = await r.text();
+      let j = null; try { j = JSON.parse(txt); } catch (e) {}
+      if (Array.isArray(j)) return j;
+      if (j && j.status === 'error') throw new Error(j.message || 'Lỗi từ Apps Script');
+      if (/^\s*</.test(txt)) throw new Error('Link trả về trang HTML: Apps Script chưa có doGet, chưa Deploy bản mới, hoặc chưa để quyền "Anyone"');
+      return parseCsv(txt).filter(x => x[2] && /\d/.test(x[0])).map(x => ({ time: x[0], name: x[1], comment: x[2] }));
+    } catch (e) { lastErr = e; }
   }
-  if (c.appsScriptUrl) return await (await fetch(c.appsScriptUrl, { cache: 'no-store' })).json();
-  try { return JSON.parse(localStorage.getItem('pt_comments') || '[]'); } catch (e) { return []; }
+  throw lastErr || new Error('Không đọc được bình luận');
 }
 function renderComments() {
   const box = $('#commentsContainer'); if (!box) return;
@@ -95,7 +105,7 @@ async function loadCommentsFromSheet() {
   const box = $('#commentsContainer'); if (!box) return;
   if (!commentList.length) box.innerHTML = '<p class="text-slate-500 text-sm text-center py-8">Đang tải bình luận…</p>';
   try { commentList = await fetchComments(); }
-  catch (e) { box.innerHTML = '<p class="text-red-300 text-sm text-center py-8">Không tải được bình luận. Kiểm tra lại link trong config.js.</p>'; return; }
+  catch (e) { box.innerHTML = '<p class="text-red-300 text-sm text-center py-8">Không tải được bình luận: ' + esc(e.message) + '</p>'; return; }
   renderComments();
 }
 async function handleCommentSubmit(ev) {
@@ -112,16 +122,24 @@ async function handleCommentSubmit(ev) {
   const html = btn.innerHTML; btn.disabled = true; btn.style.opacity = .6; btn.textContent = 'Đang gửi…';
   try {
     if (cfg.appsScriptUrl) {
+      let unread = false;
       try { // text/plain để trình duyệt không gửi preflight (Apps Script không hỗ trợ)
         const r = await fetch(cfg.appsScriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-        const j = await r.json(); if (j.status !== 'success') throw new Error(j.message || 'Lỗi từ Apps Script');
-      } catch (e) { if (!(e instanceof TypeError)) throw e; /* trình duyệt chặn đọc phản hồi, nhưng yêu cầu đã được gửi */ }
+        const txt = await r.text(); let j; try { j = JSON.parse(txt); } catch (e) { throw new Error('Apps Script trả về trang HTML (chưa Deploy với quyền "Anyone", hoặc sai link /exec)'); }
+        if (j.status !== 'success') throw new Error(j.message || 'Lỗi từ Apps Script');
+      } catch (e) { if (!(e instanceof TypeError)) throw e; unread = true; /* trình duyệt chặn đọc phản hồi: phải kiểm tra lại bên dưới */ }
+      if (unread) { // chưa biết đã lưu chưa -> đọc lại Sheet để xác nhận
+        await new Promise(ok => setTimeout(ok, 1500));
+        let l; try { l = await fetchComments(); } catch (e) { throw new Error('Không xác nhận được bình luận đã lưu: ' + e.message); }
+        if (!l.some(x => String(x.comment) === payload.comment)) throw new Error('Chưa lưu được vào Google Sheet. Kiểm tra Deploy (Who has access = Anyone) và link /exec trong config.js');
+      }
     } else {
       const l = JSON.parse(localStorage.getItem('pt_comments') || '[]'); l.push({ time: new Date().toISOString(), ...payload });
       localStorage.setItem('pt_comments', JSON.stringify(l));
     }
     localStorage.setItem('pt_last_comment', Date.now());
-    commentList.push({ time: new Date().toISOString(), ...payload });
+    const mine = { time: new Date().toISOString(), ...payload };
+    try { const l = await fetchComments(); commentList = l.some(x => String(x.comment) === payload.comment) ? l : [...l, mine]; } catch (e) { commentList.push(mine); }
     $('#commentText').value = ''; updateCharCount(); renderComments(); toast('Đã gửi bình luận. Cảm ơn bạn!');
   } catch (e) { toast('Gửi chưa được: ' + e.message); }
   btn.disabled = false; btn.style.opacity = 1; btn.innerHTML = html;
