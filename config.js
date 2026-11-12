@@ -10,7 +10,7 @@ window.APP_CONFIG = {
     projectId: "pipetraffic-devteam-hcmus",
     appId: "1:925073186465:web:ea4ab666bff77c18431ae0"
   },
-  adminUID: "ikapGprbkMQccs36Z1CqmK7of5j2",
+  adminUid: "ikapGprbkMQccs36Z1CqmK7of5j2",
   adminUser: "admin",
   adminHash: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
 };
