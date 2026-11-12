@@ -6,11 +6,15 @@ const wrap = h => { app.innerHTML = `<div class="pt-app max-w-5xl mx-auto px-4 p
 const badge = s => `<span class="tag ${s === 'Hoàn thành' ? 'done' : s === 'Đang làm' ? 'run' : ''}">${esc(s)}</span>`;
 let me = Store.me();
 const linkify = s => esc(s).replace(/https?:\/\/[^\s<]+/g, u => { const t = u.match(/[.,;:!?)]+$/); const tail = t ? t[0] : ''; const l = tail ? u.slice(0, -tail.length) : u; return `<a class="plink" href="${l}" target="_blank" rel="noopener noreferrer">${l}</a>${tail}`; });
+function fs(b) { const w = b.closest('.mwrap'), el = w && w.querySelector('iframe,video'); if (el && el.requestFullscreen) el.requestFullscreen(); }
+const L = window.Loader || { show() {}, hide() {} };
 const mediaHtml = a => (a && a.length) ? `<div class="media">${a.map(m => {
   if (m.type === 'image' && /^(data:image\/|https:\/\/)/.test(m.src)) return `<img src="${esc(m.src)}" alt="" loading="lazy">`;
-  if (m.type === 'video') {
+  if (m.type === 'video' || m.type === 'link') {
     const v = Store.embed(m.src); if (!v) return '';
-    return `<div class="vid">${v.kind === 'iframe' ? `<iframe src="${esc(v.src)}" allowfullscreen loading="lazy"></iframe>` : `<video src="${esc(v.src)}" controls preload="metadata"></video>`}</div>`;
+    if (v.kind === 'link') return `<a class="linkcard" href="${esc(v.url)}" target="_blank" rel="noopener noreferrer"><span>🔗</span><span><b>${esc(v.label)}</b><small>${esc(v.url)}</small></span></a>`;
+    const inner = v.kind === 'iframe' ? `<iframe src="${esc(v.src)}" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" allowfullscreen loading="lazy"></iframe>` : `<video src="${esc(v.src)}" controls preload="metadata"></video>`;
+    return `<div class="mwrap"><div class="vid${v.tall ? ' tall' : ''}">${inner}</div><div class="mbar"><span>${esc(v.label)}</span><span><button type="button" onclick="fs(this)">⛶ Toàn màn hình</button> <a href="${esc(v.url)}" target="_blank" rel="noopener noreferrer">Mở tab mới ↗</a></span></div></div>`;
   }
   return '';
 }).join('')}</div>` : '';
@@ -41,11 +45,11 @@ async function home() {
   ${Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : ''}
   <div class="pgrid">${ps.map(p => {
     const last = us.filter(u => u.projectId === p.id).pop();
-    const mm = (last && last.media) || [], im = mm.find(m => m.type === 'image' && /^(data:image\/|https:\/\/)/.test(m.src)), nv = mm.filter(m => m.type === 'video').length;
+    const mm = [...(p.media || []), ...((last && last.media) || [])], im = mm.find(m => m.type === 'image' && /^(data:image\/|https:\/\/)/.test(m.src)), nv = mm.filter(m => m.type !== 'image').length;
     return `<a class="card" href="#/p/${p.id}">${im ? `<img class="cover" src="${esc(im.src)}" alt="" loading="lazy">` : ''}<div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
     <p class="muted" style="margin:0">${esc(p.desc)}</p>
     <div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small>
-    ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}${nv ? ' <span class="muted">· 🎬 ' + nv + ' video</span>' : ''}</p>` : ''}</a>`;
+    ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}${nv ? ' <span class="muted">· 🔗 ' + nv + ' tài liệu/video</span>' : ''}</p>` : ''}</a>`;
   }).join('') || '<p class="muted">Chưa có dự án nào.</p>'}</div></div></section>`;
 }
 
@@ -57,6 +61,7 @@ async function project(id) {
   <div class="row" style="margin-top:12px"><h1>${esc(p.name)}</h1>${badge(p.status)}</div>
   <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${esc(p.owner)}</p>
   <div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
+  ${(p.media || []).length ? `<h2 style="margin:28px 0 0">Tài liệu &amp; trình chiếu</h2>${mediaHtml(p.media)}` : ''}
   <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2><a class="btn sm" href="#/chat/${p.id}">Nhắn chủ dự án</a></div>
   <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${linkify(u.content)}</p>${mediaHtml(u.media)}</div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
 }
@@ -106,19 +111,22 @@ async function chat(pid) {
 
 /* --- Điều hướng (hash): #/ · #/p/<id> · #/login · #/chat · #/about/<mục> --- */
 const routes = { '': home, p: project, login, chat };
+const PAGES = ['journey', 'problems', 'team', 'video', 'faq', 'comments']; // mỗi mục là một trang riêng: #/about/<mục>
 async function route() {
+  L.show();
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
+  const key = r === 'about' ? (PAGES.includes(id) ? id : 'features') : '';
   renderAuth(); toggleMobileMenu(true);
-  setActive(r === 'about' ? (id || '') : (r === '' || r === 'p' ? 'projects' : ''));
+  setActive(r === 'about' ? key : (r === '' || r === 'p' ? 'projects' : ''));
   try {
     if (r === 'about') {
-      if (app.dataset.view !== 'about') { app.innerHTML = tpl('tpl-about'); app.dataset.view = 'about'; setRating(5); loadCommentsFromSheet(); }
-      if (id) setTimeout(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 40);
-      else window.scrollTo(0, 0);
+      app.dataset.view = 'about-' + key; app.innerHTML = tpl('tpl-' + key);
+      if (key === 'comments') { setRating(5); loadCommentsFromSheet(); }
     } else {
-      app.dataset.view = r || 'home'; window.scrollTo(0, 0);
+      app.dataset.view = r || 'home';
       await (routes[r || ''] || home)(id);
     }
   } catch (e) { wrap('<p class="err">Lỗi tải dữ liệu: ' + esc(e.message) + '</p>'); }
+  window.scrollTo(0, 0); L.hide(350);
 }
 addEventListener('hashchange', route); route();
