@@ -2,6 +2,7 @@ const $ = s => document.querySelector(s), app = $('#app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = t => new Date(t).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2000); };
+const L = window.Loader || { show() {}, hide() {} };
 let tab = 'projects', editing = null, thread = null, media = [];
 const mSize = a => a.reduce((s, m) => s + m.src.length, 0);
 // Nén ảnh về JPEG <= ~250KB để vừa giới hạn 1MB/tài liệu của Firestore
@@ -31,10 +32,44 @@ function login() {
   };
 }
 
+const MEDIA_FIELDS = `<label>Hình ảnh (tối đa 3, tự động nén)</label><input type="file" id="imgs" accept="image/*" multiple>
+  <label>Video, Drive, Docs, Slides hoặc link bất kỳ (dán link rồi bấm Thêm)</label><div class="vrow"><input id="vurl" placeholder="https://drive.google.com/… · https://docs.google.com/… · https://youtu.be/…"><button type="button" class="btn ghost sm" id="vadd">Thêm</button></div>
+  <small class="muted">File Drive/Docs/Slides cần để chế độ "Bất kỳ ai có đường liên kết" thì người xem mới mở được.</small>
+  <div class="mprev" id="mprev"></div>`;
+function bindMedia() {
+  const draw = () => {
+    $('#mprev').innerHTML = media.map((m, i) => {
+      const v = m.type === 'image' ? null : Store.embed(m.src);
+      return `<div class="mi">${m.type === 'image' ? `<img src="${esc(m.src)}" alt="">` : `<div class="mv">${v && v.kind === 'video' ? '▶' : v && v.tall ? '📄' : '🔗'} ${esc(v ? v.label : 'Link')}</div>`}<button type="button" data-r="${i}" aria-label="Bỏ">×</button></div>`;
+    }).join('');
+    document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { media.splice(+b.dataset.r, 1); draw(); });
+  };
+  $('#imgs').onchange = async ev => {
+    for (const file of ev.target.files) {
+      if (media.filter(m => m.type === 'image').length >= 3) { toast('Tối đa 3 ảnh'); break; }
+      try {
+        const d = await shrink(file);
+        if (mSize(media.filter(m => m.type === 'image')) + d.length > 800000) { toast('Dung lượng vượt giới hạn, hãy bỏ bớt ảnh'); break; }
+        media.push({ type: 'image', src: d });
+      } catch (err) { toast(err.message); }
+    }
+    ev.target.value = ''; draw();
+  };
+  const addV = () => {
+    const u = $('#vurl').value.trim();
+    if (!Store.embed(u)) return toast('Link không hợp lệ: cần bắt đầu bằng https://');
+    if (media.length >= 8) return toast('Tối đa 8 mục');
+    media.push({ type: 'link', src: u }); $('#vurl').value = ''; draw();
+  };
+  $('#vadd').onclick = addV;
+  $('#vurl').onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); addV(); } };
+  draw();
+}
+
 function nav() {
   const t = [['projects', 'Dự án'], ['updates', 'Cập nhật tuần'], ['messages', 'Tin nhắn'], ['users', 'Người dùng']];
   $('#nav').innerHTML = t.map(([k, v]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}">${v}</a>`).join('') + '<button id="out">Thoát</button>';
-  document.querySelectorAll('[data-t]').forEach(a => a.onclick = e => { e.preventDefault(); tab = a.dataset.t; editing = null; thread = null; render(); });
+  document.querySelectorAll('[data-t]').forEach(a => a.onclick = e => { e.preventDefault(); tab = a.dataset.t; editing = null; thread = null; L.show(); render(); });
   $('#out').onclick = () => { Store.adminLogout(); login(); };
 }
 
@@ -45,25 +80,29 @@ function isoWeek() {
 }
 
 async function render() {
-  if (!Store.isAdmin()) return login();
+  if (!Store.isAdmin()) { L.hide(0); return login(); }
   nav();
   try { await ({ projects, updates, messages, users })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
+  L.hide(300);
 }
 
 async function projects() {
   const ps = await Store.list('projects'), e = ps.find(p => p.id === editing) || {};
+  media = (e.media || []).slice();
   app.innerHTML = `<h1>Dự án</h1><p class="sub">Thêm, sửa hoặc xoá dự án hiển thị trên trang chính.</p>
   <div class="card"><h2>${e.id ? 'Sửa dự án' : 'Thêm dự án'}</h2><form id="f"><label>Tên</label><input name="name" required value="${esc(e.name)}">
   <label>Mô tả</label><textarea name="desc">${esc(e.desc)}</textarea>
   <div class="two"><div><label>Trạng thái</label><select name="status">${['Kế hoạch', 'Đang làm', 'Tạm dừng', 'Hoàn thành'].map(s => `<option ${e.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
   <div><label>Tiến độ (%)</label><input type="number" name="progress" min="0" max="100" value="${+e.progress || 0}"></div></div>
   <label>Chủ dự án</label><input name="owner" value="${esc(e.owner || 'Admin')}">
+  ${MEDIA_FIELDS}
   <button class="btn">${e.id ? 'Lưu thay đổi' : 'Thêm dự án'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form></div>
   <div class="card" style="margin-top:14px">${ps.map(p => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${+p.progress}%</small></div>
   <div><button class="btn ghost sm" data-e="${p.id}">Sửa</button> <button class="btn danger" data-d="${p.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có dự án.</p>'}</div>`;
+  bindMedia();
   $('#f').onsubmit = async ev => {
     ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target));
-    await Store.put('projects', { ...e, name: f.name.trim(), desc: f.desc, status: f.status, progress: Math.min(100, Math.max(0, +f.progress)), owner: f.owner });
+    await Store.put('projects', { ...e, name: f.name.trim(), desc: f.desc, status: f.status, progress: Math.min(100, Math.max(0, +f.progress)), owner: f.owner, media });
     editing = null; toast('Đã lưu'); render();
   };
   if ($('#x')) $('#x').onclick = () => { editing = null; render(); };
@@ -79,38 +118,12 @@ async function updates() {
   <div class="card"><h2>${e.id ? 'Sửa cập nhật' : 'Thêm cập nhật'}</h2>${ps.length ? `<form id="f"><div class="two"><div><label>Dự án</label><select name="projectId">${ps.map(p => `<option value="${p.id}" ${e.projectId === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
   <div><label>Tuần</label><input name="week" required value="${esc(e.week || isoWeek())}"></div></div>
   <label>Tiêu đề</label><input name="title" required value="${esc(e.title)}"><label>Nội dung</label><textarea name="content" required>${esc(e.content)}</textarea>
-  <label>Hình ảnh (tối đa 3, tự động nén)</label><input type="file" id="imgs" accept="image/*" multiple>
-  <label>Video (dán link YouTube, Google Drive hoặc file .mp4)</label><div class="vrow"><input id="vurl" placeholder="https://www.youtube.com/watch?v=..."><button type="button" class="btn ghost sm" id="vadd">Thêm</button></div>
-  <div class="mprev" id="mprev"></div>
+  ${MEDIA_FIELDS}
   <button class="btn">${e.id ? 'Lưu thay đổi' : 'Đăng cập nhật'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form>` : '<p class="muted">Hãy tạo dự án trước.</p>'}</div>
   <div class="card" style="margin-top:14px">${[...us].reverse().map(u => `<div class="item"><div><small class="muted">${esc(name(u.projectId))} · ${esc(u.week)}${(u.media || []).length ? ' · 📎 ' + u.media.length : ''}</small><br><b>${esc(u.title)}</b></div>
   <div><button class="btn ghost sm" data-e="${u.id}">Sửa</button> <button class="btn danger" data-d="${u.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`;
   if ($('#f')) $('#f').onsubmit = async ev => { ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target)); await Store.put('updates', { ...e, ...f, media }); editing = null; toast('Đã đăng'); render(); };
-  if ($('#f')) {
-    const draw = () => {
-      $('#mprev').innerHTML = media.map((m, i) => `<div class="mi">${m.type === 'image' ? `<img src="${esc(m.src)}" alt="">` : `<div class="mv">▶ Video<small>${esc(m.src.slice(0, 36))}</small></div>`}<button type="button" data-r="${i}" aria-label="Bỏ">×</button></div>`).join('');
-      document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { media.splice(+b.dataset.r, 1); draw(); });
-    };
-    $('#imgs').onchange = async ev => {
-      for (const file of ev.target.files) {
-        if (media.filter(m => m.type === 'image').length >= 3) { toast('Tối đa 3 ảnh'); break; }
-        try {
-          const d = await shrink(file);
-          if (mSize(media) + d.length > 800000) { toast('Dung lượng vượt giới hạn, hãy bỏ bớt ảnh'); break; }
-          media.push({ type: 'image', src: d });
-        } catch (err) { toast(err.message); }
-      }
-      ev.target.value = ''; draw();
-    };
-    const addV = () => {
-      const u = $('#vurl').value.trim();
-      if (!Store.embed(u)) return toast('Link chưa hợp lệ: dùng YouTube, Google Drive hoặc link .mp4 (https)');
-      media.push({ type: 'video', src: u }); $('#vurl').value = ''; draw();
-    };
-    $('#vadd').onclick = addV;
-    $('#vurl').onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); addV(); } };
-    draw();
-  }
+  if ($('#f')) bindMedia();
   if ($('#x')) $('#x').onclick = () => { editing = null; render(); };
   document.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editing = b.dataset.e; render(); window.scrollTo(0, 0); });
   document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá cập nhật này?')) { await Store.del('updates', b.dataset.d); render(); } });
