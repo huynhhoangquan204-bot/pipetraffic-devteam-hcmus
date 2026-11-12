@@ -2,7 +2,7 @@
 window.APP_CONFIG = {
 
   appsScriptUrl: "https://script.google.com/macros/s/AKfycbw14V3XKOd6tjeaX1RUj5wg1yjSNG_o_YN5xptU2Wa1bH3N2u-pZtn-BBnMAh6DE84k/exec",
-  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTuqzdtnLK_v9EiQgKoWpoGvIcmNYwaHGhhjtTOrryi_kR8EMmHI44LnFAC0CBJcV3CQ3MZ7e-23BbB/pub?output=tsv",
+  sheetCsvUrl: "https://script.google.com/macros/s/AKfycbxWG9f40BnKHEvmxgli-KoZ0Nk3a0jQtfIsMVqebFmCj6DAiAMV33dJp78LuMacV86n/execv",
 
   firebase: {
     apiKey: "AIzaSyAx-93r4CMaVhMlQggy4U9PMdN7MqcGSn4",
