@@ -558,6 +558,102 @@ html{
   }
 }
 
+/* ---------- 5. VÒNG TRÒN "ĐANG TẢI" (trang chính + admin) ---------- */
+
+.pt-app .loading{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:70px 0;
+  color:var(--mute)
+}
+
+.pt-app .loading:before{
+  content:"";
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  border:3px solid #bae6fd;
+  border-top-color:var(--steel);
+  animation:spin .8s linear infinite
+}
+
+@keyframes spin{
+  to{
+    transform:rotate(360deg)
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  .pt-app .loading:before{
+    animation:none
+  }
+}
+
+/* ---------- 6. MÀN HÌNH CHỜ (loading screen) KHI MỞ WEB ---------- */
+
+#splash{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  background:#fff;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:16px;
+  transition:opacity .35s,visibility .35s;
+  animation:splashAuto .4s 8s forwards
+}
+
+/* tự tắt sau 8s phòng khi lỗi */
+
+#splash.off{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none
+}
+
+#splash img{
+  width:76px;
+  height:76px;
+  border-radius:22px;
+  -o-object-fit:cover;
+     object-fit:cover;
+  box-shadow:0 12px 28px rgba(15,23,42,.2)
+}
+
+#splash b{
+  font-weight:800;
+  letter-spacing:-.02em;
+  color:#0f172a;
+  font-size:1.15rem
+}
+
+#splash .ring{
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  border:4px solid #bae6fd;
+  border-top-color:#0284c7;
+  animation:spin .8s linear infinite
+}
+
+@keyframes splashAuto{
+  to{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none
+  }
+}
+
+@media(prefers-reduced-motion:reduce){
+  #splash .ring{
+    animation:none
+  }
+}
+
 /* =====================  TAILWIND (đã biên dịch, không cần sửa)  ===================== */
 
 *, ::before, ::after{
@@ -1631,10 +1727,6 @@ video {
   border-top-width:1px
 }
 
-.border-amber-500\/30{
-  border-color:rgb(245 158 11 / 0.3)
-}
-
 .border-cyan-400{
   --tw-border-opacity:1;
   border-color:rgb(34 211 238 / var(--tw-border-opacity, 1))
@@ -1713,10 +1805,6 @@ video {
 .bg-amber-500{
   --tw-bg-opacity:1;
   background-color:rgb(245 158 11 / var(--tw-bg-opacity, 1))
-}
-
-.bg-amber-500\/10{
-  background-color:rgb(245 158 11 / 0.1)
 }
 
 .bg-cyan-100{
@@ -2211,11 +2299,6 @@ video {
   letter-spacing:0.1em
 }
 
-.text-amber-300{
-  --tw-text-opacity:1;
-  color:rgb(252 211 77 / var(--tw-text-opacity, 1))
-}
-
 .text-amber-400{
   --tw-text-opacity:1;
   color:rgb(251 191 36 / var(--tw-text-opacity, 1))
@@ -2491,6 +2574,12 @@ video {
 .shadow-sky-600\/50{
   --tw-shadow-color:rgb(2 132 199 / 0.5);
   --tw-shadow:var(--tw-shadow-colored)
+}
+
+.ring{
+  --tw-ring-offset-shadow:var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow:var(--tw-ring-inset) 0 0 0 calc(3px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow:var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000)
 }
 
 .filter{
