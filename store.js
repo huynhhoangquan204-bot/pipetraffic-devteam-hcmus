@@ -6,7 +6,7 @@
   const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
   const sha = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))]
     .map(b => b.toString(16).padStart(2, '0')).join('');
-  const load = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
+  const load = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); setTimeout(no, cfg.timeoutMs || 12000); });
   // Chỉ tải Firebase khi đã điền cấu hình => trang nhẹ hơn ở chế độ thử
   const ready = (async () => {
     if (!wantFb) return;
@@ -27,6 +27,8 @@
     if (c === 'permission-denied' || c === 'firestore/permission-denied') return new Error('Rules Firestore từ chối thao tác này (xem README, bước 5).');
     return e;
   };
+  // Firebase treo (chưa tạo Firestore, mất mạng...) thì báo lỗi rõ ràng thay vì chờ mãi
+  const tmo = (p, ms = (cfg.timeoutMs || 12000)) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(Object.assign(new Error('Không kết nối được Firebase (quá thời gian chờ). Kiểm tra đã tạo Firestore Database, đã Publish Rules và mạng còn tốt.'), { code: 'timeout' })), ms))]);
   const BAD_PW = /wrong-password|invalid-credential|invalid-login/;
 
   function seed() {
@@ -57,7 +59,7 @@
       try {
         if (useFb) {
           let q = fdb.collection(col); if (opt.where) q = q.where(...opt.where);
-          a = (await q.get()).docs.map(x => ({ ...x.data(), id: x.id }));
+          a = (await tmo(q.get())).docs.map(x => ({ ...x.data(), id: x.id }));
         } else {
           a = db()[col] || [];
           if (opt.where) { const [f, , v] = opt.where; a = a.filter(x => x[f] === v); }
@@ -68,7 +70,7 @@
     async get(col, id) {
       await ready;
       try {
-        if (useFb) { const s = await fdb.collection(col).doc(id).get(); return s.exists ? { ...s.data(), id: s.id } : null; }
+        if (useFb) { const s = await tmo(fdb.collection(col).doc(id).get()); return s.exists ? { ...s.data(), id: s.id } : null; }
       } catch (e) { throw fbErr(e); }
       return (db()[col] || []).find(x => x.id === id) || null;
     },
@@ -77,7 +79,7 @@
       o = { ...o }; if (!o.ts) o.ts = Date.now();
       const id = o.id || uid(); o.id = id;
       try {
-        if (useFb) { const data = { ...o }; if (col === 'comments') delete data.id; await fdb.collection(col).doc(id).set(data); }
+        if (useFb) { const data = { ...o }; if (col === 'comments') delete data.id; await tmo(fdb.collection(col).doc(id).set(data)); }
         else { const d = db(); d[col] = d[col] || []; const i = d[col].findIndex(x => x.id === id); i < 0 ? d[col].push(o) : d[col][i] = o; save(d); }
       } catch (e) { throw fbErr(e); }
       return o;
@@ -85,7 +87,7 @@
     async del(col, id) {
       await ready;
       try {
-        if (useFb) await fdb.collection(col).doc(id).delete();
+        if (useFb) await tmo(fdb.collection(col).doc(id).delete());
         else { const d = db(); d[col] = (d[col] || []).filter(x => x.id !== id); save(d); }
       } catch (e) { throw fbErr(e); }
     },
