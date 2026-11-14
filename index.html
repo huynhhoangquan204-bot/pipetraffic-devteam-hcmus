@@ -8,6 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
+    <script>
+    // Nếu trang không chạy được (thiếu file, lỗi script) thì báo rõ thay vì để trống
+    addEventListener('error', function (e) {
+        var a = document.getElementById('app'); if (!a || a.children.length) return;
+        var t = e.target, msg = (t && t.src) ? 'Không tải được file: ' + t.src.split('/').pop() + ' (kiểm tra file này đã up lên GitHub chưa)' : 'Lỗi: ' + (e.message || 'không rõ') + (e.filename ? ' (' + e.filename.split('/').pop() + ')' : '');
+        var p = document.createElement('p'); p.style.cssText = 'padding:140px 20px;text-align:center;color:#b91c1c;font-weight:600'; p.textContent = msg; a.appendChild(p);
+    }, true);
+    </script>
 </head>
 <body class="font-sans text-slate-800 bg-slate-50 antialiased w-full min-h-screen overflow-x-hidden flex flex-col">
 
@@ -24,12 +32,12 @@
                 </a>
                 <div class="hidden xl:flex items-center gap-6 font-medium text-sm text-slate-600">
                     <a data-r="projects" href="#/" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-folder-open text-xs text-sky-500"></i> Dự Án</a>
-                    <a data-r="journey" href="#/about/journey" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-timeline text-xs text-sky-500"></i> Journey</a>
-                    <a data-r="team" href="#/about/team" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-users text-xs text-sky-500"></i> Team Members</a>
-                    <a data-r="problems" href="#/about/problems" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-microchip text-xs text-sky-500"></i> Problems</a>
-                    <a data-r="video" href="#/about/video" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-circle-play text-xs text-sky-500"></i> Video</a>
-                    <a data-r="faq" href="#/about/faq" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-circle-question text-xs text-sky-500"></i> FAQ & Reviews</a>
-                    <a data-r="comments" href="#/about/comments" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link font-bold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200"><i class="fa-solid fa-comments text-xs text-sky-500"></i> Bình Luận</a>
+                    <a data-r="journey" href="#/journey" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-timeline text-xs text-sky-500"></i> Journey</a>
+                    <a data-r="team" href="#/team" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-users text-xs text-sky-500"></i> Team Members</a>
+                    <a data-r="problems" href="#/problems" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-microchip text-xs text-sky-500"></i> Problems</a>
+                    <a data-r="video" href="#/video" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-circle-play text-xs text-sky-500"></i> Video</a>
+                    <a data-r="faq" href="#/faq" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-circle-question text-xs text-sky-500"></i> FAQ & Reviews</a>
+                    <a data-r="comments" href="#/comments" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link font-bold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200"><i class="fa-solid fa-comments text-xs text-sky-500"></i> Bình Luận</a>
                 </div>
                 <div id="authSlot" class="hidden xl:flex items-center gap-3 shrink-0"></div>
                 <div class="xl:hidden flex items-center gap-2">
@@ -42,12 +50,12 @@
         </div>
         <div id="mobile-menu" class="hidden xl:hidden border-t border-slate-200 bg-white px-6 pt-4 pb-6 space-y-3 shadow-xl">
             <a href="#/" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-folder-open text-sky-500 mr-2"></i> Dự Án</a>
-            <a href="#/about/journey" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-timeline text-sky-500 mr-2"></i> Hành Trình (Journey)</a>
-            <a href="#/about/team" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-users text-sky-500 mr-2"></i> Thành Viên & Quy Tắc</a>
-            <a href="#/about/problems" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
-            <a href="#/about/video" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-play text-sky-500 mr-2"></i> Video Demo</a>
-            <a href="#/about/faq" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-question text-sky-500 mr-2"></i> Đánh Giá & FAQ</a>
-            <a href="#/about/comments" onclick="toggleMobileMenu(true)" class="block py-2 text-sky-600 font-bold border-b border-slate-100"><i class="fa-solid fa-comments text-sky-500 mr-2"></i> Bình Luận Tương Tác</a>
+            <a href="#/journey" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-timeline text-sky-500 mr-2"></i> Hành Trình (Journey)</a>
+            <a href="#/team" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-users text-sky-500 mr-2"></i> Thành Viên & Quy Tắc</a>
+            <a href="#/problems" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
+            <a href="#/video" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-play text-sky-500 mr-2"></i> Video Demo</a>
+            <a href="#/faq" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-question text-sky-500 mr-2"></i> Đánh Giá & FAQ</a>
+            <a href="#/comments" onclick="toggleMobileMenu(true)" class="block py-2 text-sky-600 font-bold border-b border-slate-100"><i class="fa-solid fa-comments text-sky-500 mr-2"></i> Bình Luận Tương Tác</a>
             <div id="authSlotM"></div>
         </div>
     </nav>
@@ -135,13 +143,13 @@
                     </div>
 
                     <div class="pt-2 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                        <a href="#/about/problems" class="px-8 py-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-base shadow-lg shadow-sky-500/30 transition-all text-center">
+                        <a href="#/problems" class="px-8 py-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-base shadow-lg shadow-sky-500/30 transition-all text-center">
                             Khám Phá Giải Pháp
                         </a>
-                        <a href="#/about/video" class="px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all flex items-center justify-center gap-2">
+                        <a href="#/video" class="px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all flex items-center justify-center gap-2">
                             <i class="fa-solid fa-play text-xs text-sky-400"></i> Xem Video Demo
                         </a>
-                        <a href="#/about/comments" class="px-8 py-4 rounded-xl bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-500/40 font-bold text-base transition-all flex items-center justify-center gap-2">
+                        <a href="#/comments" class="px-8 py-4 rounded-xl bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-200 border border-cyan-500/40 font-bold text-base transition-all flex items-center justify-center gap-2">
                             <i class="fa-solid fa-comments text-xs text-cyan-300"></i> Đóng Góp Ý Kiến
                         </a>
                     </div>
@@ -199,9 +207,8 @@
     </section>
     </template>
 
-    <template id="tpl-about">
-    <!-- 3. HIGHLIGHT FEATURES -->
-    <section class="py-20 bg-white w-full">
+        <template id="tpl-intro">
+<section class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đặc Điểm Kỹ Thuật</h2>
@@ -260,9 +267,7 @@
             </div>
         </div>
     </section>
-
-    <!-- 4. COMPARISON TABLE -->
-    <section class="py-20 bg-slate-100/80 w-full">
+<section class="py-20 bg-slate-100/80 w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-14">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đánh Giá Hạ Tầng</h2>
@@ -312,9 +317,7 @@
             </div>
         </div>
     </section>
-
-    <!-- 5. 3-STEP USER GUIDE -->
-    <section class="py-20 bg-white w-full">
+<section class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Quy Trình Hoạt Động</h2>
@@ -348,9 +351,10 @@
             </div>
         </div>
     </section>
+    </template>
 
-    <!-- 6. JOURNEY / TIMELINE SECTION -->
-    <section id="journey" class="py-20 bg-slate-900 text-white relative w-full">
+    <template id="tpl-journey">
+<section id="journey" class="py-20 bg-slate-900 text-white relative w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-400 mb-2">Nhật Ký Thực Hiện</h2>
@@ -423,9 +427,10 @@
             </div>
         </div>
     </section>
+    </template>
 
-    <!-- 7. PROBLEMS SECTION -->
-    <section id="problems" class="py-20 bg-slate-50 w-full">
+    <template id="tpl-problems">
+<section id="problems" class="py-20 bg-slate-50 w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-12">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Nội Dung Chuyên Môn</h2>
@@ -506,9 +511,10 @@
             </div>
         </div>
     </section>
+    </template>
 
-    <!-- 8. TEAM MEMBERS & GROUP CHARTER -->
-    <section id="team" class="py-20 bg-white w-full">
+    <template id="tpl-team">
+<section id="team" class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đội Ngũ Phát Triển</h2>
@@ -630,9 +636,10 @@
             </div>
         </div>
     </section>
+    </template>
 
-    <!-- 9. VIDEO DEMO & SCRIPT SECTION -->
-    <section id="video" class="py-20 bg-slate-100 w-full">
+    <template id="tpl-video">
+<section id="video" class="py-20 bg-slate-100 w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-12">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Truyền Thông Dự Án</h2>
@@ -679,9 +686,10 @@
             </div>
         </div>
     </section>
+    </template>
 
-    <!-- 10. REVIEWS & FAQ SECTION -->
-    <section id="faq" class="py-20 bg-white w-full">
+    <template id="tpl-faq">
+<section id="faq" class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đánh Giá & Giải Đáp</h2>
@@ -733,9 +741,10 @@
             </div>
         </div>
     </section>
+    </template>
 
-    <!-- 11. INTERACTIVE COMMENTS SECTION -->
-    <section id="comments" class="py-20 bg-slate-900 text-white w-full border-t border-slate-800">
+    <template id="tpl-comments">
+<section id="comments" class="py-20 bg-slate-900 text-white w-full border-t border-slate-800">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-14">
                 <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-3">
@@ -831,25 +840,27 @@
             </div>
         </div>
     </section>
+    </template>
 
-    <!-- 12. CTA & FOOTER -->
-    <section id="cta" class="py-20 gradient-bg text-white w-full">
+    <template id="tpl-cta">
+<section id="cta" class="py-20 gradient-bg text-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16 text-center space-y-6">
             <h2 class="text-3xl sm:text-5xl font-extrabold">Cùng Tiên Phong Tương Lai Giao Thông Thông Minh</h2>
             <p class="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto">
                 Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) nghiên cứu và phát triển.
             </p>
             <div class="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="#/about/team" class="px-8 py-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-base shadow-lg shadow-sky-500/30 transition-all">
+                <a href="#/team" class="px-8 py-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-base shadow-lg shadow-sky-500/30 transition-all">
                     Liên Hệ Nhóm Dự Án
                 </a>
-                <a href="#/about/problems" class="px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all">
+                <a href="#/problems" class="px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all">
                     Xem Đồ Án Chi Tiết
                 </a>
             </div>
         </div>
     </section>
     </template>
+
 
     <script src="config.js"></script>
     <script src="store.js"></script>
