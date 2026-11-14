@@ -9,8 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="font-sans text-slate-800 bg-slate-50 antialiased w-full min-h-screen overflow-x-hidden">
-    <div id="loader" class="on init" role="status" aria-label="Đang tải"><div class="ld-logo"><img src="https://i.postimg.cc/tgyk09xn/logo2.jpg" alt=""></div><div class="ld-bar"><i></i></div><p>Đang tải…</p></div>
+<body class="font-sans text-slate-800 bg-slate-50 antialiased w-full min-h-screen overflow-x-hidden flex flex-col">
 
     <!-- THANH MENU -->
     <nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-slate-200/80 shadow-sm w-full">
@@ -20,7 +19,7 @@
                     <img src="https://i.postimg.cc/tgyk09xn/logo2.jpg" alt="Logo" class="w-11 h-11 rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform">
                     <div>
                         <span class="text-xl font-extrabold tracking-tight text-slate-900 block leading-none">PIPE TRAFFIC</span>
-                        <span class="brand-sub text-[10px] font-bold text-sky-600 tracking-wider uppercase">Dự Án Nghiên Cứu HCMUS</span>
+                        <span class="text-[10px] font-bold text-sky-600 tracking-wider uppercase">Dự Án Nghiên Cứu HCMUS</span>
                     </div>
                 </a>
                 <div class="hidden xl:flex items-center gap-6 font-medium text-sm text-slate-600">
@@ -33,7 +32,8 @@
                     <a data-r="comments" href="#/about/comments" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link font-bold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200"><i class="fa-solid fa-comments text-xs text-sky-500"></i> Bình Luận</a>
                 </div>
                 <div id="authSlot" class="hidden xl:flex items-center gap-3 shrink-0"></div>
-                <div class="xl:hidden flex items-center gap-2"><div id="authSlotQ"></div>
+                <div class="xl:hidden flex items-center gap-2">
+                    <a href="#/chat" aria-label="Nhắn tin với chủ dự án" class="w-10 h-10 flex items-center justify-center rounded-lg bg-sky-600 text-white shadow-md shadow-sky-600/30"><i class="fa-solid fa-comment-dots"></i></a>
                     <button id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menu" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 rounded-lg bg-slate-100">
                         <i id="mobile-menu-icon" class="fa-solid fa-bars text-xl"></i>
                     </button>
@@ -52,10 +52,10 @@
         </div>
     </nav>
 
-    <main id="app"></main>
+    <main id="app" class="flex-1"></main>
 
     <!-- FOOTER -->
-    <footer class="bg-slate-950 text-slate-400 py-12 border-t border-slate-800 w-full">
+    <footer class="shrink-0 bg-slate-950 text-slate-400 py-12 border-t border-slate-800 w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                 <div class="flex items-center gap-3">
@@ -68,7 +68,7 @@
                     </div>
                 </div>
                 <p class="text-xs text-slate-500 text-center">
-                    &copy; 2026 Pipe Traffic Team. Tất cả quyền được bảo lưu. &middot; <a href="admin.html" class="hover:text-sky-400 underline">Quản trị</a>
+                    &copy; 2026 Pipe Traffic Team. Tất cả quyền được bảo lưu. &middot; <a href="admin.html" class="hover:text-sky-400 underline whitespace-nowrap">Quản trị</a>
                 </p>
                 <div class="flex gap-4 text-slate-400">
                     <a href="https://github.com/huynhhoangquan204-bot/pipetraffic-devteam-hcmus" class="hover:text-sky-400"><i class="fa-brands fa-github text-lg"></i></a>
@@ -199,9 +199,9 @@
     </section>
     </template>
 
-    <template id="tpl-features">
+    <template id="tpl-about">
     <!-- 3. HIGHLIGHT FEATURES -->
-    <section class="pt-32 pb-20 bg-white w-full">
+    <section class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đặc Điểm Kỹ Thuật</h2>
@@ -348,28 +348,9 @@
             </div>
         </div>
     </section>
-    <!-- 12. CTA & FOOTER -->
-    <section id="cta" class="py-20 gradient-bg text-white w-full">
-        <div class="w-full px-4 sm:px-8 lg:px-16 text-center space-y-6">
-            <h2 class="text-3xl sm:text-5xl font-extrabold">Cùng Tiên Phong Tương Lai Giao Thông Thông Minh</h2>
-            <p class="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto">
-                Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) nghiên cứu và phát triển.
-            </p>
-            <div class="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="#/about/team" class="px-8 py-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-base shadow-lg shadow-sky-500/30 transition-all">
-                    Liên Hệ Nhóm Dự Án
-                </a>
-                <a href="#/about/problems" class="px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all">
-                    Xem Đồ Án Chi Tiết
-                </a>
-            </div>
-        </div>
-    </section>
-    </template>
 
-    <template id="tpl-journey">
     <!-- 6. JOURNEY / TIMELINE SECTION -->
-    <section id="journey" class="pt-32 pb-20 bg-slate-900 text-white relative w-full">
+    <section id="journey" class="py-20 bg-slate-900 text-white relative w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-400 mb-2">Nhật Ký Thực Hiện</h2>
@@ -442,11 +423,9 @@
             </div>
         </div>
     </section>
-    </template>
 
-    <template id="tpl-problems">
     <!-- 7. PROBLEMS SECTION -->
-    <section id="problems" class="pt-32 pb-20 bg-slate-50 w-full">
+    <section id="problems" class="py-20 bg-slate-50 w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-12">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Nội Dung Chuyên Môn</h2>
@@ -527,11 +506,9 @@
             </div>
         </div>
     </section>
-    </template>
 
-    <template id="tpl-team">
     <!-- 8. TEAM MEMBERS & GROUP CHARTER -->
-    <section id="team" class="pt-32 pb-20 bg-white w-full">
+    <section id="team" class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đội Ngũ Phát Triển</h2>
@@ -653,11 +630,9 @@
             </div>
         </div>
     </section>
-    </template>
 
-    <template id="tpl-video">
     <!-- 9. VIDEO DEMO & SCRIPT SECTION -->
-    <section id="video" class="pt-32 pb-20 bg-slate-100 w-full">
+    <section id="video" class="py-20 bg-slate-100 w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-12">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Truyền Thông Dự Án</h2>
@@ -704,11 +679,9 @@
             </div>
         </div>
     </section>
-    </template>
 
-    <template id="tpl-faq">
     <!-- 10. REVIEWS & FAQ SECTION -->
-    <section id="faq" class="pt-32 pb-20 bg-white w-full">
+    <section id="faq" class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
                 <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đánh Giá & Giải Đáp</h2>
@@ -760,11 +733,9 @@
             </div>
         </div>
     </section>
-    </template>
 
-    <template id="tpl-comments">
     <!-- 11. INTERACTIVE COMMENTS SECTION -->
-    <section id="comments" class="pt-32 pb-20 bg-slate-900 text-white w-full border-t border-slate-800">
+    <section id="comments" class="py-20 bg-slate-900 text-white w-full border-t border-slate-800">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-14">
                 <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-3">
@@ -860,10 +831,26 @@
             </div>
         </div>
     </section>
+
+    <!-- 12. CTA & FOOTER -->
+    <section id="cta" class="py-20 gradient-bg text-white w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16 text-center space-y-6">
+            <h2 class="text-3xl sm:text-5xl font-extrabold">Cùng Tiên Phong Tương Lai Giao Thông Thông Minh</h2>
+            <p class="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto">
+                Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) nghiên cứu và phát triển.
+            </p>
+            <div class="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="#/about/team" class="px-8 py-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-base shadow-lg shadow-sky-500/30 transition-all">
+                    Liên Hệ Nhóm Dự Án
+                </a>
+                <a href="#/about/problems" class="px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all">
+                    Xem Đồ Án Chi Tiết
+                </a>
+            </div>
+        </div>
+    </section>
     </template>
 
-
-    <script src="loader.js"></script>
     <script src="config.js"></script>
     <script src="store.js"></script>
     <script src="script.js"></script>
