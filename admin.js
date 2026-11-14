@@ -2,76 +2,25 @@ const $ = s => document.querySelector(s), app = $('#app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = t => new Date(t).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2000); };
-const L = window.Loader || { show() {}, hide() {} };
-let tab = 'projects', editing = null, thread = null, media = [];
-const mSize = a => a.reduce((s, m) => s + m.src.length, 0);
-// Nén ảnh về JPEG <= ~250KB để vừa giới hạn 1MB/tài liệu của Firestore
-const shrink = file => new Promise((ok, no) => {
-  const img = new Image(), url = URL.createObjectURL(file);
-  img.onload = () => {
-    URL.revokeObjectURL(url);
-    let k = Math.min(1, 1100 / Math.max(img.width, img.height)), d = '';
-    for (let n = 0; n < 6; n++, k *= .8) {
-      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
-      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
-      d = c.toDataURL('image/jpeg', .78); if (d.length <= 250000) return ok(d);
-    }
-    no(new Error('Ảnh quá lớn, hãy chọn ảnh khác'));
-  };
-  img.onerror = () => no(new Error('Không đọc được ảnh'));
-  img.src = url;
-});
+let tab = 'projects', editing = null, thread = null;
 
 function login() {
   $('#nav').innerHTML = '';
-  app.innerHTML = `<div class="card narrow"><h2>Đăng nhập quản trị</h2><form id="f"><label>${Store.mode === 'firebase' ? 'Email quản trị' : 'Tên tài khoản'}</label><input name="u" ${Store.mode === 'firebase' ? 'type="email"' : ''} required autofocus autocomplete="username">
+  app.innerHTML = `<div class="card narrow"><h2>Đăng nhập quản trị</h2><form id="f"><label>Tên tài khoản</label><input name="u" required autofocus autocomplete="username">
   <label>Mật khẩu</label><input type="password" name="p" required autocomplete="current-password"><button class="btn">Đăng nhập</button></form><div class="err" id="err"></div></div>`;
   $('#f').onsubmit = async e => {
     e.preventDefault(); const f = new FormData(e.target);
-    try { if (await Store.adminLogin(f.get('u').trim(), f.get('p'))) render(); else $('#err').textContent = 'Sai tài khoản hoặc mật khẩu, hoặc tài khoản này không phải admin.'; }
-    catch (x) { $('#err').textContent = x.message; }
+    try {
+      if (await Store.adminLogin(f.get('u').trim(), f.get('p'))) render(); else $('#err').textContent = 'Sai tên tài khoản hoặc mật khẩu.';
+    } catch (x) { $('#err').textContent = x.message || x.code; }
   };
-}
-
-const MEDIA_FIELDS = `<label>Hình ảnh (tối đa 3, tự động nén)</label><input type="file" id="imgs" accept="image/*" multiple>
-  <label>Video, Drive, Docs, Slides hoặc link bất kỳ (dán link rồi bấm Thêm)</label><div class="vrow"><input id="vurl" placeholder="https://drive.google.com/… · https://docs.google.com/… · https://youtu.be/…"><button type="button" class="btn ghost sm" id="vadd">Thêm</button></div>
-  <small class="muted">File Drive/Docs/Slides cần để chế độ "Bất kỳ ai có đường liên kết" thì người xem mới mở được.</small>
-  <div class="mprev" id="mprev"></div>`;
-function bindMedia() {
-  const draw = () => {
-    $('#mprev').innerHTML = media.map((m, i) => {
-      const v = m.type === 'image' ? null : Store.embed(m.src);
-      return `<div class="mi">${m.type === 'image' ? `<img src="${esc(m.src)}" alt="">` : `<div class="mv">${v && v.kind === 'video' ? '▶' : v && v.tall ? '📄' : '🔗'} ${esc(v ? v.label : 'Link')}</div>`}<button type="button" data-r="${i}" aria-label="Bỏ">×</button></div>`;
-    }).join('');
-    document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { media.splice(+b.dataset.r, 1); draw(); });
-  };
-  $('#imgs').onchange = async ev => {
-    for (const file of ev.target.files) {
-      if (media.filter(m => m.type === 'image').length >= 3) { toast('Tối đa 3 ảnh'); break; }
-      try {
-        const d = await shrink(file);
-        if (mSize(media.filter(m => m.type === 'image')) + d.length > 800000) { toast('Dung lượng vượt giới hạn, hãy bỏ bớt ảnh'); break; }
-        media.push({ type: 'image', src: d });
-      } catch (err) { toast(err.message); }
-    }
-    ev.target.value = ''; draw();
-  };
-  const addV = () => {
-    const u = $('#vurl').value.trim();
-    if (!Store.embed(u)) return toast('Link không hợp lệ: cần bắt đầu bằng https://');
-    if (media.length >= 8) return toast('Tối đa 8 mục');
-    media.push({ type: 'link', src: u }); $('#vurl').value = ''; draw();
-  };
-  $('#vadd').onclick = addV;
-  $('#vurl').onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); addV(); } };
-  draw();
 }
 
 function nav() {
-  const t = [['projects', 'Dự án'], ['updates', 'Cập nhật tuần'], ['messages', 'Tin nhắn'], ['users', 'Người dùng'], ['backup', 'Sao lưu']];
+  const t = [['projects', 'Dự án'], ['updates', 'Cập nhật tuần'], ['comments', 'Bình luận'], ['messages', 'Tin nhắn'], ['users', 'Người dùng']];
   $('#nav').innerHTML = t.map(([k, v]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}">${v}</a>`).join('') + '<button id="out">Thoát</button>';
-  document.querySelectorAll('[data-t]').forEach(a => a.onclick = e => { e.preventDefault(); tab = a.dataset.t; editing = null; thread = null; L.show(); render(); });
-  $('#out').onclick = () => { Store.adminLogout(); login(); };
+  document.querySelectorAll('[data-t]').forEach(a => a.onclick = e => { e.preventDefault(); tab = a.dataset.t; editing = null; thread = null; render(); });
+  $('#out').onclick = async () => { await Store.adminLogout(); login(); };
 }
 
 function isoWeek() {
@@ -81,30 +30,25 @@ function isoWeek() {
 }
 
 async function render() {
-  await Store.authReady;
-  if (!Store.isAdmin()) { L.hide(0); return login(); }
+  if (!await Store.isAdmin()) return login();
   nav();
-  try { await ({ projects, updates, messages, users, backup })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
-  L.hide(300);
+  try { await ({ projects, updates, comments, messages, users })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
 }
 
 async function projects() {
   const ps = await Store.list('projects'), e = ps.find(p => p.id === editing) || {};
-  media = (e.media || []).slice();
   app.innerHTML = `<h1>Dự án</h1><p class="sub">Thêm, sửa hoặc xoá dự án hiển thị trên trang chính.</p>
   <div class="card"><h2>${e.id ? 'Sửa dự án' : 'Thêm dự án'}</h2><form id="f"><label>Tên</label><input name="name" required value="${esc(e.name)}">
   <label>Mô tả</label><textarea name="desc">${esc(e.desc)}</textarea>
   <div class="two"><div><label>Trạng thái</label><select name="status">${['Kế hoạch', 'Đang làm', 'Tạm dừng', 'Hoàn thành'].map(s => `<option ${e.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
   <div><label>Tiến độ (%)</label><input type="number" name="progress" min="0" max="100" value="${+e.progress || 0}"></div></div>
   <label>Chủ dự án</label><input name="owner" value="${esc(e.owner || 'Admin')}">
-  ${MEDIA_FIELDS}
   <button class="btn">${e.id ? 'Lưu thay đổi' : 'Thêm dự án'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form></div>
   <div class="card" style="margin-top:14px">${ps.map(p => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${+p.progress}%</small></div>
   <div><button class="btn ghost sm" data-e="${p.id}">Sửa</button> <button class="btn danger" data-d="${p.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có dự án.</p>'}</div>`;
-  bindMedia();
   $('#f').onsubmit = async ev => {
     ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target));
-    await Store.put('projects', { ...e, name: f.name.trim(), desc: f.desc, status: f.status, progress: Math.min(100, Math.max(0, +f.progress)), owner: f.owner, media });
+    await Store.put('projects', { ...e, name: f.name.trim(), desc: f.desc, status: f.status, progress: Math.min(100, Math.max(0, +f.progress)), owner: f.owner });
     editing = null; toast('Đã lưu'); render();
   };
   if ($('#x')) $('#x').onclick = () => { editing = null; render(); };
@@ -114,26 +58,34 @@ async function projects() {
 
 async function updates() {
   const [ps, us] = await Promise.all([Store.list('projects'), Store.list('updates')]), e = us.find(u => u.id === editing) || {};
-  media = (e.media || []).slice();
   const name = id => (ps.find(p => p.id === id) || {}).name || '(đã xoá)';
   app.innerHTML = `<h1>Cập nhật theo tuần</h1><p class="sub">Mỗi bản cập nhật gắn với một dự án.</p>
   <div class="card"><h2>${e.id ? 'Sửa cập nhật' : 'Thêm cập nhật'}</h2>${ps.length ? `<form id="f"><div class="two"><div><label>Dự án</label><select name="projectId">${ps.map(p => `<option value="${p.id}" ${e.projectId === p.id ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
   <div><label>Tuần</label><input name="week" required value="${esc(e.week || isoWeek())}"></div></div>
   <label>Tiêu đề</label><input name="title" required value="${esc(e.title)}"><label>Nội dung</label><textarea name="content" required>${esc(e.content)}</textarea>
-  ${MEDIA_FIELDS}
   <button class="btn">${e.id ? 'Lưu thay đổi' : 'Đăng cập nhật'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form>` : '<p class="muted">Hãy tạo dự án trước.</p>'}</div>
-  <div class="card" style="margin-top:14px">${[...us].reverse().map(u => `<div class="item"><div><small class="muted">${esc(name(u.projectId))} · ${esc(u.week)}${(u.media || []).length ? ' · 📎 ' + u.media.length : ''}</small><br><b>${esc(u.title)}</b></div>
+  <div class="card" style="margin-top:14px">${[...us].reverse().map(u => `<div class="item"><div><small class="muted">${esc(name(u.projectId))} · ${esc(u.week)}</small><br><b>${esc(u.title)}</b></div>
   <div><button class="btn ghost sm" data-e="${u.id}">Sửa</button> <button class="btn danger" data-d="${u.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`;
-  if ($('#f')) $('#f').onsubmit = async ev => { ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target)); await Store.put('updates', { ...e, ...f, media }); editing = null; toast('Đã đăng'); render(); };
-  if ($('#f')) bindMedia();
+  if ($('#f')) $('#f').onsubmit = async ev => { ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target)); await Store.put('updates', { ...e, ...f }); editing = null; toast('Đã đăng'); render(); };
   if ($('#x')) $('#x').onclick = () => { editing = null; render(); };
   document.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editing = b.dataset.e; render(); window.scrollTo(0, 0); });
   document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá cập nhật này?')) { await Store.del('updates', b.dataset.d); render(); } });
 }
 
+async function comments() {
+  const cs = (await Store.list('comments')).reverse(), wait = cs.filter(c => !c.approved).length;
+  app.innerHTML = `<h1>Bình luận</h1><p class="sub">${wait} chờ duyệt · ${cs.length - wait} đang hiển thị. Bình luận chỉ hiện trên web sau khi bạn bấm Duyệt.</p>
+  <div class="card">${cs.map(c => `<div class="item" style="align-items:flex-start"><div style="min-width:0"><b>${esc(c.name)}</b> ${c.role ? `<span class="tag">${esc(c.role)}</span>` : ''}
+  <span class="tag ${c.approved ? 'done' : 'run'}">${c.approved ? 'Đã duyệt' : 'Chờ duyệt'}</span> <small class="muted">⭐${+c.rating || 0} · ${fmt(c.ts)}</small><br>
+  <span style="white-space:pre-wrap;word-break:break-word">${esc(c.text)}</span></div>
+  <div style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" data-a="${c.id}">${c.approved ? 'Bỏ duyệt' : 'Duyệt'}</button> <button class="btn danger" data-d="${c.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có bình luận nào.</p>'}</div>`;
+  document.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => { const c = cs.find(x => x.id === b.dataset.a); await Store.put('comments', { ...c, approved: !c.approved }); render(); });
+  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá bình luận này?')) { await Store.del('comments', b.dataset.d); render(); } });
+}
+
 async function messages() {
   const ms = await Store.list('messages'), by = {};
-  ms.forEach(m => (by[m.userId] = by[m.userId] || []).push(m));
+  ms.forEach(m => (by[m.uid] = by[m.uid] || []).push(m));
   const ids = Object.keys(by).sort((a, b) => by[b].at(-1).ts - by[a].at(-1).ts);
   const t = thread && by[thread] ? thread : null;
   app.innerHTML = `<h1>Tin nhắn</h1><p class="sub">Trao đổi giữa người dùng và chủ dự án.</p>
@@ -143,7 +95,7 @@ async function messages() {
   if (t) {
     $('#back').onclick = e => { e.preventDefault(); thread = null; render(); };
     const log = $('#log'); log.scrollTop = log.scrollHeight;
-    $('#f').onsubmit = async e => { e.preventDefault(); await Store.put('messages', { userId: t, userName: by[t][0].userName, from: 'admin', text: new FormData(e.target).get('t').trim() }); render(); };
+    $('#f').onsubmit = async e => { e.preventDefault(); await Store.put('messages', { uid: t, userName: by[t][0].userName, from: 'admin', text: new FormData(e.target).get('t').trim() }); render(); };
   }
   document.querySelectorAll('[data-t]').forEach(b => { if (b.classList.contains('btn')) b.onclick = () => { thread = b.dataset.t; render(); }; });
 }
@@ -151,20 +103,6 @@ async function messages() {
 async function users() {
   const us = await Store.list('users');
   app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký.</p><div class="card">${us.map(u => `<div class="item"><div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
-  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này và toàn bộ tin nhắn của họ?\n(Tài khoản đăng nhập vẫn còn trong Firebase → Authentication, cần xoá thêm ở đó.)')) { const id = b.dataset.d; for (const m of (await Store.list('messages')).filter(m => m.userId === id)) await Store.del('messages', m.id); await Store.del('users', id); render(); } });
-}
-
-async function backup() {
-  app.innerHTML = `<h1>Sao lưu</h1><p class="sub">Tải toàn bộ dữ liệu (dự án, cập nhật, người dùng, tin nhắn) về máy thành một file JSON. Nên làm trước khi xoá hàng loạt và định kỳ mỗi tuần.</p>
-  <div class="card"><button class="btn" id="bk">Xuất dữ liệu (JSON)</button><p class="muted" style="margin-top:12px">File chứa email người dùng và tin nhắn: hãy cất ở nơi an toàn, không đăng công khai.</p></div>`;
-  $('#bk').onclick = async () => {
-    try {
-      const out = { exportedAt: new Date().toISOString(), mode: Store.mode };
-      for (const c of ['projects', 'updates', 'users', 'messages']) out[c] = await Store.list(c);
-      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }));
-      a.download = 'pipetraffic-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      toast(`Đã xuất ${out.projects.length} dự án, ${out.updates.length} cập nhật, ${out.users.length} người dùng, ${out.messages.length} tin nhắn`);
-    } catch (e) { toast('Xuất chưa được: ' + e.message); }
-  };
+  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này?')) { await Store.del('users', b.dataset.d); render(); } });
 }
 render();
