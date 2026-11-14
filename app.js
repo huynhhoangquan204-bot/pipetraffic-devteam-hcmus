@@ -21,19 +21,24 @@ function setActive(key) {
   document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('nav-on', a.dataset.r === key));
 }
 
-/* --- Trang chủ: banner gốc + danh sách dự án --- */
+/* --- Trang chủ: banner + giới thiệu + danh sách dự án + CTA. Phần tĩnh hiện ngay, dự án tải sau --- */
 async function home() {
-  const [ps, us] = await Promise.all([Store.list('projects'), Store.list('updates')]);
-  app.innerHTML = tpl('tpl-hero') + `<section id="projects" class="py-20 bg-slate-50"><div class="pt-app max-w-5xl mx-auto px-4">
+  app.innerHTML = tpl('tpl-hero') + tpl('tpl-intro') + `<section id="projects" class="py-20 bg-slate-50"><div class="pt-app max-w-5xl mx-auto px-4">
   <h2 class="sec">Các dự án</h2><p class="sub">Tình hình cập nhật hằng tuần của Pipe Traffic Dev Team.</p>
-  ${Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : ''}
-  <div class="pgrid">${ps.map(p => {
-    const last = us.filter(u => u.projectId === p.id).pop();
-    return `<a class="card" href="#/p/${p.id}"><div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
-    <p class="muted" style="margin:0">${esc(p.desc)}</p>
-    <div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small>
-    ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}</p>` : ''}</a>`;
-  }).join('') || '<p class="muted">Chưa có dự án nào.</p>'}</div></div></section>`;
+  <div id="projBox"><div class="loading">Đang tải dự án…</div></div></div></section>` + tpl('tpl-cta');
+  const box = $('#projBox');
+  try {
+    const [ps, us] = await Promise.all([Store.list('projects'), Store.list('updates')]);
+    if (!document.body.contains(box)) return;   // người dùng đã sang trang khác
+    box.innerHTML = (Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : '') +
+    `<div class="pgrid">${ps.map(p => {
+      const last = us.filter(u => u.projectId === p.id).pop();
+      return `<a class="card" href="#/p/${p.id}"><div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
+      <p class="muted" style="margin:0">${esc(p.desc)}</p>
+      <div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small>
+      ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}</p>` : ''}</a>`;
+    }).join('') || '<p class="muted">Chưa có dự án nào.</p>'}</div>`;
+  } catch (e) { if (document.body.contains(box)) box.innerHTML = '<p class="err">Chưa tải được dự án: ' + esc(e.message) + '</p>'; }
 }
 
 async function project(id) {
@@ -102,22 +107,22 @@ async function chat(pid) {
   };
 }
 
-/* --- Điều hướng (hash): #/ · #/p/<id> · #/login · #/chat · #/about/<mục> --- */
+/* --- Điều hướng (hash), mỗi mục trên menu là một TRANG RIÊNG nhưng vẫn là một file SPA ---
+   #/  ·  #/p/<id>  ·  #/login  ·  #/chat  ·  #/journey  #/problems  #/team  #/video  #/faq  #/comments */
+const PAGES = ['journey', 'problems', 'team', 'video', 'faq', 'comments'];   // mỗi tên ứng với <template id="tpl-...">
 const routes = { '': home, p: project, login, chat };
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
+  if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
   renderAuth(); toggleMobileMenu(true);
-  setActive(r === 'about' ? (id || '') : (r === '' || r === 'p' ? 'projects' : ''));
+  setActive(PAGES.includes(r) ? r : (r === '' || r === 'p' ? 'projects' : ''));
+  window.scrollTo(0, 0);
   try {
-    if (r === 'about') {
-      if (app.dataset.view !== 'about') { app.innerHTML = '<div class="pt-20">' + tpl('tpl-about') + '</div>'; app.dataset.view = 'about'; setRating(5); loadCommentsFromSheet(); }
-      if (id) setTimeout(() => { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 40);
-      else window.scrollTo(0, 0);
-    } else {
-      app.dataset.view = r || 'home'; window.scrollTo(0, 0);
-      await (routes[r || ''] || home)(id);
-    }
+    if (PAGES.includes(r)) {
+      app.dataset.view = r; app.innerHTML = `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
+      if (r === 'comments') { setRating(5); loadCommentsFromSheet(); }
+    } else { app.dataset.view = r || 'home'; await (routes[r || ''] || home)(id); }
   } catch (e) { wrap('<p class="err">Lỗi tải dữ liệu: ' + esc(e.message) + '</p>'); }
 }
-app.innerHTML = '<p class="text-center text-slate-400 pt-40">Đang tải…</p>';
+app.innerHTML = '<div class="pt-app pt-32"><div class="loading">Đang tải…</div></div>';
 (async () => { await Store.init(); me = Store.me(); addEventListener('hashchange', route); route(); })();
