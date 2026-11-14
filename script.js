@@ -31,7 +31,7 @@ function closeMemberModal() { $('#member-modal').classList.add('hidden'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMemberModal(); });
 document.addEventListener('click', e => { if (e.target.id === 'member-modal') closeMemberModal(); });
 
-/* --- Bình luận: lưu & đọc từ Google Sheet (qua Apps Script) --- */
+/* --- Bình luận chung: lưu ở Firestore, admin duyệt rồi mới hiện --- */
 let rating = 5, commentList = [];
 const AVATAR = ['bg-sky-500', 'bg-indigo-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-amber-500'];
 const EMAIL = /[\w.+-]+@[\w-]+(\.[\w-]+)+/g;                       // luôn ẩn email trên trang công khai
@@ -53,29 +53,14 @@ function addEmoji(e) {
   t.value += (t.value && !t.value.endsWith(' ') ? ' ' : '') + e + ' '; updateCharCount(); t.focus();
 }
 
-// Đọc danh sách bình luận. Chỉ dùng link Apps Script (doGet) để việc "Duyệt" ở cột D có hiệu lực.
-async function fetchComments() {
-  const url = (window.APP_CONFIG || {}).appsScriptUrl;
-  if (!url) { try { return JSON.parse(localStorage.getItem('pt_comments') || '[]'); } catch (e) { return []; } }
-  const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { cache: 'no-store' });
-  const txt = await r.text(); let j; try { j = JSON.parse(txt); } catch (e) {}
-  if (Array.isArray(j)) return j;
-  if (j && j.status === 'error') throw new Error(j.message || 'Lỗi từ Apps Script');
-  throw new Error('Link Apps Script không trả về dữ liệu: cần Deploy bản mới có doGet, quyền "Anyone", đúng link /exec');
-}
-
 function renderComments() {
   const box = $('#commentsContainer'); if (!box) return;
-  const url = (window.APP_CONFIG || {}).appsScriptUrl, dbg = debugOn();
   const list = [...commentList].reverse();
   $('#commentBadgeCount').textContent = list.length;
-  const info = dbg ? (url
-    ? `<div class="text-[11px] text-slate-500 text-right">Chế độ admin · ${list.length} bình luận đã duyệt · ${new Date().toLocaleTimeString('vi-VN')}</div>`
-    : '<div class="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">Chưa nối Google Sheet: bình luận chỉ lưu trên trình duyệt này. Dán link Apps Script vào <b>config.js</b>.</div>') : '';
+  const info = debugOn() ? `<div class="text-[11px] text-slate-500 text-right">Chế độ admin · ${Store.mode === 'firebase' ? 'Firestore' : 'chế độ thử (chỉ lưu trong trình duyệt này)'} · ${list.length} bình luận đã duyệt</div>` : '';
   box.innerHTML = info + (list.map(m => {
-    const p = /^⭐\uFE0F?\s?([1-5]) \| (.*?) \| ([\s\S]*)$/.exec(m.comment || '');
-    const star = p ? +p[1] : 0, role = p && !/@/.test(p[2]) ? p[2] : '', text = hideEmail(p ? p[3] : m.comment);
-    const d = new Date(m.time), when = String(m.time).includes('T') && !isNaN(d) ? d.toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : String(m.time || '');
+    const star = Math.min(5, Math.max(0, +m.rating || 0)), role = /@/.test(m.role || '') ? '' : (m.role || ''), text = hideEmail(m.text);
+    const when = new Date(m.ts).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
     const name = hideEmail(m.name || 'Ẩn danh'), col = AVATAR[[...name].reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR.length];
     return `<div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-5"><div class="flex items-start gap-3">
       <div class="w-10 h-10 rounded-full ${col} text-white font-extrabold flex items-center justify-center shrink-0">${esc(name.trim().charAt(0).toUpperCase() || '?')}</div>
@@ -87,10 +72,11 @@ function renderComments() {
   }).join('') || '<p class="text-slate-500 text-sm text-center py-8">Chưa có bình luận nào được hiển thị. Hãy là người đầu tiên!</p>');
 }
 
+// Tên hàm giữ nguyên vì nút "Làm mới" trong index.html đang gọi nó
 async function loadCommentsFromSheet() {
   const box = $('#commentsContainer'); if (!box) return;
   if (!commentList.length) box.innerHTML = '<p class="text-slate-500 text-sm text-center py-8">Đang tải bình luận…</p>';
-  try { commentList = await fetchComments(); }
+  try { commentList = await Store.list('comments', { where: ['approved', '==', true] }); }
   catch (e) {
     box.innerHTML = `<div class="text-center py-8"><p class="text-red-300 text-sm">Chưa tải được bình luận lúc này.</p>
       ${debugOn() ? `<p class="text-xs text-slate-400 mt-1">${esc(e.message)}</p>` : ''}
@@ -102,37 +88,21 @@ async function loadCommentsFromSheet() {
 
 async function handleCommentSubmit(ev) {
   ev.preventDefault();
-  const url = (window.APP_CONFIG || {}).appsScriptUrl, btn = $('#submitBtn');
+  const btn = $('#submitBtn');
   const anon = document.querySelector('input[name="identityMode"]:checked').value === 'anonymous';
-  const name = anon ? 'Ẩn danh' : $('#commenterName').value.trim();
-  const role = anon ? '' : $('#commenterRole').value.trim().replace(/\|/g, '/');
+  const name = (anon ? 'Ẩn danh' : $('#commenterName').value.trim()).slice(0, 80);
+  const role = (anon ? '' : $('#commenterRole').value.trim()).slice(0, 80);
   const text = $('#commentText').value.trim();
   if (!name) return toast('Vui lòng nhập họ tên hoặc chọn Ẩn danh');
   if (text.length < 2) return toast('Hãy nhập nội dung bình luận');
   if (Date.now() - (+localStorage.getItem('pt_last_comment') || 0) < 15000) return toast('Bạn gửi hơi nhanh, đợi vài giây nhé');
-  const payload = { name, comment: `⭐${rating} | ${role} | ${text}` };
   const html = btn.innerHTML; btn.disabled = true; btn.style.opacity = .6; btn.textContent = 'Đang gửi…';
   try {
-    let moderated = false, unconfirmed = false;
-    if (url) {
-      try { // text/plain để trình duyệt không gửi preflight (Apps Script không hỗ trợ)
-        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-        let j; try { j = JSON.parse(await r.text()); } catch (e) { throw new Error('Apps Script trả về trang HTML: kiểm tra Deploy (Who has access = Anyone) và link /exec'); }
-        if (j.status !== 'success') throw new Error(j.message || 'Lỗi từ Apps Script');
-        moderated = !!j.pendingApproval;
-      } catch (e) { if (e.name !== 'TypeError') throw e; unconfirmed = true; }
-    } else {
-      const l = JSON.parse(localStorage.getItem('pt_comments') || '[]'); l.push({ time: new Date().toISOString(), ...payload });
-      localStorage.setItem('pt_comments', JSON.stringify(l));
-    }
+    // approved:false => chỉ hiện trên web sau khi admin duyệt (Rules cũng bắt buộc điều này)
+    await Store.put('comments', { name, role, rating, text: text.slice(0, 700), ts: Date.now(), approved: false });
     localStorage.setItem('pt_last_comment', Date.now());
-    if (unconfirmed) {            // không đọc được phản hồi: giữ lại nội dung, không báo thành công giả
-      toast('Chưa xác nhận được việc gửi (trình duyệt chặn đọc phản hồi). Hãy kiểm tra lại sau, tránh gửi lặp.');
-    } else {
-      $('#commentText').value = ''; updateCharCount();
-      if (moderated) toast('Đã gửi! Bình luận sẽ hiện sau khi quản trị viên duyệt.');
-      else { toast('Đã gửi bình luận. Cảm ơn bạn!'); await loadCommentsFromSheet(); }
-    }
+    $('#commentText').value = ''; updateCharCount();
+    toast('Đã gửi! Bình luận sẽ hiện sau khi quản trị viên duyệt.');
   } catch (e) { toast('Gửi chưa được. ' + (debugOn() ? e.message : 'Vui lòng thử lại sau ít phút.')); }
   btn.disabled = false; btn.style.opacity = 1; btn.innerHTML = html;
 }
