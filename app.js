@@ -121,8 +121,19 @@ async function route() {
     if (PAGES.includes(r)) {
       app.dataset.view = r; app.innerHTML = `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
       if (r === 'comments') { setRating(5); loadCommentsFromSheet(); }
-    } else { app.dataset.view = r || 'home'; await (routes[r || ''] || home)(id); }
+    } else {
+      app.dataset.view = r || 'home';
+      if (r === 'p' || r === 'chat') app.innerHTML = '<div class="pt-app pt-32"><div class="loading">Đang tải…</div></div>';
+      await (routes[r || ''] || home)(id);
+    }
   } catch (e) { wrap('<p class="err">Lỗi tải dữ liệu: ' + esc(e.message) + '</p>'); }
 }
 app.innerHTML = '<div class="pt-app pt-32"><div class="loading">Đang tải…</div></div>';
-(async () => { await Store.init(); me = Store.me(); addEventListener('hashchange', route); route(); })();
+const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off'); setTimeout(() => s.remove(), 500); } };
+(async () => {
+  try {
+    await Store.init(); me = Store.me(); addEventListener('hashchange', route);
+    await Promise.race([route(), new Promise(r => setTimeout(r, 4000))]);   // chờ tối đa 4 giây rồi mở trang
+  } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
+  hideSplash();
+})();
