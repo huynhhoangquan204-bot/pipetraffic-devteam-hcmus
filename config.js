@@ -12,7 +12,7 @@ window.APP_CONFIG = {
   // ADMIN (trang admin.html). adminEmail = email của tài khoản admin bạn tạo trong
   // Firebase Console > Authentication > Users > Add user (xem README, bước 4).
   adminUser: "admin",
-  adminEmail: "",
+  adminEmail: "huynhhoangquan204@mgmail.com",
 
   // Chỉ dùng cho CHẾ ĐỘ THỬ (khi không có Firebase): SHA-256 của mật khẩu admin, mặc định "123".
   adminHash: "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3"
