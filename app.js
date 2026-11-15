@@ -33,7 +33,8 @@ async function home() {
     box.innerHTML = (Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : '') +
     `<div class="pgrid">${ps.map(p => {
       const last = us.filter(u => u.projectId === p.id).pop();
-      return `<a class="card" href="#/p/${p.id}"><div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
+      const cover = Media.list(p).find(m => m.t === 'img');
+      return `<a class="card" href="#/p/${p.id}">${cover ? `<img class="pcover" src="${esc(cover.src)}" loading="lazy" alt="">` : ''}<div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
       <p class="muted" style="margin:0">${esc(p.desc)}</p>
       <div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small>
       ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}</p>` : ''}</a>`;
@@ -49,8 +50,9 @@ async function project(id) {
   <div class="row" style="margin-top:12px"><h1>${esc(p.name)}</h1>${badge(p.status)}</div>
   <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${esc(p.owner)}</p>
   <div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
+  ${Media.html(Media.list(p))}
   <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2><a class="btn sm" href="#/chat/${p.id}">Nhắn chủ dự án</a></div>
-  <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${esc(u.content)}</p></div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
+  <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${esc(u.content)}</p>${Media.html(Media.list(u))}</div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
 }
 
 /* --- Đăng nhập: Google (bắt buộc) -> mật khẩu (Firebase Auth) -> tên / giới tính khi tạo mới --- */
