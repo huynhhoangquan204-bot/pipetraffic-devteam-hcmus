@@ -6,11 +6,56 @@ const wrap = h => { app.innerHTML = `<div class="pt-app max-w-5xl mx-auto px-4 p
 const badge = s => `<span class="tag ${s === 'Hoàn thành' ? 'done' : s === 'Đang làm' ? 'run' : ''}">${esc(s)}</span>`;
 let me = Store.me();
 
+/* --- Liên kết mạng xã hội ở chân trang (sửa trong config.js, mục links; để trống thì ẩn biểu tượng) --- */
+const LINKS = { github: 'https://github.com/huynhhoangquan204-bot/pipetraffic-devteam-hcmus', facebook: '', youtube: 'https://www.youtube.com/watch?v=al_L4F2ac9c&t=1s', ...((window.APP_CONFIG || {}).links || {}) };
+function applyLinks() {
+  [['lnkGh', 'github'], ['lnkFb', 'facebook'], ['lnkYt', 'youtube']].forEach(([id, k]) => {
+    const el = document.getElementById(id); if (!el) return;
+    if (/^https?:\/\//i.test(LINKS[k] || '')) { el.href = LINKS[k]; el.target = '_blank'; el.rel = 'noopener'; el.hidden = false; } else el.hidden = true;
+  });
+}
+
+/* --- Theo dõi thời gian thực: huỷ hết khi chuyển trang --- */
+const live = [];
+const stopLive = () => live.splice(0).forEach(f => f());
+
+/* --- Chấm đỏ "có tin nhắn mới từ admin" trên nút Nhắn tin --- */
+let unread = 0, badgeFor = null, badgeOff = null;
+const paintBadge = () => document.querySelectorAll('[data-chat]').forEach(a => a.classList.toggle('has-dot', !!me && unread > 0));
+function ensureBadge() {
+  const id = me ? me.id : null;
+  if (id === badgeFor) return;
+  if (badgeOff) { badgeOff(); badgeOff = null; }
+  badgeFor = id; unread = 0; paintBadge();
+  if (!id) return;
+  badgeOff = Store.listen('messages', { where: ['uid', '==', id] }, ms => {
+    const seen = +localStorage.getItem('pt_seen_' + id) || 0;
+    unread = ms.filter(m => m.from === 'admin' && m.ts > seen).length; paintBadge();
+  });
+}
+
+/* --- Nội dung sửa trong admin (Journey, Team, Review, FAQ). Admin chưa nhập thì giữ nội dung mẫu trong index.html --- */
+const ccache = {};
+async function contentList(col) {
+  const c = ccache[col]; if (c && Date.now() - c.t < 30000) return c.v;
+  const v = Content.sort(await Store.list(col)); ccache[col] = { t: Date.now(), v }; return v;
+}
+async function fillContent(r) {
+  const jobs = { journey: [['journey', '#journeyList', 'journey']], team: [['team', '#teamGrid', 'team']], faq: [['reviews', '#reviewList', 'reviews'], ['faq', '#faqList', 'faq']] }[r] || [];
+  await Promise.all(jobs.map(async ([col, sel, fn]) => {
+    const box = $(sel); if (!box) return;
+    box.style.opacity = 0; box.style.transition = 'opacity .25s';
+    let list = null;
+    try { list = await Promise.race([contentList(col), new Promise(ok => setTimeout(() => ok(null), 2500))]); } catch (e) {}
+    if ($(sel) === box) { if (list && list.length) box.innerHTML = Content[fn](list); box.style.opacity = 1; }
+  }));
+}
+
 /* --- Nút đăng nhập trên menu --- */
 function renderAuth() {
   const btn = 'bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm px-6 py-2.5 rounded-full shadow-lg shadow-sky-600/25 transition-all hover:shadow-xl hover:scale-105 inline-flex items-center gap-2';
   $('#authSlot').innerHTML = me
-    ? `<a href="#/chat" class="${btn}"><i class="fa-solid fa-comment-dots text-xs"></i> Nhắn tin</a><button data-out class="text-sm font-medium text-slate-500 hover:text-sky-600">${esc(me.name)} · Thoát</button>`
+    ? `<a href="#/chat" data-chat class="${btn} relative"><i class="fa-solid fa-comment-dots text-xs"></i> Nhắn tin</a><button data-out class="text-sm font-medium text-slate-500 hover:text-sky-600">${esc(me.name)} · Thoát</button>`
     : `<a href="#/login" class="${btn}"><i class="fa-solid fa-right-to-bracket text-xs"></i> Đăng nhập</a>`;
   $('#authSlotM').innerHTML = me
     ? `<a href="#/chat" onclick="toggleMobileMenu(true)" class="block text-center bg-sky-600 text-white py-3 rounded-xl font-bold mt-2">Nhắn tin với chủ dự án</a><button data-out class="block w-full text-center py-2 text-slate-500 font-medium">${esc(me.name)} · Thoát</button>`
@@ -96,16 +141,25 @@ function step(g, p) {
 /* --- Nhắn tin với chủ dự án --- */
 async function chat(pid) {
   if (!me) { location.hash = '#/login'; return; }
-  const [ps, ms] = await Promise.all([Store.list('projects'), Store.list('messages', { where: ['uid', '==', me.id] })]);
-  wrap(`<h1>Nhắn tin với chủ dự án</h1><p class="sub">Cuộc trò chuyện được lưu lại để admin trả lời.</p>
-  <div class="card"><div class="chat" id="log">${ms.map(m => `<div class="msg ${m.from === 'user' ? 'me' : ''}"><small>${m.from === 'user' ? 'Bạn' : 'Admin'}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small><span>${esc(m.text)}</span></div>`).join('') || '<p class="muted">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</p>'}</div>
+  const ps = await Store.list('projects');
+  wrap(`<h1>Nhắn tin với chủ dự án</h1><p class="sub">Tin nhắn hiện ngay khi admin trả lời, không cần tải lại trang.</p>
+  <div class="card"><div class="chat" id="log"><p class="muted">Đang tải…</p></div>
   <form id="f"><label>Về dự án</label><select name="p"><option value="">Chung</option>${ps.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
   <label>Nội dung</label><textarea name="t" required maxlength="1000"></textarea><button class="btn">Gửi</button></form></div>`);
-  const log = $('#log'); log.scrollTop = log.scrollHeight;
+  let first = true;
+  live.push(Store.listen('messages', { where: ['uid', '==', me.id] }, ms => {
+    const log = $('#log'); if (!log) return;
+    const stick = first || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+    log.innerHTML = ms.map(m => `<div class="msg ${m.from === 'user' ? 'me' : ''}"><small>${m.from === 'user' ? 'Bạn' : 'Admin'}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small><span>${esc(m.text)}</span></div>`).join('') || '<p class="muted">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</p>';
+    if (stick) log.scrollTop = log.scrollHeight; first = false;
+    localStorage.setItem('pt_seen_' + me.id, Date.now()); unread = 0; paintBadge();   // đã xem
+  }, er => { const log = $('#log'); if (log) log.innerHTML = '<p class="err">' + esc(er.message) + '</p>'; }));
   $('#f').onsubmit = async e => {
-    e.preventDefault(); const f = new FormData(e.target), p = ps.find(x => x.id === f.get('p'));
-    await Store.put('messages', { uid: me.id, userName: me.name, from: 'user', text: f.get('t').trim(), projectId: p ? p.id : '', projectName: p ? p.name : '' });
-    toast('Đã gửi'); chat(pid);
+    e.preventDefault(); const f = new FormData(e.target), p = ps.find(x => x.id === f.get('p')), t = f.get('t').trim(); if (!t) return;
+    try {
+      await Store.put('messages', { uid: me.id, userName: me.name, from: 'user', text: t, projectId: p ? p.id : '', projectName: p ? p.name : '' });
+      e.target.elements.t.value = '';
+    } catch (x) { toast('Gửi chưa được: ' + x.message); }
   };
 }
 
@@ -116,13 +170,14 @@ const routes = { '': home, p: project, login, chat };
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
-  renderAuth(); toggleMobileMenu(true);
+  stopLive(); renderAuth(); ensureBadge(); paintBadge(); toggleMobileMenu(true);
   setActive(PAGES.includes(r) ? r : (r === '' || r === 'p' ? 'projects' : ''));
   window.scrollTo(0, 0);
   try {
     if (PAGES.includes(r)) {
       app.dataset.view = r; app.innerHTML = `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
       if (r === 'comments') { setRating(5); loadCommentsFromSheet(); }
+      fillContent(r);
     } else {
       app.dataset.view = r || 'home';
       if (r === 'p' || r === 'chat') app.innerHTML = '<div class="pt-app pt-32"><div class="loading">Đang tải…</div></div>';
@@ -134,7 +189,7 @@ app.innerHTML = '<div class="pt-app pt-32"><div class="loading">Đang tải…</
 const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off'); setTimeout(() => s.remove(), 500); } };
 (async () => {
   try {
-    await Store.init(); me = Store.me(); addEventListener('hashchange', route);
+    await Store.init(); me = Store.me(); applyLinks(); addEventListener('hashchange', route);
     await Promise.race([route(), new Promise(r => setTimeout(r, 4000))]);   // chờ tối đa 4 giây rồi mở trang
   } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
   hideSplash();
