@@ -2,7 +2,7 @@
 (function () {
   const cfg = window.APP_CONFIG || {};
   const wantFb = !!(cfg.firebase && cfg.firebase.apiKey);
-  let useFb = false, fdb, fauth;
+  let useFb = false, fdb, fauth, fbFail = '';
   const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
   const sha = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))]
     .map(b => b.toString(16).padStart(2, '0')).join('');
@@ -15,7 +15,7 @@
       await load(b + 'firebase-app-compat.js');
       await Promise.all([load(b + 'firebase-auth-compat.js'), load(b + 'firebase-firestore-compat.js')]);
       firebase.initializeApp(cfg.firebase); fdb = firebase.firestore(); fauth = firebase.auth(); useFb = true;
-    } catch (e) { console.warn('Không tải được Firebase, dùng chế độ thử.', e); }
+    } catch (e) { fbFail = (e && e.message) || 'không tải được thư viện Firebase (mạng, trình chặn quảng cáo, hoặc firebase.com bị chặn)'; console.warn('Không tải được Firebase, dùng chế độ thử.', e); }
   })();
   const authUser = () => new Promise(res => { const un = fauth.onAuthStateChanged(u => { un(); res(u); }); });
   const hasPw = u => !!u && u.providerData.some(p => p.providerId === 'password');
@@ -29,6 +29,15 @@
   };
   // Firebase treo (chưa tạo Firestore, mất mạng...) thì báo lỗi rõ ràng thay vì chờ mãi
   const tmo = (p, ms = (cfg.timeoutMs || 12000)) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(Object.assign(new Error('Không kết nối được Firebase (quá thời gian chờ). Kiểm tra đã tạo Firestore Database, đã Publish Rules và mạng còn tốt.'), { code: 'timeout' })), ms))]);
+  const adminErr = e => {
+    const c = e.code || '';
+    if (/wrong-password|invalid-credential|invalid-login|user-not-found/.test(c)) return new Error('Sai mật khẩu, hoặc email admin chưa có tài khoản trong Firebase (Authentication → Users). Bấm "Quên mật khẩu admin?" để đặt lại. (' + c + ')');
+    if (c === 'auth/too-many-requests') return new Error('Firebase tạm khoá vì nhập sai nhiều lần. Đợi 10–15 phút hoặc bấm "Quên mật khẩu admin?" rồi thử lại.');
+    if (c === 'auth/network-request-failed') return new Error('Không có kết nối mạng tới Firebase.');
+    if (c === 'auth/user-disabled') return new Error('Tài khoản admin đang bị vô hiệu hoá trong Firebase Console.');
+    if (c === 'auth/invalid-email') return new Error('adminEmail trong config.js không phải email hợp lệ.');
+    return fbErr(e);
+  };
   const BAD_PW = /wrong-password|invalid-credential|invalid-login/;
 
   function seed() {
@@ -45,6 +54,10 @@
 
   window.Store = {
     get mode() { return useFb ? 'firebase' : 'demo'; },
+    get fbFailed() { return wantFb && !useFb; },            // đã điền Firebase nhưng không kết nối được
+    get fbFailReason() { return fbFail; },
+    // Thông tin chẩn đoán hiện trên trang đăng nhập admin (email được che bớt)
+    info() { return { mode: useFb ? 'firebase' : 'demo', project: (cfg.firebase || {}).projectId || '', email: cfg.adminEmail ? cfg.adminEmail.replace(/^(.).*(@.+)$/, '$1***$2') : '' }; },
     sha,
     // Gọi một lần khi mở web: nếu phiên Google đã hết/đổi người thì xoá phiên đăng nhập cũ
     async init() {
@@ -170,15 +183,18 @@
     // ----- Admin (trang admin.html riêng). Firebase: đăng nhập bằng tài khoản Email/Password do bạn tạo.
     async adminLogin(user, pw) {
       await ready;
-      if (user !== cfg.adminUser) return false;
+      const u = String(user || '').trim().toLowerCase();
       if (useFb) {
         if (!cfg.adminEmail) throw new Error('Chưa điền adminEmail trong config.js (xem README, bước 4).');
+        // Chấp nhận "admin" hoặc chính email admin (trình duyệt hay tự điền email vào ô tên tài khoản)
+        if (u !== String(cfg.adminUser).toLowerCase() && u !== lc(cfg.adminEmail)) throw new Error('Tên tài khoản là "' + cfg.adminUser + '" (hoặc email admin).');
         try {
           const r = await fauth.signInWithEmailAndPassword(cfg.adminEmail, pw);
           if (lc(r.user.email) !== lc(cfg.adminEmail)) return false;
           sessionStorage.setItem('pt_admin', '1'); return true;
-        } catch (e) { if (BAD_PW.test(e.code || '') || /user-not-found|invalid-email/.test(e.code || '')) return false; throw fbErr(e); }
+        } catch (e) { throw adminErr(e); }
       }
+      if (u !== String(cfg.adminUser).toLowerCase()) return false;
       if (await sha(pw) === cfg.adminHash) { sessionStorage.setItem('pt_admin', '1'); return true; }
       return false;
     },
