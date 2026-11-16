@@ -25,12 +25,24 @@ function login() {
   };
 }
 
-function nav() {
-  const t = [['projects', 'Dự án'], ['updates', 'Cập nhật tuần'], ['comments', 'Bình luận'], ['messages', 'Tin nhắn'], ['users', 'Người dùng']];
-  $('#nav').innerHTML = t.map(([k, v]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}">${v}</a>`).join('') + '<button id="out">Thoát</button>';
-  document.querySelectorAll('[data-t]').forEach(a => a.onclick = e => { e.preventDefault(); tab = a.dataset.t; editing = null; thread = null; render(); });
-  $('#out').onclick = async () => { await Store.adminLogout(); login(); };
+/* ===== Thanh tab (kèm số bình luận chờ duyệt / tin nhắn chờ trả lời) + theo dõi thời gian thực ===== */
+const live = [];                       // theo dõi của tab đang mở, huỷ khi đổi tab
+const stopLive = () => live.splice(0).forEach(f => f());
+let pendCmt = 0, waitMsg = 0; const badgeOff = [];
+function startBadges() {
+  badgeOff.push(Store.listen('comments', null, cs => { pendCmt = cs.filter(c => !c.approved).length; if ($('#nav').children.length) nav(); }));
+  badgeOff.push(Store.listen('messages', null, ms => { const last = {}; ms.forEach(m => last[m.uid] = m); waitMsg = Object.values(last).filter(m => m.from === 'user').length; if ($('#nav').children.length) nav(); }));
 }
+const stopBadges = () => { badgeOff.splice(0).forEach(f => f()); pendCmt = waitMsg = 0; };
+
+function nav() {
+  const old = Date.now() - (+localStorage.getItem('pt_last_backup') || 0) > 7 * 864e5;
+  const t = [['projects', 'Dự án'], ['updates', 'Cập nhật tuần'], ['content', 'Nội dung'], ['comments', 'Bình luận', pendCmt], ['messages', 'Tin nhắn', waitMsg], ['users', 'Người dùng'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu']];
+  $('#nav').innerHTML = t.map(([k, v, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}">${v}${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('') + '<button id="out">Thoát</button>';
+  document.querySelectorAll('#nav [data-t]').forEach(x => x.onclick = e => { e.preventDefault(); tab = x.dataset.t; editing = null; thread = null; render(); });
+  $('#out').onclick = async () => { stopLive(); stopBadges(); await Store.adminLogout(); login(); };
+}
+
 
 function isoWeek() {
   const d = new Date(), t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())), n = t.getUTCDay() || 7;
@@ -39,11 +51,13 @@ function isoWeek() {
 }
 
 async function render() {
+  stopLive();
   app.innerHTML = '<div class="loading">Đang tải…</div>';
-  if (!await Store.isAdmin()) return login();
-  nav();
-  try { await ({ projects, updates, comments, messages, users })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
+  if (!await Store.isAdmin()) { stopBadges(); return login(); }
+  nav(); if (!badgeOff.length) startBadges();
+  try { await ({ projects, updates, content, comments, messages, users, backup })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
 }
+
 
 /* ===== Đính kèm: ảnh / PDF nhỏ tải từ máy, video / PDF lớn dán link ===== */
 let M = { files: [] };
@@ -134,37 +148,157 @@ async function updates() {
   document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá cập nhật này?')) { await Store.del('updates', b.dataset.d); render(); } });
 }
 
-async function comments() {
-  const cs = (await Store.list('comments')).reverse(), wait = cs.filter(c => !c.approved).length;
-  app.innerHTML = `<h1>Bình luận</h1><p class="sub">${wait} chờ duyệt · ${cs.length - wait} đang hiển thị. Bình luận chỉ hiện trên web sau khi bạn bấm Duyệt.</p>
-  <div class="card">${cs.map(c => `<div class="item" style="align-items:flex-start"><div style="min-width:0"><b>${esc(c.name)}</b> ${c.role ? `<span class="tag">${esc(c.role)}</span>` : ''}
-  <span class="tag ${c.approved ? 'done' : 'run'}">${c.approved ? 'Đã duyệt' : 'Chờ duyệt'}</span> <small class="muted">⭐${+c.rating || 0} · ${fmt(c.ts)}</small><br>
-  <span style="white-space:pre-wrap;word-break:break-word">${esc(c.text)}</span></div>
-  <div style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" data-a="${c.id}">${c.approved ? 'Bỏ duyệt' : 'Duyệt'}</button> <button class="btn danger" data-d="${c.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có bình luận nào.</p>'}</div>`;
-  document.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => { const c = cs.find(x => x.id === b.dataset.a); await Store.put('comments', { ...c, approved: !c.approved }); render(); });
-  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá bình luận này?')) { await Store.del('comments', b.dataset.d); render(); } });
+/* ===== Nội dung trang: Journey / Team / Review / FAQ ===== */
+const COLOR_VN = { sky: 'Xanh da trời', indigo: 'Chàm', cyan: 'Xanh ngọc', rose: 'Hồng', emerald: 'Xanh lá' };
+const SECTIONS = {
+  journey: { name: 'Journey (từng tuần)', opt: [], label: x => `${x.week} · ${x.title}`,
+    fields: [['week', 'Nhãn tuần', 'text', 'Tuần 1'], ['title', 'Tiêu đề', 'text'], ['items', 'Các ý (mỗi dòng một ý, có thể **in đậm**)', 'lines'], ['color', 'Màu', 'color']] },
+  team: { name: 'Team (thành viên)', opt: ['modalRole', 'detail', 'photo'], label: x => `${x.name} · ${x.role}`,
+    fields: [['name', 'Họ tên', 'text'], ['role', 'Vai trò (dưới tên)', 'text'], ['short', 'Mô tả ngắn (1–2 dòng)', 'text'], ['modalRole', 'Vai trò đầy đủ (trong cửa sổ Chi tiết)', 'text'], ['detail', 'Mô tả chi tiết', 'area'], ['photo', 'Ảnh đại diện', 'photo'], ['color', 'Màu viền', 'color']] },
+  reviews: { name: 'Review chuyên gia', opt: [], label: x => `${x.name} · ${'★'.repeat(+x.stars || 5)}`,
+    fields: [['text', 'Nội dung nhận xét', 'area'], ['name', 'Tên', 'text'], ['title', 'Chức danh', 'text'], ['stars', 'Số sao', 'stars']] },
+  faq: { name: 'FAQ (câu hỏi thường gặp)', opt: [], label: x => x.q,
+    fields: [['q', 'Câu hỏi', 'text'], ['a', 'Trả lời (có thể **in đậm**)', 'area']] }
+};
+let csec = 'journey', photoData = '';
+function fieldHtml(S, f, v) {
+  const [k, l, t, ph] = f, req = S.opt.includes(k) ? '' : 'required';
+  if (t === 'area') return `<label>${l}</label><textarea name="${k}" rows="3" ${req}>${esc(v)}</textarea>`;
+  if (t === 'lines') return `<label>${l}</label><textarea name="${k}" rows="5" ${req}>${esc((v || []).join('\n'))}</textarea>`;
+  if (t === 'color') return `<label>${l}</label><select name="${k}">${Content.colors.map(c => `<option value="${c}" ${(v || 'sky') === c ? 'selected' : ''}>${COLOR_VN[c]}</option>`).join('')}</select>`;
+  if (t === 'stars') return `<label>${l}</label><select name="${k}">${[5, 4, 3, 2, 1].map(n => `<option ${(+v || 5) === n ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+  if (t === 'photo') return `<label>${l}</label><input type="file" id="photoFile" accept="image/*"><div class="pthumbs" id="photoPrev"></div>
+    <input name="photo" placeholder="hoặc dán link ảnh https://..." value="${esc(v && !String(v).startsWith('data:') ? v : '')}">`;
+  return `<label>${l}</label><input name="${k}" value="${esc(v)}" ${ph ? `placeholder="${esc(ph)}"` : ''} ${req}>`;
+}
+async function content() {
+  const S = SECTIONS[csec], list = Content.sort(await Store.list(csec)), e = list.find(x => x.id === editing) || {};
+  photoData = e.photo && String(e.photo).startsWith('data:') ? e.photo : '';
+  app.innerHTML = `<h1>Nội dung trang</h1><p class="sub">Journey, Team, Review và FAQ trên web hiển thị theo dữ liệu nhập ở đây. Mục nào chưa có dữ liệu thì web dùng nội dung mẫu.</p>
+  <div class="row" style="justify-content:flex-start;gap:8px;margin-bottom:14px">${Object.entries(SECTIONS).map(([k, v]) => `<button class="btn ${k === csec ? '' : 'ghost'} sm" data-s="${k}">${v.name}</button>`).join('')}</div>
+  ${list.length ? '' : '<div class="banner">Mục này chưa có dữ liệu nên web đang hiện nội dung mẫu. <button class="btn sm" id="seed">Nạp nội dung mẫu để chỉnh sửa</button></div>'}
+  <div class="card"><h2>${e.id ? 'Sửa' : 'Thêm'}: ${S.name}</h2><form id="f">${S.fields.map(f => fieldHtml(S, f, e[f[0]])).join('')}
+  <button class="btn">${e.id ? 'Lưu thay đổi' : 'Thêm'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form></div>
+  <div class="card" style="margin-top:14px">${list.map((x, i) => `<div class="item"><div style="min-width:0"><b>${esc(S.label(x))}</b></div>
+  <div style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" data-mv="${x.id}|-1" ${i === 0 ? 'disabled' : ''} aria-label="Lên">▲</button><button class="btn ghost sm" data-mv="${x.id}|1" ${i === list.length - 1 ? 'disabled' : ''} aria-label="Xuống">▼</button>
+  <button class="btn ghost sm" data-e="${x.id}">Sửa</button><button class="btn danger" data-d="${x.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có mục nào.</p>'}</div>`;
+  document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { csec = b.dataset.s; editing = null; render(); });
+  const prev = () => { const p = $('#photoPrev'); if (p) p.innerHTML = photoData ? `<div class="pth"><img src="${esc(photoData)}" alt=""><button type="button" id="photoRm" aria-label="Bỏ ảnh">×</button></div>` : ''; const r = $('#photoRm'); if (r) r.onclick = () => { photoData = ''; prev(); }; };
+  prev();
+  if ($('#photoFile')) $('#photoFile').onchange = async ev => { try { photoData = await Media.avatar(ev.target.files[0]); prev(); } catch (x) { toast(x.message); } ev.target.value = ''; };
+  if ($('#seed')) $('#seed').onclick = async () => {
+    const d = Content.defaults[csec] || [];
+    for (let i = 0; i < d.length; i++) await Store.put(csec, { ...d[i], id: `seed-${csec}-${i + 1}`, order: i * 10, ts: Date.now() + i });
+    toast('Đã nạp nội dung mẫu, bạn có thể sửa từng mục'); render();
+  };
+  $('#f').onsubmit = async ev => {
+    ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target)), o = {};
+    S.fields.forEach(([k, , t]) => {
+      if (t === 'lines') o[k] = String(f[k] || '').split(/\n+/).map(s => s.trim()).filter(Boolean);
+      else if (t === 'stars') o[k] = +f[k] || 5;
+      else if (t === 'photo') o[k] = photoData || String(f[k] || '').trim();
+      else o[k] = String(f[k] ?? '').trim();
+    });
+    if (o.photo && !/^(https?:\/\/|data:image\/)/i.test(o.photo)) return toast('Link ảnh phải bắt đầu bằng https://');
+    o.order = e.id ? e.order ?? list.length * 10 : (list.reduce((m, x) => Math.max(m, x.order ?? 0), -10) + 10);
+    try { await Store.put(csec, { ...e, ...o }); } catch (x) { return toast(x.message); }
+    editing = null; toast('Đã lưu'); render();
+  };
+  if ($('#x')) $('#x').onclick = () => { editing = null; render(); };
+  document.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editing = b.dataset.e; render(); window.scrollTo(0, 0); });
+  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá mục này?')) { await Store.del(csec, b.dataset.d); render(); } });
+  document.querySelectorAll('[data-mv]').forEach(b => b.onclick = async () => {
+    const [id, dir] = b.dataset.mv.split('|'), i = list.findIndex(x => x.id === id), j = i + +dir; if (j < 0 || j >= list.length) return;
+    const order = list.map(x => x.id); [order[i], order[j]] = [order[j], order[i]];
+    for (let k = 0; k < order.length; k++) { const x = list.find(y => y.id === order[k]); if (x.order !== k * 10) await Store.put(csec, { ...x, order: k * 10 }); }
+    render();
+  });
 }
 
-async function messages() {
-  const ms = await Store.list('messages'), by = {};
-  ms.forEach(m => (by[m.uid] = by[m.uid] || []).push(m));
-  const ids = Object.keys(by).sort((a, b) => by[b].at(-1).ts - by[a].at(-1).ts);
-  const t = thread && by[thread] ? thread : null;
-  app.innerHTML = `<h1>Tin nhắn</h1><p class="sub">Trao đổi giữa người dùng và chủ dự án.</p>
-  ${t ? `<a href="#" id="back" class="muted">&larr; Tất cả hội thoại</a><div class="card" style="margin-top:10px"><h2>${esc(by[t][0].userName)}</h2><div class="chat" id="log">${by[t].map(m => `<div class="msg ${m.from === 'admin' ? 'me' : ''}"><small>${m.from === 'admin' ? 'Admin' : esc(m.userName)}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small><span>${esc(m.text)}</span></div>`).join('')}</div>
-  <form id="f"><textarea name="t" required placeholder="Trả lời…"></textarea><button class="btn">Gửi trả lời</button></form></div>`
-  : `<div class="card">${ids.map(id => { const l = by[id].at(-1); return `<div class="item"><div><b>${esc(l.userName)}</b> <small class="muted">${fmt(l.ts)}</small><br><span class="muted">${l.from === 'admin' ? 'Bạn: ' : ''}${esc(l.text.slice(0, 80))}</span></div><button class="btn sm" data-t="${id}">Mở</button></div>`; }).join('') || '<p class="muted">Chưa có tin nhắn nào.</p>'}</div>`}`;
-  if (t) {
-    $('#back').onclick = e => { e.preventDefault(); thread = null; render(); };
-    const log = $('#log'); log.scrollTop = log.scrollHeight;
-    $('#f').onsubmit = async e => { e.preventDefault(); await Store.put('messages', { uid: t, userName: by[t][0].userName, from: 'admin', text: new FormData(e.target).get('t').trim() }); render(); };
-  }
-  document.querySelectorAll('[data-t]').forEach(b => { if (b.classList.contains('btn')) b.onclick = () => { thread = b.dataset.t; render(); }; });
+/* ===== Bình luận: lọc, duyệt từng cái hoặc tất cả, cập nhật ngay ===== */
+let cfilter = 'pending';
+async function comments() {
+  app.innerHTML = '<h1>Bình luận</h1><p class="sub" id="csub"></p><div class="row" style="justify-content:flex-start;gap:8px;margin-bottom:14px" id="cf"></div><div class="card" id="clist"><div class="loading">Đang tải…</div></div>';
+  let all = [];
+  const draw = () => {
+    if (!$('#clist')) return;
+    const wait = all.filter(c => !c.approved).length, ok = all.length - wait;
+    $('#csub').textContent = `${wait} chờ duyệt · ${ok} đang hiển thị. Bình luận chỉ hiện trên web sau khi bạn duyệt.`;
+    $('#cf').innerHTML = [['pending', `Chờ duyệt (${wait})`], ['approved', `Đã duyệt (${ok})`], ['all', `Tất cả (${all.length})`]].map(([k, v]) => `<button class="btn ${cfilter === k ? '' : 'ghost'} sm" data-f="${k}">${v}</button>`).join('') + (wait ? `<button class="btn sm" id="apall">Duyệt tất cả (${wait})</button>` : '');
+    const list = [...all].reverse().filter(c => cfilter === 'all' || (cfilter === 'approved') === !!c.approved);
+    $('#clist').innerHTML = list.map(c => `<div class="item" style="align-items:flex-start"><div style="min-width:0"><b>${esc(c.name)}</b> ${c.role ? `<span class="tag">${esc(c.role)}</span>` : ''}
+      <span class="tag ${c.approved ? 'done' : 'run'}">${c.approved ? 'Đã duyệt' : 'Chờ duyệt'}</span> <small class="muted">⭐${+c.rating || 0} · ${fmt(c.ts)}</small><br>
+      <span style="white-space:pre-wrap;word-break:break-word">${esc(c.text)}</span></div>
+      <div style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" data-a="${c.id}">${c.approved ? 'Bỏ duyệt' : 'Duyệt'}</button><button class="btn danger" data-d="${c.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Không có bình luận nào ở mục này.</p>';
+    document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { cfilter = b.dataset.f; draw(); });
+    const ap = $('#apall'); if (ap) ap.onclick = async () => { for (const c of all.filter(x => !x.approved)) await Store.put('comments', { ...c, approved: true }); toast('Đã duyệt tất cả'); };
+    document.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => { const c = all.find(x => x.id === b.dataset.a); try { await Store.put('comments', { ...c, approved: !c.approved }); } catch (x) { toast(x.message); } });
+    document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá bình luận này?')) { try { await Store.del('comments', b.dataset.d); } catch (x) { toast(x.message); } } });
+  };
+  live.push(Store.listen('comments', null, cs => { all = cs; draw(); }, er => { const b = $('#clist'); if (b) b.innerHTML = '<p class="err">' + esc(er.message) + '</p>'; }));
 }
+
+/* ===== Tin nhắn: thời gian thực, đánh dấu cuộc trò chuyện chờ trả lời ===== */
+async function messages() {
+  app.innerHTML = '<h1>Tin nhắn</h1><p class="sub">Tin mới hiện ngay, không cần tải lại. Cuộc trò chuyện đang chờ bạn trả lời được đánh dấu.</p><div id="mbox"><div class="loading">Đang tải…</div></div>';
+  let last = [], built = null;
+  const bubbles = ms => ms.map(m => `<div class="msg ${m.from === 'admin' ? 'me' : ''}"><small>${m.from === 'admin' ? 'Admin' : esc(m.userName)}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small><span>${esc(m.text)}</span></div>`).join('');
+  const draw = () => {
+    const box = $('#mbox'); if (!box) return;
+    const by = {}; last.forEach(m => (by[m.uid] = by[m.uid] || []).push(m));
+    if (thread && by[thread]) {
+      if (built !== thread) {
+        built = thread;
+        box.innerHTML = '<a href="#" id="back" class="plink">&larr; Tất cả hội thoại</a><div class="card" style="margin-top:10px"><h2 id="tname"></h2><div class="chat" id="log"></div><form id="f"><textarea name="t" required placeholder="Trả lời…"></textarea><button class="btn">Gửi trả lời</button></form></div>';
+        $('#back').onclick = e => { e.preventDefault(); thread = null; built = null; draw(); };
+        $('#f').onsubmit = async e => {
+          e.preventDefault(); const t = e.target.elements.t.value.trim(); if (!t) return; const u = last.find(m => m.uid === thread);
+          try { await Store.put('messages', { uid: thread, userName: u ? u.userName : '', from: 'admin', text: t, projectId: '', projectName: '' }); e.target.elements.t.value = ''; } catch (x) { toast(x.message); }
+        };
+      }
+      $('#tname').textContent = by[thread][0].userName;
+      const log = $('#log'), stick = !log.children.length || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+      log.innerHTML = bubbles(by[thread]); if (stick) log.scrollTop = log.scrollHeight;
+    } else {
+      built = null; thread = null;
+      const ids = Object.keys(by).sort((a, b) => by[b].at(-1).ts - by[a].at(-1).ts);
+      box.innerHTML = `<div class="card">${ids.map(id => { const l = by[id].at(-1); return `<div class="item"><div style="min-width:0"><b>${esc(l.userName)}</b> ${l.from === 'user' ? '<span class="tag run">Chờ trả lời</span>' : ''} <small class="muted">${fmt(l.ts)}</small><br><span class="muted">${l.from === 'admin' ? 'Bạn: ' : ''}${esc(l.text.slice(0, 80))}</span></div><button class="btn sm" data-th="${id}">Mở</button></div>`; }).join('') || '<p class="muted">Chưa có tin nhắn nào.</p>'}</div>`;
+      box.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { thread = b.dataset.th; draw(); });
+    }
+  };
+  live.push(Store.listen('messages', null, ms => { last = ms; draw(); }, er => { const b = $('#mbox'); if (b) b.innerHTML = '<p class="err">' + esc(er.message) + '</p>'; }));
+}
+
 
 async function users() {
   const us = await Store.list('users');
   app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký.</p>${Store.uid() ? `<div class="banner">UID tài khoản admin của bạn: <code style="user-select:all">${esc(Store.uid())}</code><br>Giá trị này phải trùng với UID trong <b>firestore.rules</b> (hàm <code>isAdmin</code>).</div>` : ''}<div class="card">${us.map(u => `<div class="item"><div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
   document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này?')) { await Store.del('users', b.dataset.d); render(); } });
 }
+
+/* ===== Sao lưu / khôi phục JSON ===== */
+async function backup() {
+  const last = +localStorage.getItem('pt_last_backup') || 0;
+  app.innerHTML = `<h1>Sao lưu dữ liệu</h1><p class="sub">Tải toàn bộ dữ liệu (dự án, cập nhật, nội dung trang, bình luận, tin nhắn, người dùng) về máy thành một file JSON. Nên sao lưu mỗi tuần.</p>
+  <div class="card"><p>Lần sao lưu gần nhất: <b>${last ? fmt(last) : 'chưa có'}</b></p><button class="btn" id="bk">Tải bản sao lưu (.json)</button></div>
+  <div class="card" style="margin-top:14px"><h2>Khôi phục từ file</h2><p class="muted">Ghi lại các bản ghi trong file (trùng ID thì ghi đè). Không xoá dữ liệu đang có.</p>
+  <input type="file" id="rs" accept="application/json,.json"><button class="btn ghost" id="rsb">Khôi phục</button></div>`;
+  $('#bk').onclick = async () => {
+    try {
+      const d = await Store.exportAll(), a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: 'application/json' }));
+      a.download = 'pipe-traffic-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+      localStorage.setItem('pt_last_backup', Date.now()); toast('Đã tạo bản sao lưu'); nav(); backup();
+    } catch (x) { toast(x.message); }
+  };
+  $('#rsb').onclick = async () => {
+    const f = $('#rs').files[0]; if (!f) return toast('Hãy chọn file .json trước');
+    try {
+      const obj = JSON.parse(await f.text()), n = Object.values(obj.data || {}).reduce((s, l) => s + (l || []).length, 0);
+      if (!confirm(`Khôi phục ${n} bản ghi từ file này?`)) return;
+      toast(`Đã khôi phục ${await Store.importAll(obj)} bản ghi`);
+    } catch (x) { toast(x.message || 'File không đọc được'); }
+  };
+}
+
 render();
