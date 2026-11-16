@@ -6,16 +6,21 @@ let tab = 'projects', editing = null, thread = null;
 
 function login() {
   $('#nav').innerHTML = '';
-  const fb = Store.mode === 'firebase', noMail = fb && !(window.APP_CONFIG || {}).adminEmail;
-  app.innerHTML = `<div class="card narrow"><h2>Đăng nhập quản trị</h2>
+  const fb = Store.mode === 'firebase', noMail = fb && !(window.APP_CONFIG || {}).adminEmail, inf = Store.info();
+  const status = fb
+    ? `<p class="muted" style="font-size:.8rem;margin:8px 0 0">Kết nối: Firebase ✓ · Dự án: ${esc(inf.project)} · Email admin: ${esc(inf.email || '(chưa điền)')}</p>`
+    : Store.fbFailed
+      ? `<div class="banner" style="margin:10px 0;color:#991b1b;background:#fef2f2;border-color:#fecaca"><b>Không kết nối được Firebase</b> nên web đang ở <b>chế độ thử</b> (mật khẩu thử là 123, không phải mật khẩu Firebase của bạn). Lý do: ${esc(Store.fbFailReason)}<br>Hãy kiểm tra mạng, tắt trình chặn quảng cáo cho trang này rồi nhấn Ctrl+Shift+R.</div>`
+      : '<p class="muted" style="font-size:.8rem;margin:8px 0 0">Chế độ thử (chưa cấu hình Firebase): tài khoản admin / mật khẩu 123.</p>';
+  app.innerHTML = `<div class="card narrow"><h2>Đăng nhập quản trị</h2>${status}
   ${noMail ? '<div class="banner" style="margin:10px 0">Chưa điền <b>adminEmail</b> trong <b>config.js</b> nên chưa đăng nhập được (xem README, bước 4).</div>' : ''}
-  <form id="f"><label>Tên tài khoản</label><input name="u" required autofocus autocomplete="username">
+  <form id="f"><label>Tên tài khoản</label><input name="u" required autofocus autocomplete="username" placeholder="admin">
   <label>Mật khẩu</label><input type="password" name="p" required autocomplete="current-password"><button class="btn">Đăng nhập</button></form>
   ${fb && !noMail ? '<p style="margin-top:12px"><a href="#" id="forgot" class="plink">Quên mật khẩu admin?</a></p>' : ''}<div class="err" id="err"></div></div>`;
   $('#f').onsubmit = async e => {
-    e.preventDefault(); const f = new FormData(e.target);
+    e.preventDefault(); const f = new FormData(e.target); $('#err').textContent = '';
     try {
-      if (await Store.adminLogin(f.get('u').trim(), f.get('p'))) render(); else $('#err').textContent = 'Sai tên tài khoản hoặc mật khẩu.';
+      if (await Store.adminLogin(f.get('u'), f.get('p'))) render(); else $('#err').textContent = 'Sai tên tài khoản hoặc mật khẩu.';
     } catch (x) { $('#err').textContent = x.message || x.code; }
   };
   const fg = $('#forgot');
