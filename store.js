@@ -67,6 +67,41 @@
       } catch (e) { throw fbErr(e); }
       return a.sort((x, y) => x.ts - y.ts);
     },
+    // Theo dõi thay đổi theo thời gian thực. Firebase: onSnapshot. Chế độ thử: đọc lại mỗi 0,8 giây.
+    // Trả về hàm để HUỶ theo dõi.
+    listen(col, opt, cb, onErr) {
+      let stop = false, un = null, timer = null, bus = null;
+      (async () => {
+        await ready; if (stop) return;
+        if (useFb) {
+          let q = fdb.collection(col); if (opt && opt.where) q = q.where(...opt.where);
+          un = q.onSnapshot(sn => { if (!stop) cb(sn.docs.map(x => ({ ...x.data(), id: x.id })).sort((a, b) => a.ts - b.ts)); }, er => onErr && onErr(fbErr(er)));
+        } else {
+          let last = '';
+          bus = () => {
+            if (stop) return;
+            let a = db()[col] || []; if (opt && opt.where) { const [f, , v] = opt.where; a = a.filter(x => x[f] === v); }
+            a = [...a].sort((x, y) => x.ts - y.ts); const sig = JSON.stringify(a);
+            if (sig !== last) { last = sig; cb(a); }
+          };
+          window.addEventListener('pt-db', bus); bus(); timer = setInterval(bus, 800);
+        }
+      })();
+      return () => { stop = true; if (un) un(); if (timer) clearInterval(timer); if (bus) window.removeEventListener('pt-db', bus); };
+    },
+    // Sao lưu / khôi phục toàn bộ dữ liệu (admin)
+    COLS: ['projects', 'updates', 'team', 'journey', 'reviews', 'faq', 'comments', 'messages', 'users'],
+    async exportAll() {
+      const data = {};
+      for (const c of this.COLS) { try { data[c] = await this.list(c); } catch (e) { data[c] = []; } }
+      return { app: 'pipe-traffic', version: 1, exportedAt: new Date().toISOString(), data };
+    },
+    async importAll(obj) {
+      if (!obj || obj.app !== 'pipe-traffic' || !obj.data) throw new Error('Đây không phải file sao lưu của web này.');
+      let n = 0;
+      for (const c of this.COLS) for (const d of (obj.data[c] || [])) { if (d && d.id) { await this.put(c, d); n++; } }
+      return n;
+    },
     async get(col, id) {
       await ready;
       try {
@@ -80,7 +115,7 @@
       const id = o.id || uid(); o.id = id;
       try {
         if (useFb) { const data = { ...o }; if (col === 'comments') delete data.id; await tmo(fdb.collection(col).doc(id).set(data)); }
-        else { const d = db(); d[col] = d[col] || []; const i = d[col].findIndex(x => x.id === id); i < 0 ? d[col].push(o) : d[col][i] = o; save(d); }
+        else { const d = db(); d[col] = d[col] || []; const i = d[col].findIndex(x => x.id === id); i < 0 ? d[col].push(o) : d[col][i] = o; save(d);  window.dispatchEvent(new Event('pt-db')); }
       } catch (e) { throw fbErr(e); }
       return o;
     },
@@ -88,7 +123,7 @@
       await ready;
       try {
         if (useFb) await tmo(fdb.collection(col).doc(id).delete());
-        else { const d = db(); d[col] = (d[col] || []).filter(x => x.id !== id); save(d); }
+        else { const d = db(); d[col] = (d[col] || []).filter(x => x.id !== id); save(d);  window.dispatchEvent(new Event('pt-db')); }
       } catch (e) { throw fbErr(e); }
     },
     // ----- Người dùng: bắt buộc Google trước, sau đó tên / giới tính / mật khẩu
@@ -254,6 +289,15 @@
       URL.revokeObjectURL(img.src);
       if (out.length > 300000) throw new Error('Ảnh ' + file.name + ' quá lớn để lưu');
       return out;
+    },
+    // Ảnh đại diện: cắt vuông giữa ảnh, 256px
+    async avatar(file) {
+      if (!/^image\//.test(file.type)) throw new Error('"' + file.name + '" không phải ảnh');
+      const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Không đọc được ảnh')); i.src = URL.createObjectURL(file); });
+      const sz = Math.min(img.width, img.height), c = document.createElement('canvas'); c.width = c.height = 256;
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 256, 256);
+      g.drawImage(img, (img.width - sz) / 2, (img.height - sz) / 2, sz, sz, 0, 0, 256, 256);
+      URL.revokeObjectURL(img.src); return c.toDataURL('image/jpeg', .85);
     },
     pdf(file) {
       return new Promise((ok, no) => {
