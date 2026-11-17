@@ -70,6 +70,9 @@
     .pp-list small{display:block;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
     .pp-list a,.pp-list span{font-size:.95rem;font-weight:600;color:#0f172a;word-break:break-word;text-decoration:none}
     .pp-list a{color:#0369a1}.pp-list a:hover{text-decoration:underline}
+    .pp-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
+    .pp-chip{font:inherit;font-size:.82rem;font-weight:600;padding:8px 12px;border:1px solid #bae6fd;border-radius:99px;background:#f0f9ff;color:#0369a1;cursor:pointer}
+    .pp-chip:hover{background:#e0f2fe}
     .pp-note{margin-top:14px;font-size:.82rem;color:#64748b;white-space:pre-wrap}
     </style>
 </head>
@@ -174,8 +177,8 @@
 
     <!-- KHUNG CHAT CHUNG (popup): mở bằng nút Chat cạnh menu -->
     <div id="chatPop" class="pp-chat" hidden role="dialog" aria-label="Khung chat">
-        <div class="pp-head"><div><b>Trò chuyện</b><small>Chat với Admin hoặc trợ lý AI</small></div><button type="button" class="pp-x" data-chat-close aria-label="Đóng khung chat">&times;</button></div>
-        <div class="pp-tabs"><button type="button" data-ct="admin">Admin</button><button type="button" data-ct="ai">AI</button></div>
+        <div class="pp-head"><div><b>Trò chuyện</b><small>Chat với Admin hoặc trợ lý ảo</small></div><button type="button" class="pp-x" data-chat-close aria-label="Đóng khung chat">&times;</button></div>
+        <div class="pp-tabs"><button type="button" data-ct="admin">Admin</button><button type="button" data-ct="ai">Trợ lý</button></div>
         <div class="pp-log" id="chatLog"></div>
         <form class="pp-form" id="chatForm"><input name="t" maxlength="1000" autocomplete="off" placeholder="Nhập tin nhắn…"><button type="submit">Gửi</button></form>
     </div>
@@ -946,7 +949,8 @@
     <script src="config.js"></script>
     <script src="store.js?v=14"></script>
     <script src="script.js?v=14"></script>
-    <script src="content.js?v=14"></script>
-    <script src="app.js?v=14"></script>
+    <script src="content.js?v=15"></script>
+    <script src="bot.js?v=15"></script>
+    <script src="app.js?v=15"></script>
 </body>
 </html>
