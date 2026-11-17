@@ -103,7 +103,7 @@
       return () => { stop = true; if (un) un(); if (timer) clearInterval(timer); if (bus) window.removeEventListener('pt-db', bus); };
     },
     // Sao lưu / khôi phục toàn bộ dữ liệu (admin)
-    COLS: ['projects', 'updates', 'team', 'journey', 'reviews', 'faq', 'comments', 'messages', 'users'],
+    COLS: ['projects', 'updates', 'team', 'journey', 'reviews', 'faq', 'comments', 'messages', 'users', 'botkb'],
     async exportAll() {
       const data = {};
       for (const c of this.COLS) { try { data[c] = await this.list(c); } catch (e) { data[c] = []; } }
