@@ -161,9 +161,9 @@ function drawChat(busy) {
   const inp = form.t, btn = form.querySelector('button'), stick = !log.children.length || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
   if (chatTab === 'ai') {
     const on = aiOn(); inp.disabled = btn.disabled = !on;
-    inp.placeholder = on ? 'Hỏi trợ lý AI…' : 'AI sẽ được thêm sau';
-    log.innerHTML = (aiHist.map(m => bub(m.role === 'user' ? 'me' : 'ai', m.role === 'user' ? 'Bạn' : 'AI', m.text)).join('')
-      || `<div class="pp-empty">${on ? 'Hãy đặt câu hỏi cho trợ lý AI.' : 'Trợ lý AI sẽ được thêm sau.'}</div>`) + (busy ? bub('ai', 'AI', 'Đang trả lời…') : '');
+    inp.placeholder = on ? 'Hỏi trợ lý về Pipe Traffic…' : 'Trợ lý sẽ được thêm sau';
+    log.innerHTML = (aiHist.map(m => bub(m.role === 'user' ? 'me' : 'ai', m.role === 'user' ? 'Bạn' : 'Trợ lý ảo', m.text)).join('')
+      || `<div class="pp-empty">${on ? 'Xin chào! Mình là trợ lý ảo của Pipe Traffic. Bạn muốn hỏi gì?<div class="pp-chips">' + ((window.PT_AI.suggest || []).map(q => `<button type="button" class="pp-chip" data-q="${esc(q)}">${esc(q)}</button>`).join('')) + '</div>' : 'Trợ lý sẽ được thêm sau.'}</div>`) + (busy ? bub('ai', 'Trợ lý ảo', 'Đang trả lời…') : '');
     log.scrollTop = log.scrollHeight; return;
   }
   if (!me) {
@@ -184,7 +184,7 @@ function openChat(tab) {
       if (chatTab === 'ai') {
         inp.value = ''; const before = aiHist.slice(); aiHist.push({ role: 'user', text: t }); drawChat(true);
         try { aiHist.push({ role: 'ai', text: String(await window.PT_AI.ask(t, before)) }); }
-        catch (x) { aiHist.push({ role: 'ai', text: 'AI chưa trả lời được: ' + (x.message || x) }); }
+        catch (x) { aiHist.push({ role: 'ai', text: 'Trợ lý chưa trả lời được: ' + (x.message || x) }); }
         drawChat(); inp.focus();
       } else {
         try { await Store.put('messages', { uid: me.id, userName: me.name, from: 'user', text: t, projectId: '', projectName: '' }); inp.value = ''; }
@@ -210,6 +210,7 @@ async function openContact() {
 const closeContact = () => { const m = $('#contact-modal'); if (m) m.hidden = true; };
 
 document.addEventListener('click', e => {
+  const qb = e.target.closest('[data-q]'); if (qb) { const f = $('#chatForm'); if (f && !f.t.disabled) { f.t.value = qb.dataset.q; f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event('submit', { cancelable: true })); } return; }
   const ct = e.target.closest('[data-ct]'); if (ct) { chatTab = ct.dataset.ct; if (chatTab === 'admin') markSeen(); drawChat(); return; }
   if (e.target.closest('[data-chat-open]')) { e.preventDefault(); toggleChat(); return; }
   if (e.target.closest('[data-chat-close]')) { closeChat(); return; }
