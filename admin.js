@@ -42,8 +42,8 @@ const stopBadges = () => { badgeOff.splice(0).forEach(f => f()); pendCmt = waitM
 
 function nav() {
   const old = Date.now() - (+localStorage.getItem('pt_last_backup') || 0) > 7 * 864e5;
-  const t = [['projects', 'Dự án'], ['updates', 'Cập nhật tuần'], ['content', 'Nội dung'], ['comments', 'Bình luận', pendCmt], ['messages', 'Tin nhắn', waitMsg], ['users', 'Người dùng'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu']];
-  $('#nav').innerHTML = t.map(([k, v, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}">${v}${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('') + '<button id="out">Thoát</button>';
+  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️', 'Tuần'], ['content', 'Nội dung', '📝'], ['comments', 'Bình luận', '💬', '', pendCmt], ['messages', 'Tin nhắn', '✉️', '', waitMsg], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
+  $('#nav').innerHTML = '<div class="tabs">' + t.map(([k, v, ic, s, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}"><span class="ic">${ic}</span><span class="lb-l">${v}</span><span class="lb-s">${s || v}</span>${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('') + '</div><button id="out">Thoát</button>';
   document.querySelectorAll('#nav [data-t]').forEach(x => x.onclick = e => { e.preventDefault(); tab = x.dataset.t; editing = null; thread = null; render(); });
   $('#out').onclick = async () => { stopLive(); stopBadges(); await Store.adminLogout(); login(); };
 }
@@ -105,25 +105,31 @@ function mediaCollect(links) {
 
 async function projects() {
   const ps = await Store.list('projects'), e = ps.find(p => p.id === editing) || {};
+  const pct = v => Math.min(100, Math.max(0, Math.round(+v || 0))), P = pct(e.progress);
   app.innerHTML = `<h1>Dự án</h1><p class="sub">Thêm, sửa hoặc xoá dự án hiển thị trên trang chính.</p>
   <div class="card"><h2>${e.id ? 'Sửa dự án' : 'Thêm dự án'}</h2><form id="f"><label>Tên</label><input name="name" required value="${esc(e.name)}">
   <label>Mô tả</label><textarea name="desc">${esc(e.desc)}</textarea>
   <div class="two"><div><label>Trạng thái</label><select name="status">${['Kế hoạch', 'Đang làm', 'Tạm dừng', 'Hoàn thành'].map(s => `<option ${e.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-  <div><label>Tiến độ (%)</label><input type="number" name="progress" min="0" max="100" value="${+e.progress || 0}"></div></div>
+  <div><label>Tiến độ (%)</label><div class="prog"><input type="range" id="pr" min="0" max="100" step="1" value="${P}" aria-label="Kéo để chỉnh tiến độ"><input type="text" id="pn" name="progress" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" value="${P}" aria-label="Tiến độ (%)"></div></div></div>
   <label>Chủ dự án</label><input name="owner" value="${esc(e.owner || 'Admin')}">
-  ${mediaHtml(e)}
   <button class="btn">${e.id ? 'Lưu thay đổi' : 'Thêm dự án'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form></div>
-  <div class="card" style="margin-top:14px">${ps.map(p => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${+p.progress}%${Media.list(p).length ? ' · 📎' + Media.list(p).length : ''}</small></div>
+  <div class="card" style="margin-top:14px">${ps.map(p => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${pct(p.progress)}%</small></div>
   <div><button class="btn ghost sm" data-e="${p.id}">Sửa</button> <button class="btn danger" data-d="${p.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có dự án.</p>'}</div>`;
+  // Ô tiến độ: ô chữ (không dùng type=number nên lăn chuột / phím mũi tên không làm đổi số) + thanh kéo, luôn giữ trong 0–100
+  const pr = $('#pr'), pn = $('#pn');
+  pr.oninput = () => { pn.value = pr.value; };
+  pn.oninput = () => { pn.value = pn.value.replace(/\D/g, '').slice(0, 3); if (pn.value !== '') { pn.value = pct(pn.value); pr.value = pn.value; } };
+  pn.onblur = () => { pn.value = pct(pn.value); pr.value = pn.value; };
   $('#f').onsubmit = async ev => {
     ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target));
+    if (String(f.progress).trim() === '') return toast('Hãy nhập tiến độ từ 0 đến 100');
+    const progress = pct(f.progress);
     try {
-      const media = mediaCollect(f.links);
-      await Store.put('projects', { ...stripMedia(e), name: f.name.trim(), desc: f.desc, status: f.status, progress: Math.min(100, Math.max(0, +f.progress)), owner: f.owner, media });
+      // Dự án không còn lưu ảnh / video / PDF: stripMedia xoá luôn các trường tệp cũ của bản ghi này
+      await Store.put('projects', { ...stripMedia(e), name: f.name.trim(), desc: f.desc, status: f.status, progress, owner: f.owner });
     } catch (x) { return toast(x.message); }
-    editing = null; toast('Đã lưu'); render();
+    editing = null; toast('Đã lưu · tiến độ ' + progress + '%'); render();
   };
-  mediaWire();
   if ($('#x')) $('#x').onclick = () => { editing = null; render(); };
   document.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editing = b.dataset.e; render(); window.scrollTo(0, 0); });
   document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá dự án này và các cập nhật của nó?')) { const id = b.dataset.d; for (const u of (await Store.list('updates')).filter(u => u.projectId === id)) await Store.del('updates', u.id); await Store.del('projects', id); render(); } });
