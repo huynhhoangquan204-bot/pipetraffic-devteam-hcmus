@@ -126,39 +126,75 @@ function step(g, p) {
       let u = p;
       if (p) { if (!await Store.checkPw(g, f.get('pw'), p)) { $('#err').textContent = 'Sai mật khẩu.'; return; } }
       else u = await Store.register(g, f.get('name').trim(), f.get('gender'), f.get('pw'));
-      Store.setMe(u); me = Store.me(); toast('Xin chào ' + me.name); location.hash = '#/';
+      Store.setMe(u); me = Store.me(); toast('Xin chào ' + me.name); location.hash = '#/'; setTimeout(() => openChat('admin'), 200);
     } catch (x) { $('#err').textContent = x.message || x.code; }
   };
 }
 
-/* --- Khung chat chung (popup): bấm nút Chat cạnh menu để mở / đóng ---
-   Không còn chat với admin hay nhắn chủ dự án. Gắn AI: trong config.js hoặc một file <script> riêng, khai báo
+/* --- Khung chat chung (popup): bấm nút Chat cạnh menu để mở / đóng. Hai tab: Admin (tin nhắn thật, cần đăng nhập) và AI ---
+   Gắn AI: trong config.js hoặc một file <script> riêng, khai báo
    window.PT_AI = { ask: async (cauHoi, lichSu) => 'câu trả lời' };  (lichSu = [{role:'user'|'ai', text}]) */
-const aiHist = []; let chatBound = false;
+const aiHist = []; let chatBound = false, chatTab = 'admin', msgs = [], unread = 0, msgOff = null, msgFor = null;
 const bub = (cls, label, text) => `<div class="pp-msg ${cls}"><small>${label}</small><span>${esc(text)}</span></div>`;
 const aiOn = () => !!(window.PT_AI && typeof window.PT_AI.ask === 'function');
+const chatOpen = () => { const p = $('#chatPop'); return !!p && !p.hidden; };
+
+/* Chấm đỏ trên nút Chat khi admin vừa trả lời; tin nhắn của người đăng nhập cập nhật ngay (thời gian thực) */
+const paintBadge = () => document.querySelectorAll('[data-chat-open]').forEach(a => a.classList.toggle('has-dot', !!me && unread > 0));
+const markSeen = () => { if (me) localStorage.setItem('pt_seen_' + me.id, Date.now()); unread = 0; paintBadge(); };
+function ensureMsgs() {
+  const id = me ? me.id : null;
+  if (id === msgFor) return;
+  if (msgOff) { msgOff(); msgOff = null; }
+  msgFor = id; msgs = []; unread = 0; paintBadge();
+  if (!id) return;
+  msgOff = Store.listen('messages', { where: ['uid', '==', id] }, ms => {
+    msgs = ms;
+    if (chatOpen() && chatTab === 'admin') { markSeen(); drawChat(); }
+    else { const seen = +localStorage.getItem('pt_seen_' + id) || 0; unread = ms.filter(m => m.from === 'admin' && m.ts > seen).length; paintBadge(); }
+  }, () => {});
+}
+
 function drawChat(busy) {
   const log = $('#chatLog'), form = $('#chatForm'); if (!log || !form) return;
-  const on = aiOn(); form.t.disabled = form.querySelector('button').disabled = !on;
-  form.t.placeholder = on ? 'Nhập tin nhắn…' : 'Khung chat sẽ được kích hoạt sau';
-  log.innerHTML = (aiHist.map(m => bub(m.role === 'user' ? 'me' : 'ai', m.role === 'user' ? 'Bạn' : 'Trợ lý', m.text)).join('')
-    || `<div class="pp-empty">${on ? 'Hãy đặt câu hỏi, trợ lý sẽ trả lời ngay.' : 'Khung chat chung đã sẵn sàng.<br>Trợ lý sẽ được kích hoạt sau.'}</div>`) + (busy ? bub('ai', 'Trợ lý', 'Đang trả lời…') : '');
-  log.scrollTop = log.scrollHeight;
+  document.querySelectorAll('[data-ct]').forEach(b => b.classList.toggle('on', b.dataset.ct === chatTab));
+  const inp = form.t, btn = form.querySelector('button'), stick = !log.children.length || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+  if (chatTab === 'ai') {
+    const on = aiOn(); inp.disabled = btn.disabled = !on;
+    inp.placeholder = on ? 'Hỏi trợ lý AI…' : 'AI sẽ được thêm sau';
+    log.innerHTML = (aiHist.map(m => bub(m.role === 'user' ? 'me' : 'ai', m.role === 'user' ? 'Bạn' : 'AI', m.text)).join('')
+      || `<div class="pp-empty">${on ? 'Hãy đặt câu hỏi cho trợ lý AI.' : 'Trợ lý AI sẽ được thêm sau.'}</div>`) + (busy ? bub('ai', 'AI', 'Đang trả lời…') : '');
+    log.scrollTop = log.scrollHeight; return;
+  }
+  if (!me) {
+    inp.disabled = btn.disabled = true; inp.placeholder = 'Đăng nhập để nhắn tin cho admin';
+    log.innerHTML = '<div class="pp-empty">Đăng nhập để nhắn tin cho admin.<br><a class="pp-btn" href="#/login" data-chat-close>Đăng nhập</a></div>'; return;
+  }
+  inp.disabled = btn.disabled = false; inp.placeholder = 'Nhắn cho admin…';
+  log.innerHTML = msgs.map(m => bub(m.from === 'user' ? 'me' : '', `${m.from === 'user' ? 'Bạn' : 'Admin'} · ${fmt(m.ts)}`, m.text)).join('') || '<div class="pp-empty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
+  if (stick) log.scrollTop = log.scrollHeight;
 }
-function openChat() {
+function openChat(tab) {
   const p = $('#chatPop'); if (!p) return;
+  if (tab) chatTab = tab;
   if (!chatBound) {
     chatBound = true;
     $('#chatForm').onsubmit = async e => {
-      e.preventDefault(); const inp = e.target.t, t = inp.value.trim(); if (!t || !aiOn()) return;
-      inp.value = ''; const before = aiHist.slice(); aiHist.push({ role: 'user', text: t }); drawChat(true);
-      try { aiHist.push({ role: 'ai', text: String(await window.PT_AI.ask(t, before)) }); }
-      catch (x) { aiHist.push({ role: 'ai', text: 'Chưa trả lời được: ' + (x.message || x) }); }
-      drawChat(); inp.focus();
+      e.preventDefault(); const inp = e.target.t, t = inp.value.trim(); if (!t || inp.disabled) return;
+      if (chatTab === 'ai') {
+        inp.value = ''; const before = aiHist.slice(); aiHist.push({ role: 'user', text: t }); drawChat(true);
+        try { aiHist.push({ role: 'ai', text: String(await window.PT_AI.ask(t, before)) }); }
+        catch (x) { aiHist.push({ role: 'ai', text: 'AI chưa trả lời được: ' + (x.message || x) }); }
+        drawChat(); inp.focus();
+      } else {
+        try { await Store.put('messages', { uid: me.id, userName: me.name, from: 'user', text: t, projectId: '', projectName: '' }); inp.value = ''; }
+        catch (x) { toast('Gửi chưa được: ' + x.message); }
+      }
     };
   }
-  p.hidden = false; drawChat();
-  if (aiOn()) setTimeout(() => $('#chatForm').t.focus(), 50);
+  p.hidden = false; if (chatTab === 'admin') markSeen(); drawChat();
+  const log = $('#chatLog'); if (log) log.scrollTop = log.scrollHeight;
+  if (!$('#chatForm').t.disabled) setTimeout(() => $('#chatForm').t.focus(), 50);
 }
 const closeChat = () => { const p = $('#chatPop'); if (p) p.hidden = true; };
 const toggleChat = () => { const p = $('#chatPop'); if (p) p.hidden ? openChat() : closeChat(); };
@@ -174,6 +210,7 @@ async function openContact() {
 const closeContact = () => { const m = $('#contact-modal'); if (m) m.hidden = true; };
 
 document.addEventListener('click', e => {
+  const ct = e.target.closest('[data-ct]'); if (ct) { chatTab = ct.dataset.ct; if (chatTab === 'admin') markSeen(); drawChat(); return; }
   if (e.target.closest('[data-chat-open]')) { e.preventDefault(); toggleChat(); return; }
   if (e.target.closest('[data-chat-close]')) { closeChat(); return; }
   if (e.target.closest('[data-contact]')) { e.preventDefault(); openContact(); return; }
@@ -188,8 +225,8 @@ const routes = { '': home, p: project, login };
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
-  if (r === 'chat' || r === 'comments') { location.replace('#/'); setTimeout(openChat, 100); return; }   // link cũ -> về trang chủ và mở popup chat
-  stopLive(); renderAuth(); toggleMobileMenu(true);
+  if (r === 'chat' || r === 'comments') { location.replace('#/'); setTimeout(() => openChat(), 100); return; }   // link cũ -> về trang chủ và mở popup chat
+  stopLive(); renderAuth(); ensureMsgs(); paintBadge(); toggleMobileMenu(true);
   setActive(PAGES.includes(r) ? r : (r === '' || r === 'p' ? 'projects' : ''));
   window.scrollTo(0, 0);
   try {
