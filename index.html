@@ -38,6 +38,10 @@
     .pp-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:linear-gradient(135deg,#0369a1,#0284c7);color:#fff}
     .pp-head b{display:block;font-size:1rem}.pp-head small{opacity:.8;font-size:.75rem}
     .pp-x{width:34px;height:34px;flex-shrink:0;border:0;border-radius:10px;background:rgba(255,255,255,.18);color:#fff;font-size:1.3rem;line-height:1;cursor:pointer}
+    .pp-tabs{display:flex;gap:4px;padding:5px;background:#f1f5f9}
+    .pp-tabs button{flex:1;padding:9px 0;font:inherit;font-size:.9rem;font-weight:700;color:#64748b;background:none;border:0;border-radius:12px;cursor:pointer}
+    .pp-tabs button.on{background:#fff;color:#0284c7;box-shadow:0 1px 3px rgba(15,23,42,.12)}
+    .pp-btn{display:inline-block;margin-top:12px;padding:10px 22px;border-radius:99px;background:#0284c7;color:#fff;font-weight:700;text-decoration:none}
     .pp-log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:14px;background:#f8fafc}
     .pp-msg{max-width:82%;padding:9px 14px;border-radius:16px 16px 16px 4px;background:#fff;border:1px solid #e2e8f0;font-size:.92rem;line-height:1.45;color:#1e293b}
     .pp-msg small{display:block;opacity:.65;font-size:.7rem;margin-bottom:2px}
@@ -164,7 +168,8 @@
 
     <!-- KHUNG CHAT CHUNG (popup): mở bằng nút Chat cạnh menu -->
     <div id="chatPop" class="pp-chat" hidden role="dialog" aria-label="Khung chat">
-        <div class="pp-head"><div><b>Trò chuyện</b><small>Khung chat chung Pipe Traffic</small></div><button type="button" class="pp-x" data-chat-close aria-label="Đóng khung chat">&times;</button></div>
+        <div class="pp-head"><div><b>Trò chuyện</b><small>Chat với Admin hoặc trợ lý AI</small></div><button type="button" class="pp-x" data-chat-close aria-label="Đóng khung chat">&times;</button></div>
+        <div class="pp-tabs"><button type="button" data-ct="admin">Admin</button><button type="button" data-ct="ai">AI</button></div>
         <div class="pp-log" id="chatLog"></div>
         <form class="pp-form" id="chatForm"><input name="t" maxlength="1000" autocomplete="off" placeholder="Nhập tin nhắn…"><button type="submit">Gửi</button></form>
     </div>
@@ -835,8 +840,8 @@
 
     <script src="config.js"></script>
     <script src="store.js?v=12"></script>
-    <script src="script.js?v=12"></script>
+    <script src="script.js?v=13"></script>
     <script src="content.js?v=12"></script>
-    <script src="app.js?v=12"></script>
+    <script src="app.js?v=13"></script>
 </body>
 </html>
