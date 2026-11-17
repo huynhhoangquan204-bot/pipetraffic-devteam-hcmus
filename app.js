@@ -240,7 +240,7 @@ async function profile() {
   <p class="muted" style="margin-top:14px;font-size:.85rem">Ảnh được cắt vuông và thu nhỏ tự động. Avatar hiện cạnh tin nhắn của bạn trong khung chat.</p>
   <div class="err" id="pfErr"></div></div>`);
   $('#pfPick').onclick = () => $('#pfFile').click();
-  $('#pfFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) setAvatar(() => Store.avatar(f, 160, .82)); };
+  $('#pfFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) setAvatar(() => Media.avatar(f, 160, .82)); };
   if ($('#pfDel')) $('#pfDel').onclick = () => setAvatar(async () => '');
 }
 
