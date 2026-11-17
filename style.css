@@ -3235,3 +3235,19 @@ video {
 .pt-app .mrow.me{align-self:flex-end;flex-direction:row-reverse}
 .pt-app .mrow .msg{max-width:none;min-width:0}
 @media(min-width:1280px) and (max-width:1535px){.navlinks{gap:14px!important;font-size:.82rem}}
+
+/* ---------- Admin: footer luôn nằm cuối trang (kể cả khi nội dung ngắn) ---------- */
+body.adm{
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+  min-height:100dvh
+}
+body.adm #app{
+  flex:1 0 auto;
+  width:100%
+}
+body.adm .foot{
+  flex-shrink:0;
+  margin-top:auto
+}
