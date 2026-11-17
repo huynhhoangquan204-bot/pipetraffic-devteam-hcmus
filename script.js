@@ -8,9 +8,10 @@
   const toast = m => { const t = $('#toast'); if (!t) return; t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), Math.max(2400, m.length * 70)); };
 
   // Chia sẻ cho app.js (không ghi đè nếu đã tồn tại)
-  if (!('$' in window)) window.$ = $;
-  if (!('esc' in window)) window.esc = esc;
-  if (!('toast' in window)) window.toast = toast;
+  // Lưu ý: <div id="toast"> khiến window.toast là một phần tử HTML, nên phải kiểm tra typeof === 'function'
+  if (typeof window.$ !== 'function') window.$ = $;
+  if (typeof window.esc !== 'function') window.esc = esc;
+  if (typeof window.toast !== 'function') window.toast = toast;
 
   /* --- Menu điện thoại --- */
   function toggleMobileMenu(force) {
