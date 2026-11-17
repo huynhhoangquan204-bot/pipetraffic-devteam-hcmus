@@ -1,7 +1,7 @@
 /* ===== SPA: định tuyến + trang Dự án / Đăng nhập / Tin nhắn (dùng chung hàm tiện ích trong script.js) ===== */
 const app = $('#app');
 const fmt = t => new Date(t).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
-const tpl = id => document.getElementById(id).innerHTML;
+const tpl = id => { const t = document.getElementById(id); return t ? t.innerHTML : ''; };
 const wrap = h => { app.innerHTML = `<div class="pt-app max-w-5xl mx-auto px-4 pt-28 pb-20 min-h-[70vh]">${h}</div>`; };
 const badge = s => `<span class="tag ${s === 'Hoàn thành' ? 'done' : s === 'Đang làm' ? 'run' : ''}">${esc(s)}</span>`;
 let me = Store.me();
@@ -68,7 +68,7 @@ function setActive(key) {
 
 /* --- Trang chủ: banner + giới thiệu + danh sách dự án + CTA. Phần tĩnh hiện ngay, dự án tải sau --- */
 async function home() {
-  app.innerHTML = tpl('tpl-hero') + tpl('tpl-intro') + `<section id="projects" class="py-20 bg-slate-50"><div class="pt-app max-w-5xl mx-auto px-4">
+  app.innerHTML = tpl('tpl-hero') + `<section id="projects" class="py-20 bg-slate-50"><div class="pt-app max-w-5xl mx-auto px-4">
   <h2 class="sec">Các dự án</h2><p class="sub">Tình hình cập nhật hằng tuần của Pipe Traffic Dev Team.</p>
   <div id="projBox"><div class="loading">Đang tải dự án…</div></div></div></section>` + tpl('tpl-cta');
   const box = $('#projBox');
@@ -78,8 +78,7 @@ async function home() {
     box.innerHTML = (Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : '') +
     `<div class="pgrid">${ps.map(p => {
       const last = us.filter(u => u.projectId === p.id).pop();
-      const cover = Media.list(p).find(m => m.t === 'img');
-      return `<a class="card" href="#/p/${p.id}">${cover ? `<img class="pcover" src="${esc(cover.src)}" loading="lazy" alt="">` : ''}<div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
+      return `<a class="card" href="#/p/${p.id}"><div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
       <p class="muted" style="margin:0">${esc(p.desc)}</p>
       <div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small>
       ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}</p>` : ''}</a>`;
@@ -95,7 +94,6 @@ async function project(id) {
   <div class="row" style="margin-top:12px"><h1>${esc(p.name)}</h1>${badge(p.status)}</div>
   <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${esc(p.owner)}</p>
   <div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
-  ${Media.html(Media.list(p))}
   <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2><a class="btn sm" href="#/chat/${p.id}">Nhắn chủ dự án</a></div>
   <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${esc(u.content)}</p>${Media.html(Media.list(u))}</div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
 }
@@ -138,49 +136,85 @@ function step(g, p) {
   };
 }
 
-/* --- Nhắn tin với chủ dự án --- */
+/* --- Khung chat nhỏ (#/comments, #/chat): tab Admin = tin nhắn thật, tab AI = gắn sau ---
+   Gắn AI: trong config.js hoặc một file <script> riêng, khai báo
+   window.PT_AI = { ask: async (cauHoi, lichSu) => 'câu trả lời' };  (lichSu = [{role:'user'|'ai', text}]) */
+let chatTab = 'admin'; const aiHist = [];
+const bub = (cls, label, text) => `<div class="msg ${cls}"><small>${label}</small><span>${esc(text)}</span></div>`;
 async function chat(pid) {
-  if (!me) { location.hash = '#/login'; return; }
-  const ps = await Store.list('projects');
-  wrap(`<h1>Nhắn tin với chủ dự án</h1><p class="sub">Tin nhắn hiện ngay khi admin trả lời, không cần tải lại trang.</p>
-  <div class="card"><div class="chat" id="log"><p class="muted">Đang tải…</p></div>
-  <form id="f"><label>Về dự án</label><select name="p"><option value="">Chung</option>${ps.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>
-  <label>Nội dung</label><textarea name="t" required maxlength="1000"></textarea><button class="btn">Gửi</button></form></div>`);
-  let first = true;
-  live.push(Store.listen('messages', { where: ['uid', '==', me.id] }, ms => {
-    const log = $('#log'); if (!log) return;
-    const stick = first || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
-    log.innerHTML = ms.map(m => `<div class="msg ${m.from === 'user' ? 'me' : ''}"><small>${m.from === 'user' ? 'Bạn' : 'Admin'}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small><span>${esc(m.text)}</span></div>`).join('') || '<p class="muted">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</p>';
-    if (stick) log.scrollTop = log.scrollHeight; first = false;
-    localStorage.setItem('pt_seen_' + me.id, Date.now()); unread = 0; paintBadge();   // đã xem
-  }, er => { const log = $('#log'); if (log) log.innerHTML = '<p class="err">' + esc(er.message) + '</p>'; }));
-  $('#f').onsubmit = async e => {
-    e.preventDefault(); const f = new FormData(e.target), p = ps.find(x => x.id === f.get('p')), t = f.get('t').trim(); if (!t) return;
-    try {
-      await Store.put('messages', { uid: me.id, userName: me.name, from: 'user', text: t, projectId: p ? p.id : '', projectName: p ? p.name : '' });
-      e.target.elements.t.value = '';
-    } catch (x) { toast('Gửi chưa được: ' + x.message); }
+  pid = pid || ''; if (pid) chatTab = 'admin';
+  wrap(`<h1>Trò chuyện</h1><p class="sub">Nhắn trực tiếp cho admin, hoặc hỏi trợ lý AI.</p>
+  <div class="cbox"><div class="ctabs"><button data-ct="admin">Admin</button><button data-ct="ai">AI</button></div><div class="cpane" id="cpane"></div></div>`);
+  const ps = me ? await Store.list('projects').catch(() => []) : [];
+
+  const adminPane = () => {
+    const pane = $('#cpane');
+    if (!me) { pane.innerHTML = '<div class="cempty">Đăng nhập để nhắn tin cho admin.<br><a class="btn sm" style="margin-top:12px" href="#/login">Đăng nhập</a></div>'; return; }
+    pane.innerHTML = `<div class="cbar"><span>Về</span><select id="cp"><option value="">Chung</option>${ps.map(p => `<option value="${p.id}" ${p.id === pid ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
+    <div class="chat" id="log"><p class="muted">Đang tải…</p></div>
+    <form class="cform" id="f"><input name="t" required maxlength="1000" autocomplete="off" placeholder="Nhắn cho admin…"><button class="btn">Gửi</button></form>`;
+    let first = true;
+    live.push(Store.listen('messages', { where: ['uid', '==', me.id] }, ms => {
+      const log = $('#log'); if (!log) return;
+      const stick = first || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+      log.innerHTML = ms.map(m => bub(m.from === 'user' ? 'me' : '', `${m.from === 'user' ? 'Bạn' : 'Admin'}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}`, m.text)).join('') || '<div class="cempty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
+      if (stick) log.scrollTop = log.scrollHeight; first = false;
+      localStorage.setItem('pt_seen_' + me.id, Date.now()); unread = 0; paintBadge();   // đã xem
+    }, er => { const log = $('#log'); if (log) log.innerHTML = '<p class="err">' + esc(er.message) + '</p>'; }));
+    $('#f').onsubmit = async e => {
+      e.preventDefault(); const inp = e.target.elements.t, t = inp.value.trim(), pj = ps.find(x => x.id === $('#cp').value); if (!t) return;
+      try {
+        await Store.put('messages', { uid: me.id, userName: me.name, from: 'user', text: t, projectId: pj ? pj.id : '', projectName: pj ? pj.name : '' });
+        inp.value = '';
+      } catch (x) { toast('Gửi chưa được: ' + x.message); }
+    };
   };
+
+  const aiPane = () => {
+    const pane = $('#cpane'), AI = window.PT_AI, on = !!(AI && typeof AI.ask === 'function');
+    pane.innerHTML = `<div class="chat" id="log"></div><form class="cform" id="f"><input name="t" required maxlength="1000" autocomplete="off" placeholder="${on ? 'Hỏi trợ lý AI…' : 'AI sẽ được thêm sau'}" ${on ? '' : 'disabled'}><button class="btn" ${on ? '' : 'disabled'}>Gửi</button></form>`;
+    const draw = busy => {
+      const log = $('#log'); if (!log) return;
+      log.innerHTML = (aiHist.map(m => bub(m.role === 'user' ? 'me' : 'ai', m.role === 'user' ? 'Bạn' : 'AI', m.text)).join('') || `<div class="cempty">${on ? 'Hãy đặt câu hỏi cho trợ lý AI.' : 'Trợ lý AI sẽ được thêm sau.'}</div>`) + (busy ? bub('ai', 'AI', 'Đang trả lời…') : '');
+      log.scrollTop = log.scrollHeight;
+    };
+    draw();
+    if (!on) return;
+    $('#f').onsubmit = async e => {
+      e.preventDefault(); const inp = e.target.elements.t, t = inp.value.trim(); if (!t) return;
+      inp.value = ''; const before = aiHist.slice(); aiHist.push({ role: 'user', text: t }); draw(true);
+      try { aiHist.push({ role: 'ai', text: String(await AI.ask(t, before)) }); }
+      catch (x) { aiHist.push({ role: 'ai', text: 'AI chưa trả lời được: ' + (x.message || x) }); }
+      draw();
+    };
+  };
+
+  const show = t => {
+    chatTab = t; stopLive();
+    document.querySelectorAll('[data-ct]').forEach(b => b.classList.toggle('on', b.dataset.ct === t));
+    t === 'ai' ? aiPane() : adminPane();
+  };
+  document.querySelectorAll('[data-ct]').forEach(b => b.onclick = () => show(b.dataset.ct));
+  show(chatTab);
 }
 
 /* --- Điều hướng (hash), mỗi mục trên menu là một TRANG RIÊNG nhưng vẫn là một file SPA ---
-   #/  ·  #/p/<id>  ·  #/login  ·  #/chat  ·  #/journey  #/problems  #/team  #/video  #/faq  #/comments */
-const PAGES = ['journey', 'problems', 'team', 'video', 'faq', 'comments'];   // mỗi tên ứng với <template id="tpl-...">
-const routes = { '': home, p: project, login, chat };
+   #/  ·  #/p/<id>  ·  #/login  ·  #/comments (= #/chat)  ·  #/specs  #/journey  #/problems  #/team  #/video  #/faq */
+const PAGES = ['specs', 'journey', 'problems', 'team', 'video', 'faq'];   // mỗi tên ứng với <template id="tpl-...">
+const routes = { '': home, p: project, login, chat, comments: chat };
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
   stopLive(); renderAuth(); ensureBadge(); paintBadge(); toggleMobileMenu(true);
-  setActive(PAGES.includes(r) ? r : (r === '' || r === 'p' ? 'projects' : ''));
+  setActive(PAGES.includes(r) ? r : (r === '' || r === 'p' ? 'projects' : (r === 'chat' || r === 'comments' ? 'comments' : '')));
   window.scrollTo(0, 0);
   try {
     if (PAGES.includes(r)) {
       app.dataset.view = r; app.innerHTML = `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
-      if (r === 'comments') { setRating(5); loadCommentsFromSheet(); }
       fillContent(r);
     } else {
       app.dataset.view = r || 'home';
-      if (r === 'p' || r === 'chat') app.innerHTML = '<div class="pt-app pt-32"><div class="loading">Đang tải…</div></div>';
+      if (r === 'p' || r === 'chat' || r === 'comments') app.innerHTML = '<div class="pt-app pt-32"><div class="loading">Đang tải…</div></div>';
       await (routes[r || ''] || home)(id);
     }
   } catch (e) { wrap('<p class="err">Lỗi tải dữ liệu: ' + esc(e.message) + '</p>'); }
