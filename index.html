@@ -21,7 +21,7 @@
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=11">
+    <link rel="stylesheet" href="style.css?v=14">
     <script>
     // Nếu trang không chạy được (thiếu file, lỗi script) thì báo rõ thay vì để trống
     addEventListener('error', function (e) {
@@ -33,7 +33,7 @@
     </script>
     <style>
     /* Popup khung chat + popup Liên hệ (không phụ thuộc Tailwind / style.css) */
-    .pp-chat{position:fixed;z-index:70;right:16px;top:88px;width:380px;max-width:calc(100vw - 16px);height:min(540px,calc(100vh - 108px));display:flex;flex-direction:column;background:#fff;border:1px solid #e2e8f0;border-radius:20px;box-shadow:0 24px 60px rgba(15,23,42,.25);overflow:hidden}
+    .pp-chat{position:fixed;z-index:70;right:16px;bottom:16px;width:380px;max-width:calc(100vw - 16px);height:min(540px,calc(100vh - 120px));display:flex;flex-direction:column;background:#fff;border:1px solid #e2e8f0;border-radius:20px;box-shadow:0 24px 60px rgba(15,23,42,.25);overflow:hidden}
     .pp-chat[hidden],.pp-overlay[hidden]{display:none}
     .pp-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:linear-gradient(135deg,#0369a1,#0284c7);color:#fff}
     .pp-head b{display:block;font-size:1rem}.pp-head small{opacity:.8;font-size:.75rem}
@@ -48,13 +48,17 @@
     .pp-msg span{white-space:pre-wrap;word-break:break-word}
     .pp-msg.me{align-self:flex-end;background:#0284c7;border-color:#0284c7;color:#fff;border-radius:16px 16px 4px 16px}
     .pp-msg.ai{background:#ecfeff;border-color:#a5f3fc}
+    .pp-row{display:flex;align-items:flex-end;gap:8px;max-width:94%}
+    .pp-row.me{align-self:flex-end;flex-direction:row-reverse}
+    .pp-row .pp-msg{max-width:none;min-width:0}
+    .pp-row .av{width:30px;height:30px;font-size:.8rem}
     .pp-empty{margin:auto;padding:24px;text-align:center;color:#64748b;font-size:.9rem}
     .pp-form{display:flex;gap:8px;padding:10px;border-top:1px solid #e2e8f0;background:#fff}
     .pp-form input{flex:1;min-width:0;font:inherit;font-size:16px;border:1px solid #cbd5e1;border-radius:99px;padding:10px 16px;color:#1e293b;background:#fff}
     .pp-form input:disabled{background:#f1f5f9}
     .pp-form button{font:inherit;font-weight:700;border:0;border-radius:99px;padding:0 18px;background:#0284c7;color:#fff;cursor:pointer}
     .pp-form button:disabled{opacity:.4;cursor:default}
-    @media(max-width:640px){.pp-chat{left:8px;right:8px;width:auto;top:84px;height:calc(100vh - 96px);height:calc(100dvh - 96px)}}
+    @media(max-width:640px){.pp-chat{left:8px;right:8px;bottom:8px;width:auto;height:calc(100vh - 100px);height:calc(100dvh - 100px)}}
     .pp-overlay{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.8);backdrop-filter:blur(4px)}
     .pp-card{position:relative;width:100%;max-width:480px;max-height:calc(100vh - 32px);overflow:auto;background:#fff;border-radius:24px;padding:28px 24px 24px;box-shadow:0 30px 70px rgba(0,0,0,.35);color:#334155}
     .pp-card .pp-x{position:absolute;top:14px;right:14px;background:#f1f5f9;color:#475569}
@@ -86,7 +90,7 @@
                         <span class="text-[10px] font-bold text-sky-600 tracking-wider uppercase">Dự Án Nghiên Cứu HCMUS</span>
                     </div>
                 </a>
-                <div class="hidden xl:flex items-center gap-6 font-medium text-sm text-slate-600">
+                <div class="navlinks hidden xl:flex items-center gap-6 font-medium text-sm text-slate-600">
                     <a data-r="projects" href="#/" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-folder-open text-xs text-sky-500"></i> Dự Án</a>
                     <a data-r="specs" href="#/specs" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-gears text-xs text-sky-500"></i> Kỹ Thuật</a>
                     <a data-r="journey" href="#/journey" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-timeline text-xs text-sky-500"></i> Journey</a>
@@ -94,6 +98,7 @@
                     <a data-r="problems" href="#/problems" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-microchip text-xs text-sky-500"></i> Problems</a>
                     <a data-r="video" href="#/video" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-circle-play text-xs text-sky-500"></i> Video</a>
                     <a data-r="faq" href="#/faq" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-circle-question text-xs text-sky-500"></i> FAQ & Reviews</a>
+                    <a data-r="comments" href="#/comments" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-regular fa-message text-xs text-sky-500"></i> Bình Luận</a>
                     <button type="button" data-chat-open class="hover:text-sky-600 transition-colors flex items-center gap-1.5 font-bold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200"><i class="fa-solid fa-comments text-xs text-sky-500"></i> Chat</button>
                 </div>
                 <div id="authSlot" class="hidden xl:flex items-center gap-3 shrink-0"></div>
@@ -113,6 +118,7 @@
             <a href="#/problems" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
             <a href="#/video" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-play text-sky-500 mr-2"></i> Video Demo</a>
             <a href="#/faq" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-question text-sky-500 mr-2"></i> Đánh Giá & FAQ</a>
+            <a href="#/comments" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-regular fa-message text-sky-500 mr-2"></i> Bình Luận</a>
             <button type="button" data-chat-open onclick="toggleMobileMenu(true)" class="block w-full text-left py-2 text-sky-600 font-bold border-b border-slate-100"><i class="fa-solid fa-comments text-sky-500 mr-2"></i> Mở khung chat</button>
             <button type="button" data-contact onclick="toggleMobileMenu(true)" class="block w-full text-left py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-address-book text-sky-500 mr-2"></i> Liên Hệ</button>
             <div id="authSlotM"></div>
@@ -818,6 +824,105 @@
     </section>
     </template>
 
+    <template id="tpl-comments">
+<section id="comments" class="py-20 bg-slate-900 text-white w-full border-t border-slate-800">
+        <div class="w-full px-4 sm:px-8 lg:px-16">
+            <div class="text-center max-w-4xl mx-auto mb-14">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold uppercase tracking-wider mb-3">
+                    <i class="fa-solid fa-comments"></i> Tương Tác Cùng Nhóm Nghiên Cứu
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white">Góp Ý & Bình Luận Cho Dự Án Pipe Traffic</h2>
+                <p class="text-slate-400 mt-2">Mọi nhận xét của bạn sẽ đóng góp quan trọng cho sự phát triển của giải pháp giao thông đường ống.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 w-full items-start">
+                <div class="lg:col-span-5 bg-slate-800/90 border border-slate-700/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-pen-to-square text-sky-400"></i> Bảng Đóng Góp Ý Kiến
+                        </h3>
+                        <span class="text-xs text-slate-400 font-mono">Công khai / Ẩn danh</span>
+                    </div>
+
+                    <form id="commentForm" onsubmit="handleCommentSubmit(event)" class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-2">Chế độ danh tính</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-700 bg-slate-900/60 cursor-pointer hover:border-sky-500 transition-all">
+                                    <input type="radio" name="identityMode" value="real" checked onchange="toggleIdentityFields()" class="accent-sky-500">
+                                    <span class="text-xs font-bold text-white"><i class="fa-solid fa-user text-sky-400 mr-1"></i> Tên Thật</span>
+                                </label>
+                                <label class="flex items-center justify-center gap-2 p-3 rounded-xl border border-slate-700 bg-slate-900/60 cursor-pointer hover:border-sky-500 transition-all">
+                                    <input type="radio" name="identityMode" value="anonymous" onchange="toggleIdentityFields()" class="accent-sky-500">
+                                    <span class="text-xs font-bold text-slate-300"><i class="fa-solid fa-user-ninja text-indigo-400 mr-1"></i> Ẩn Danh</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="realNameInputs" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Họ & Tên <span class="text-red-400">*</span></label>
+                                <input type="text" id="commenterName" placeholder="Nhập tên của bạn..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Email / Vai trò (Tùy chọn)</label>
+                                <input type="text" id="commenterRole" placeholder="Ví dụ: Sinh viên HCMUS, Kỹ sư, Khách..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-400 tracking-wider mb-2">Đánh giá mức độ khả thi</label>
+                            <div class="flex items-center gap-2 bg-slate-900/80 p-3 rounded-xl border border-slate-700 text-amber-400 text-xl cursor-pointer">
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(1)"></i>
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(2)"></i>
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(3)"></i>
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(4)"></i>
+                                <i class="fa-solid fa-star star-btn" onclick="setRating(5)"></i>
+                                <span id="ratingValueText" class="text-xs font-bold text-slate-300 ml-auto">5/5 Sao</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-semibold text-slate-300">Nội dung bình luận <span class="text-red-400">*</span></label>
+                                <span id="charCount" class="text-[11px] text-slate-400 font-mono">0/500</span>
+                            </div>
+                            <textarea id="commentText" rows="4" maxlength="500" oninput="updateCharCount()" placeholder="Nhập nhận xét, câu hỏi hoặc ý kiến đóng góp cho Pipe Traffic..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors resize-none"></textarea>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 pt-1">
+                            <button type="button" onclick="addEmoji('🚀')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs hover:border-sky-500">🚀 Đột phá</button>
+                            <button type="button" onclick="addEmoji('💡')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs hover:border-sky-500">💡 Ý tưởng hay</button>
+                            <button type="button" onclick="addEmoji('👏')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs hover:border-sky-500">👏 Ủng hộ</button>
+                            <button type="button" onclick="addEmoji('❓')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs hover:border-sky-500">❓ Thắc mắc</button>
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-white font-extrabold text-sm shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Gửi Bình Luận Ngay
+                        </button>
+                    </form>
+                </div>
+
+                <div class="lg:col-span-7 space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                        <h3 class="text-xl font-bold text-white flex items-center gap-3">
+                            <i class="fa-solid fa-comments text-sky-400"></i> Ý Kiến Đóng Góp Từ Cộng Đồng
+                            <span id="commentBadgeCount" class="text-xs font-bold px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30">0</span>
+                        </h3>
+                        <button onclick="loadCommentsFromSheet()" class="text-xs text-slate-400 hover:text-sky-400 transition-colors">
+                            <i class="fa-solid fa-rotate mr-1"></i> Làm mới dữ liệu
+                        </button>
+                    </div>
+
+                    <div id="commentsContainer" class="space-y-4 max-h-[750px] overflow-y-auto pr-2 custom-scrollbar">
+                        <!-- Items rendered via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    </template>
+
     <template id="tpl-cta">
 <section id="cta" class="py-20 gradient-bg text-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16 text-center space-y-6">
@@ -839,9 +944,9 @@
 
 
     <script src="config.js"></script>
-    <script src="store.js?v=12"></script>
-    <script src="script.js?v=13"></script>
-    <script src="content.js?v=12"></script>
-    <script src="app.js?v=13"></script>
+    <script src="store.js?v=14"></script>
+    <script src="script.js?v=14"></script>
+    <script src="content.js?v=14"></script>
+    <script src="app.js?v=14"></script>
 </body>
 </html>
