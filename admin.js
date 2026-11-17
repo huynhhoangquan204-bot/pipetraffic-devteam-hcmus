@@ -33,16 +33,17 @@ function login() {
 /* ===== Thanh tab (kèm số bình luận chờ duyệt / tin nhắn chờ trả lời) + theo dõi thời gian thực ===== */
 const live = [];                       // theo dõi của tab đang mở, huỷ khi đổi tab
 const stopLive = () => live.splice(0).forEach(f => f());
-let pendCmt = 0, waitMsg = 0; const badgeOff = [];
+let pendCmt = 0, waitMsg = 0, pendBot = 0; const badgeOff = [];
 function startBadges() {
   badgeOff.push(Store.listen('comments', null, cs => { pendCmt = cs.filter(c => !c.approved).length; if ($('#nav').children.length) nav(); }));
   badgeOff.push(Store.listen('messages', null, ms => { const last = {}; ms.forEach(m => last[m.uid] = m); waitMsg = Object.values(last).filter(m => m.from === 'user').length; if ($('#nav').children.length) nav(); }));
+  badgeOff.push(Store.listen('botlogs', null, ls => { pendBot = ls.length; if ($('#nav').children.length) nav(); }));
 }
-const stopBadges = () => { badgeOff.splice(0).forEach(f => f()); pendCmt = waitMsg = 0; };
+const stopBadges = () => { badgeOff.splice(0).forEach(f => f()); pendCmt = waitMsg = pendBot = 0; };
 
 function nav() {
   const old = Date.now() - (+localStorage.getItem('pt_last_backup') || 0) > 7 * 864e5;
-  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️', 'Tuần'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬', 'Video'], ['comments', 'Bình luận', '💬', '', pendCmt], ['messages', 'Tin nhắn', '✉️', '', waitMsg], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
+  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️', 'Tuần'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬', 'Video'], ['comments', 'Bình luận', '💬', '', pendCmt], ['messages', 'Tin nhắn', '✉️', '', waitMsg], ['bot', 'Dạy Bot', '🤖', 'Bot', pendBot], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
   $('#nav').innerHTML = '<div class="tabs">' + t.map(([k, v, ic, s, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}"><span class="ic">${ic}</span><span class="lb-l">${v}</span><span class="lb-s">${s || v}</span>${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('') + '</div><button id="out">Thoát</button>';
   document.querySelectorAll('#nav [data-t]').forEach(x => x.onclick = e => { e.preventDefault(); tab = x.dataset.t; editing = null; thread = null; render(); });
   $('#out').onclick = async () => { stopLive(); stopBadges(); await Store.adminLogout(); login(); };
@@ -60,7 +61,7 @@ async function render() {
   app.innerHTML = '<div class="loading">Đang tải…</div>';
   if (!await Store.isAdmin()) { stopBadges(); return login(); }
   nav(); if (!badgeOff.length) startBadges();
-  try { await ({ projects, updates, content, site, comments, messages, users, backup })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
+  try { await ({ projects, updates, content, site, comments, messages, bot: botTab, users, backup })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
 }
 
 
@@ -335,6 +336,51 @@ async function users() {
   const us = await Store.list('users');
   app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký.</p>${Store.uid() ? `<div class="banner">UID tài khoản admin của bạn: <code style="user-select:all">${esc(Store.uid())}</code><br>Giá trị này phải trùng với UID trong <b>firestore.rules</b> (hàm <code>isAdmin</code>).</div>` : ''}<div class="card">${us.map(u => `<div class="item"><div style="display:flex;gap:10px;align-items:center">${Avatar.html(u)}<div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small></div></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
   document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này?')) { await Store.del('users', b.dataset.d); render(); } });
+}
+
+/* ===== Dạy trợ lý ảo: câu hỏi bot chưa biết (botlogs) + câu trả lời do admin dạy (botkb) ===== */
+let botDraft = null;
+async function botTab() {
+  const kb = [...(await Store.list('botkb').catch(() => []))].reverse();
+  const e = editing ? (kb.find(x => x.id === editing) || {}) : (botDraft || {});
+  app.innerHTML = `<h1>Dạy trợ lý ảo</h1><p class="sub">Câu khách hỏi mà bot chưa biết sẽ hiện ở mục 2. Bạn gõ câu trả lời, bot dùng được ngay, không cần sửa code.</p>
+  <div class="card"><h2>1. Thử hỏi bot</h2><form id="tf" style="display:flex;gap:8px"><input name="t" placeholder="Gõ một câu hỏi để thử…" autocomplete="off" style="flex:1"><button class="btn">Hỏi</button></form><div id="tans" style="white-space:pre-wrap;margin-top:10px"></div></div>
+  <div class="card" style="margin-top:14px"><h2>2. Câu hỏi bot chưa trả lời được <span class="tag" id="lc">0</span></h2><div id="llist"><div class="loading">Đang tải…</div></div></div>
+  <div class="card" style="margin-top:14px" id="bf"><h2>3. ${e.id ? 'Sửa câu trả lời' : 'Dạy bot câu mới'}</h2><form id="f">
+  <label>Câu hỏi / chủ đề</label><input name="q" required maxlength="200" value="${esc(e.q)}" placeholder="VD: Dự án có xin học bổng không?">
+  <label>Câu trả lời của bot</label><textarea name="a" rows="5" required maxlength="1200" placeholder="Bot sẽ trả lời đúng nội dung này">${esc(e.a)}</textarea>
+  <label>Các cách hỏi khác (tuỳ chọn, mỗi cách một dòng)</label><textarea name="k" rows="3" placeholder="VD: học bổng (mỗi dòng một cách hỏi)">${esc(e.k)}</textarea>
+  <button class="btn">${e.id ? 'Lưu thay đổi' : 'Dạy bot'}</button>${e.id || botDraft ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form></div>
+  <div class="card" style="margin-top:14px"><h2>4. Bot đã được dạy (${kb.length})</h2>${kb.map(b => `<div class="item" style="align-items:flex-start"><div style="min-width:0"><b>${esc(b.q)}</b><br><small class="muted" style="white-space:pre-wrap;word-break:break-word">${esc(String(b.a || '').slice(0, 160))}</small></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" data-be="${b.id}">Sửa</button><button class="btn danger" data-bd="${b.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa dạy câu nào.</p>'}</div>`;
+
+  $('#tf').onsubmit = async ev => {
+    ev.preventDefault(); const t = ev.target.elements.t.value.trim(); if (!t) return;
+    if (!window.PT_AI) { $('#tans').textContent = 'Không tải được bot.js (kiểm tra file đã up lên GitHub chưa).'; return; }
+    $('#tans').textContent = 'Đang trả lời…';
+    try { $('#tans').textContent = await PT_AI.test(t); } catch (x) { $('#tans').textContent = x.message || String(x); }
+  };
+  $('#f').onsubmit = async ev => {
+    ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target)), q = f.q.trim(), a = f.a.trim();
+    if (!q || !a) return toast('Hãy nhập cả câu hỏi và câu trả lời');
+    try {
+      await Store.put('botkb', { ...(editing ? e : {}), q, a, k: f.k.trim() });
+      if (botDraft && botDraft.logId) await Store.del('botlogs', botDraft.logId).catch(() => {});   // đã dạy xong thì bỏ khỏi danh sách chưa biết
+    } catch (x) { return toast(x.message); }
+    botDraft = null; editing = null; if (window.PT_AI) PT_AI.reload(); toast('Đã dạy bot'); render();
+  };
+  if ($('#x')) $('#x').onclick = () => { botDraft = null; editing = null; render(); };
+  document.querySelectorAll('[data-be]').forEach(b => b.onclick = async () => { editing = b.dataset.be; botDraft = null; await render(); const f = $('#bf'); if (f) f.scrollIntoView({ behavior: 'smooth' }); });
+  document.querySelectorAll('[data-bd]').forEach(b => b.onclick = async () => { if (confirm('Xoá câu trả lời này? Bot sẽ không còn biết câu đó.')) { try { await Store.del('botkb', b.dataset.bd); } catch (x) { return toast(x.message); } if (window.PT_AI) PT_AI.reload(); render(); } });
+
+  let logs = [];
+  const draw = () => {
+    const box = $('#llist'); if (!box) return;
+    $('#lc').textContent = logs.length;
+    box.innerHTML = [...logs].reverse().map(l => `<div class="item" style="align-items:flex-start"><div style="min-width:0"><b style="word-break:break-word">${esc(l.q)}</b><br><small class="muted">${fmt(l.ts)}</small></div><div style="display:flex;gap:6px;flex-shrink:0"><button class="btn sm" data-teach="${l.id}">Dạy</button><button class="btn danger" data-skip="${l.id}">Bỏ qua</button></div></div>`).join('') || '<p class="muted">Chưa có câu nào. Khi khách hỏi điều bot chưa biết, câu đó sẽ hiện ở đây.</p>';
+    document.querySelectorAll('[data-teach]').forEach(b => b.onclick = async () => { const l = logs.find(x => x.id === b.dataset.teach); if (!l) return; botDraft = { q: l.q, logId: l.id }; editing = null; await render(); const f = $('#bf'); if (f) f.scrollIntoView({ behavior: 'smooth' }); });
+    document.querySelectorAll('[data-skip]').forEach(b => b.onclick = async () => { try { await Store.del('botlogs', b.dataset.skip); } catch (x) { toast(x.message); } });
+  };
+  live.push(Store.listen('botlogs', null, ls => { logs = ls; draw(); }, er => { const b = $('#llist'); if (b) b.innerHTML = '<p class="err">' + esc(er.message) + '<br>Nếu chưa thêm Rules cho botlogs / botkb thì dán lại firestore.rules mới rồi Publish.</p>'; }));
 }
 
 /* ===== Sao lưu / khôi phục JSON ===== */
