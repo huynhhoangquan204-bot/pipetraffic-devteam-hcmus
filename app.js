@@ -50,10 +50,10 @@ async function fillContent(r) {
 function renderAuth() {
   const btn = 'bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm px-6 py-2.5 rounded-full shadow-lg shadow-sky-600/25 transition-all hover:shadow-xl hover:scale-105 inline-flex items-center gap-2';
   $('#authSlot').innerHTML = me
-    ? `<button data-out class="text-sm font-medium text-slate-500 hover:text-sky-600">${esc(me.name)} · Thoát</button>`
+    ? `<a href="#/profile" title="Hồ sơ và avatar" class="navuser flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-sky-600">${Avatar.html(me, 'sm')}<span class="navname">${esc(me.name)}</span></a><button data-out class="text-sm font-medium text-slate-500 hover:text-sky-600">Thoát</button>`
     : `<a href="#/login" class="${btn}"><i class="fa-solid fa-right-to-bracket text-xs"></i> Đăng nhập</a>`;
   $('#authSlotM').innerHTML = me
-    ? `<button data-out class="block w-full text-center py-2 text-slate-500 font-medium">${esc(me.name)} · Thoát</button>`
+    ? `<a href="#/profile" onclick="toggleMobileMenu(true)" class="navuser flex items-center gap-3 py-2 text-slate-700 font-semibold border-b border-slate-100">${Avatar.html(me, 'sm')}<span class="navname">${esc(me.name)}</span><span class="text-xs text-sky-600 font-medium">Đổi avatar</span></a><button data-out class="block w-full text-center py-2 text-slate-500 font-medium">Thoát</button>`
     : `<a href="#/login" onclick="toggleMobileMenu(true)" class="block text-center bg-sky-600 text-white py-3 rounded-xl font-bold mt-2 shadow-lg shadow-sky-600/30">Đăng nhập</a>`;
   document.querySelectorAll('[data-out]').forEach(b => b.onclick = () => { Store.setMe(null); me = null; location.hash = '#/'; route(); });
 }
@@ -135,7 +135,7 @@ function step(g, p) {
    Gắn AI: trong config.js hoặc một file <script> riêng, khai báo
    window.PT_AI = { ask: async (cauHoi, lichSu) => 'câu trả lời' };  (lichSu = [{role:'user'|'ai', text}]) */
 const aiHist = []; let chatBound = false, chatTab = 'admin', msgs = [], unread = 0, msgOff = null, msgFor = null;
-const bub = (cls, label, text) => `<div class="pp-msg ${cls}"><small>${label}</small><span>${esc(text)}</span></div>`;
+const bub = (cls, label, text) => `<div class="pp-row ${cls}">${cls === 'me' ? Avatar.html(me || { name: 'Bạn' }, 'sm') : cls === 'ai' ? Avatar.ai('sm') : Avatar.admin('sm')}<div class="pp-msg ${cls}"><small>${label}</small><span>${esc(text)}</span></div></div>`;
 const aiOn = () => !!(window.PT_AI && typeof window.PT_AI.ask === 'function');
 const chatOpen = () => { const p = $('#chatPop'); return !!p && !p.hidden; };
 
@@ -218,21 +218,47 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeContact(); closeChat(); } });
 
+/* --- Hồ sơ: đổi avatar. Ảnh cắt vuông, thu nhỏ 160px, lưu vào hồ sơ người dùng (users) và hiện cạnh tin nhắn trong chat --- */
+async function setAvatar(get) {
+  let url, msg = '';
+  try { url = await get(); } catch (x) { const e = $('#pfErr'); if (e) e.textContent = x.message; return; }
+  me.avatar = url; Store.setMe(me, true); renderAuth(); if (chatOpen()) drawChat();   // hiện ngay trên máy này
+  try {
+    const pr = await Store.profile(me.id);
+    if (pr) await Store.put('users', { ...pr, avatar: url }); else msg = 'Không tìm thấy hồ sơ trên máy chủ.';
+  } catch (x) { msg = 'Đã lưu trên máy này nhưng chưa đồng bộ lên máy chủ (' + (x.message || x.code) + '). Admin cần cập nhật Rules để cho phép đổi avatar.'; }
+  profile();
+  if (msg) $('#pfErr').textContent = msg; else toast(url ? 'Đã cập nhật avatar' : 'Đã xoá avatar');
+}
+async function profile() {
+  if (!me) { location.hash = '#/login'; return; }
+  wrap(`<a href="#/" class="plink">&larr; Trang chính</a>
+  <div class="card narrow pf"><div id="pfAv">${Avatar.html(me, 'lg')}</div>
+  <h1>${esc(me.name)}</h1><p class="muted">${esc(me.email)}</p>
+  <input type="file" id="pfFile" accept="image/*" hidden>
+  <div class="row" style="justify-content:center;gap:10px"><button class="btn" id="pfPick">${Avatar.ok(me.avatar) ? 'Đổi avatar' : 'Chọn avatar'}</button>${Avatar.ok(me.avatar) ? '<button class="btn ghost" id="pfDel">Xoá ảnh</button>' : ''}</div>
+  <p class="muted" style="margin-top:14px;font-size:.85rem">Ảnh được cắt vuông và thu nhỏ tự động. Avatar hiện cạnh tin nhắn của bạn trong khung chat.</p>
+  <div class="err" id="pfErr"></div></div>`);
+  $('#pfPick').onclick = () => $('#pfFile').click();
+  $('#pfFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) setAvatar(() => Store.avatar(f, 160, .82)); };
+  if ($('#pfDel')) $('#pfDel').onclick = () => setAvatar(async () => '');
+}
+
 /* --- Điều hướng (hash), mỗi mục trên menu là một TRANG RIÊNG nhưng vẫn là một file SPA ---
-   #/  ·  #/p/<id>  ·  #/login  ·  #/specs  #/journey  #/problems  #/team  #/video  #/faq */
-const PAGES = ['specs', 'journey', 'problems', 'team', 'video', 'faq'];   // mỗi tên ứng với <template id="tpl-...">
-const routes = { '': home, p: project, login };
+   #/  ·  #/p/<id>  ·  #/login  ·  #/profile  ·  #/specs  #/journey  #/problems  #/team  #/video  #/faq  #/comments */
+const PAGES = ['specs', 'journey', 'problems', 'team', 'video', 'faq', 'comments'];   // mỗi tên ứng với <template id="tpl-...">
+const routes = { '': home, p: project, login, profile };
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
-  if (r === 'chat' || r === 'comments') { location.replace('#/'); setTimeout(() => openChat(), 100); return; }   // link cũ -> về trang chủ và mở popup chat
+  if (r === 'chat') { location.replace('#/'); setTimeout(() => openChat(), 100); return; }   // link cũ #/chat -> về trang chủ và mở popup chat
   stopLive(); renderAuth(); ensureMsgs(); paintBadge(); toggleMobileMenu(true);
   setActive(PAGES.includes(r) ? r : (r === '' || r === 'p' ? 'projects' : ''));
   window.scrollTo(0, 0);
   try {
     if (PAGES.includes(r)) {
       app.dataset.view = r; app.innerHTML = `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
-      fillContent(r);
+      fillContent(r); if (r === 'comments') { setRating(5); loadCommentsFromSheet(); }
     } else {
       app.dataset.view = r || 'home';
       if (r === 'p') app.innerHTML = '<div class="pt-app pt-32"><div class="loading">Đang tải…</div></div>';
@@ -245,6 +271,7 @@ const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off
 (async () => {
   try {
     await Store.init(); me = Store.me(); applyLinks(); addEventListener('hashchange', route);
+    if (me) Store.profile(me.id).then(pr => { if (me && pr && Avatar.ok(pr.avatar) && pr.avatar !== me.avatar) { me.avatar = pr.avatar; Store.setMe(me, true); renderAuth(); if (chatOpen()) drawChat(); } }).catch(() => {});
     await Promise.race([route(), new Promise(r => setTimeout(r, 4000))]);   // chờ tối đa 4 giây rồi mở trang
   } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
   hideSplash();
