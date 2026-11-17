@@ -42,7 +42,7 @@ const stopBadges = () => { badgeOff.splice(0).forEach(f => f()); pendCmt = waitM
 
 function nav() {
   const old = Date.now() - (+localStorage.getItem('pt_last_backup') || 0) > 7 * 864e5;
-  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️', 'Tuần'], ['content', 'Nội dung', '📝'], ['comments', 'Bình luận', '💬', '', pendCmt], ['messages', 'Tin nhắn', '✉️', '', waitMsg], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
+  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️', 'Tuần'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬', 'Video'], ['comments', 'Bình luận', '💬', '', pendCmt], ['messages', 'Tin nhắn', '✉️', '', waitMsg], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
   $('#nav').innerHTML = '<div class="tabs">' + t.map(([k, v, ic, s, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}"><span class="ic">${ic}</span><span class="lb-l">${v}</span><span class="lb-s">${s || v}</span>${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('') + '</div><button id="out">Thoát</button>';
   document.querySelectorAll('#nav [data-t]').forEach(x => x.onclick = e => { e.preventDefault(); tab = x.dataset.t; editing = null; thread = null; render(); });
   $('#out').onclick = async () => { stopLive(); stopBadges(); await Store.adminLogout(); login(); };
@@ -60,7 +60,7 @@ async function render() {
   app.innerHTML = '<div class="loading">Đang tải…</div>';
   if (!await Store.isAdmin()) { stopBadges(); return login(); }
   nav(); if (!badgeOff.length) startBadges();
-  try { await ({ projects, updates, content, comments, messages, users, backup })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
+  try { await ({ projects, updates, content, site, comments, messages, users, backup })[tab](); } catch (e) { app.innerHTML = '<p class="err">Lỗi: ' + esc(e.message) + '</p>'; }
 }
 
 
@@ -224,6 +224,55 @@ async function content() {
     for (let k = 0; k < order.length; k++) { const x = list.find(y => y.id === order[k]); if (x.order !== k * 10) await Store.put(csec, { ...x, order: k * 10 }); }
     render();
   });
+}
+
+/* ===== Video demo & Liên hệ (popup): mỗi mục là một tài liệu trong bộ sưu tập "site" ===== */
+const SITE = {
+  video: { name: 'Video demo', view: 'index.html#/video', opt: ['tag', 'videoUrl', 'cover', 'playTitle', 'playSub', 'scenes'],
+    fields: [['tag', 'Dòng nhỏ phía trên tiêu đề', 'text'], ['title', 'Tiêu đề', 'text'],
+      ['videoUrl', 'Link video (YouTube, Vimeo, Google Drive hoặc .mp4). Để trống thì chỉ hiện ảnh bìa', 'text', 'https://www.youtube.com/watch?v=...'],
+      ['cover', 'Ảnh bìa (hiện trước khi phát, hoặc khi chưa có link video)', 'cover'],
+      ['playTitle', 'Dòng chữ lớn trên ảnh bìa', 'text'], ['playSub', 'Dòng chữ nhỏ trên ảnh bìa', 'text'],
+      ['scenesTitle', 'Tiêu đề khung kịch bản', 'text'],
+      ['scenes', 'Các phân cảnh: mỗi dòng một cảnh, dạng  Nhãn | Nội dung  (có thể **in đậm**, *in nghiêng*). Xoá hết để ẩn khung này', 'lines']] },
+  contact: { name: 'Liên hệ (popup)', view: 'index.html', opt: ['intro', 'note'],
+    fields: [['title', 'Tiêu đề popup', 'text'], ['intro', 'Lời giới thiệu ngắn', 'area'],
+      ['rows', 'Các dòng liên hệ: mỗi dòng dạng  Nhãn | Giá trị  (vd: Email | nhom@gmail.com, Điện thoại | 0901234567, Facebook | https://facebook.com/...). Email, số điện thoại và link tự thành liên kết bấm được', 'lines'],
+      ['note', 'Ghi chú cuối popup (vd: giờ phản hồi)', 'area']] }
+};
+let ssec = 'video', coverData = '';
+async function site() {
+  const S = SITE[ssec], doc = await Store.get('site', ssec).catch(() => null), v = { ...Content.defaults[ssec], ...(doc || {}) };
+  coverData = v.cover && String(v.cover).startsWith('data:') ? v.cover : '';
+  const field = f => {
+    const [k, l, t, ph] = f;
+    if (t !== 'cover') return fieldHtml(S, f, v[k]);
+    return `<label>${l}</label><input type="file" id="coverFile" accept="image/*"><div class="pthumbs" id="coverPrev"></div>
+      <input name="cover" placeholder="hoặc dán link ảnh https://..." value="${esc(v.cover && !String(v.cover).startsWith('data:') ? v.cover : '')}">`;
+  };
+  app.innerHTML = `<h1>Video & Liên hệ</h1><p class="sub">Sửa mục Video demo và popup Liên hệ hiển thị trên web.</p>
+  <div class="row" style="justify-content:flex-start;gap:8px;margin-bottom:14px">${Object.entries(SITE).map(([k, x]) => `<button class="btn ${k === ssec ? '' : 'ghost'} sm" data-s="${k}">${x.name}</button>`).join('')}</div>
+  ${doc ? '' : '<div class="banner">Mục này chưa có dữ liệu nên web đang hiện nội dung mẫu. Form bên dưới đã điền sẵn nội dung mẫu, sửa rồi bấm Lưu để web dùng nội dung của bạn.</div>'}
+  <div class="card"><h2>${S.name}</h2><form id="f">${S.fields.map(field).join('')}
+  <button class="btn">Lưu</button> <a class="btn ghost" href="${S.view}" target="_blank" rel="noopener">Xem trên web</a>${doc ? ' <button type="button" class="btn danger" id="reset">Xoá, dùng lại nội dung mẫu</button>' : ''}</form></div>`;
+  document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { ssec = b.dataset.s; render(); });
+  const prev = () => { const p = $('#coverPrev'); if (p) p.innerHTML = coverData ? `<div class="pth"><img src="${esc(coverData)}" alt=""><button type="button" id="coverRm" aria-label="Bỏ ảnh">×</button></div>` : ''; const r = $('#coverRm'); if (r) r.onclick = () => { coverData = ''; prev(); }; };
+  prev();
+  if ($('#coverFile')) $('#coverFile').onchange = async ev => { try { coverData = await Media.image(ev.target.files[0]); prev(); } catch (x) { toast(x.message); } ev.target.value = ''; };
+  if ($('#reset')) $('#reset').onclick = async () => { if (confirm('Xoá nội dung đã nhập và dùng lại nội dung mẫu?')) { try { await Store.del('site', ssec); } catch (x) { return toast(x.message); } toast('Đã quay về nội dung mẫu'); render(); } };
+  $('#f').onsubmit = async ev => {
+    ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target)), o = {};
+    S.fields.forEach(([k, , t]) => {
+      if (t === 'lines') o[k] = String(f[k] || '').split(/\n+/).map(s => s.trim()).filter(Boolean);
+      else if (t === 'cover') o[k] = coverData || String(f[k] || '').trim();
+      else o[k] = String(f[k] ?? '').trim();
+    });
+    if (o.videoUrl && !/^https?:\/\/\S+$/i.test(o.videoUrl)) return toast('Link video phải bắt đầu bằng https://');
+    if (o.cover && !/^(https?:\/\/\S+|data:image\/)/i.test(o.cover)) return toast('Link ảnh bìa phải bắt đầu bằng https://');
+    if (ssec === 'contact' && !o.rows.length) return toast('Hãy nhập ít nhất một dòng liên hệ');
+    try { await Store.put('site', { ...(doc || {}), ...o, id: ssec }); } catch (x) { return toast(x.message); }
+    toast('Đã lưu'); render();
+  };
 }
 
 /* ===== Bình luận: lọc, duyệt từng cái hoặc tất cả, cập nhật ngay ===== */
