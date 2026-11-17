@@ -84,7 +84,7 @@
   const withTimeout = (p, ms) => Promise.race([p, new Promise(ok => setTimeout(() => ok(null), ms))]);
   const roleVi = r => { r = fold(r); return [/design|graphic|thiet ke/.test(r) && 'thiet ke, do hoa, logo, nhan dien thuong hieu, mind map',
     /web|tech|dev|ky thuat/.test(r) && 'web, website, lap trinh, ky thuat, cong nghe, cau hinh',
-    /research|content|nghien cuu|noi dung/.test(r) && 'nghien cuu, noi dung, tai lieu chuyen mon, y tuong, bien soan, tao ra, sang lap, nghi ra, chu y tuong, tac gia',
+    /research|content|nghien cuu|noi dung/.test(r) && 'nghien cuu, noi dung, tai lieu chuyen mon, y tuong, bien soan, viet bai, tao ra, sang lap, nghi ra, chu y tuong, tac gia',
     /media|video|truyen thong/.test(r) && 'video, truyen thong, dung phim, hau ky, kich ban, bien ban hop',
     /manager|pm\b|quan ly|dieu phoi/.test(r) && 'quan ly, dieu phoi, tien do, truong nhom, leader, tai lieu, hop dong, quy tac'].filter(Boolean).join(', '); };
 
@@ -103,14 +103,17 @@
     };
     const [team, journey, faq, reviews, projects, updates, contact, video] = await Promise.all(
       [list('team'), list('journey'), list('faq'), list('reviews'), list('projects'), list('updates'), one('contact'), one('video')]);
+    let taught = []; try { taught = (window.Store ? await withTimeout(Store.list('botkb'), 2500) : null) || []; } catch (e) {}
     const out = []; people = []; journeyByWeek = {};
+    // Câu trả lời do admin dạy (tab "Dạy Bot" trong admin): ưu tiên cao nhất
+    taught.forEach((b, i) => { if (b.q && b.a) out.push({ id: 'b' + i, taught: true, t: b.q, k: [b.q].concat(String(b.k || '').split(/[\n,]+/)).map(x => x.trim()).filter(Boolean).join(', '), a: String(b.a).trim() }); });
 
     team.forEach((m, i) => {
       const e = { id: 'm' + i, who: true, t: m.name, k: [m.name, m.role, roleVi(m.role), m.modalRole].filter(Boolean).join(', '),
         a: `${m.name} – ${m.modalRole || m.role}.\n${plain(m.detail || m.short)}${m.short && m.detail && m.short !== m.detail ? '\nĐã làm: ' + plain(m.short) : ''}` };
       out.push(e);
       const parts = tok(m.name), last = parts[parts.length - 1], last2 = parts.slice(-2).join(' ');
-      people.push({ e, full: ' ' + parts.join(' ') + ' ', last2: ' ' + last2 + ' ', last, ambiguous: ['quan', 'lam', 'phuc', 'giau'].includes(last) });
+      people.push({ e, full: ' ' + parts.join(' ') + ' ', last2: ' ' + last2 + ' ', last, ambiguous: ['quan', 'lam', 'phuc'].includes(last) });
     });
     if (team.length) out.push({ id: 'team', who: true, t: 'Thành viên nhóm', k: 'thanh vien, nhom co may nguoi, bao nhieu nguoi, doi ngu, ai trong nhom, danh sach, team, member, ai lam gi, phan cong, vai tro',
       a: `Nhóm có ${team.length} thành viên:\n` + team.map(m => `• ${m.name} – ${m.role}`).join('\n') + '\nHỏi tên một người để biết họ làm gì.' });
@@ -134,7 +137,7 @@
 
     if (contact) {
       const rows = (contact.rows || []).map(r => { const i = String(r).indexOf('|'); return i < 0 ? '• ' + plain(r) : `• ${plain(String(r).slice(0, i))}: ${plain(String(r).slice(i + 1))}`; });
-      out.push({ id: 'contact', t: 'Liên hệ nhóm', k: 'lien he, contact, email, mail, sdt, so dien thoai, github, youtube, facebook, mang xa hoi, dia chi, hop tac, o dau, kenh chinh thuc, link',
+      out.push({ id: 'contact', t: 'Liên hệ nhóm', k: 'lien he, contact, email, mail, sdt, so dien thoai, github, youtube, facebook, mang xa hoi, dia chi, hop tac, kenh chinh thuc, link',
         a: `${plain(contact.title || 'Liên hệ nhóm')}\n${plain(contact.intro || '')}\n${rows.join('\n')}${contact.note ? '\n' + plain(contact.note) : ''}\nBấm nút "Liên hệ" trên menu để xem đầy đủ.`.replace(/\n\n/g, '\n') });
     }
     if (video) {
@@ -160,29 +163,36 @@
   const idf = w => { const n = index.df.get(w) || 0; return Math.log(1 + (index.N - n + .5) / (n + .5)); };
 
   function expand(q) {                     // từ khoá câu hỏi -> [từ, trọng số]; sửa lỗi gõ; thêm đồng nghĩa
-    const out = new Map(), put = (w, x) => out.set(w, Math.max(out.get(w) || 0, x));
+    const out = new Map(), groups = [], put = (w, x) => out.set(w, Math.max(out.get(w) || 0, x));
     keyTok(q).forEach(w => {
-      if (index.df.has(w) || synOf[w]) put(w, 1);
-      else if (w.length >= 4) {
+      const ws = [w]; let known = index.df.has(w), base = w;
+      if (known || synOf[w]) put(w, 1);
+      else if (w.length >= 5) {
         let best = null, bd = w.length >= 8 ? 2 : 1;
         for (const v of index.vocab) { if (Math.abs(v.length - w.length) > bd) continue; const d = lev(w, v, bd); if (d <= bd && (best === null || d < bd || index.df.get(v) > index.df.get(best))) { best = v; bd = d; } }
-        if (best) put(best, .8);
+        if (best) { put(best, .8); ws.push(best); known = true; base = best; }
       }
-      (synOf[w] || []).forEach(s => put(s, .6));
+      (synOf[w] || []).forEach(x => { put(x, .6); ws.push(x); });
+      // groups: mỗi từ của câu hỏi + độ hiếm của nó (từ lạ chưa từng thấy trong kho = hiếm nhất)
+      groups.push({ ws, wt: known ? idf(base) : Math.log(1 + index.N) });
     });
-    return out;
+    return { out, groups };
   }
 
   function rank(q, only) {
     if (!index) build();
-    const qw = expand(q), fq = norm(q), res = [];
+    const { out: qw, groups } = expand(q), fq = norm(q), res = [], total = groups.reduce((a, g) => a + g.wt, 0);
     index.docs.forEach(d => {
       if (only && !only(d.e)) return;
-      let s = 0;
+      let s = 0; const ptok = new Set();
       qw.forEach((wt, w) => { const f = d.tf.get(w) || 0; if (f) s += idf(w) * wt * (f * 2.2 / (f + 1.2)); });
-      d.phr.forEach(p => { if (fq.includes(p)) s += 3 + p.trim().split(' ').length; });
+      d.phr.forEach(p => { if (fq.includes(p)) { s += 3 + p.trim().split(' ').length; p.trim().split(' ').forEach(x => ptok.add(x)); } });
       if (d.title.trim() && fq.includes(d.title)) s += 4;
-      if (s > 0) res.push({ e: d.e, s });
+      if (d.e.taught) s *= 1.3;
+      if (s <= 0) return;
+      // cov = phần "độ hiếm" của câu hỏi mà mục này giải thích được. Thấp = bot đang đoán bừa.
+      const hit = groups.reduce((a, g) => a + (g.ws.some(x => d.tf.has(x) || ptok.has(x)) ? g.wt : 0), 0);
+      res.push({ e: d.e, s, cov: total ? hit / total : 1 });
     });
     return res.sort((a, b) => b.s - a.s);
   }
@@ -205,7 +215,7 @@
     for (const p of people) {
       if (!fqTokens.includes(p.last)) continue;
       if (!p.ambiguous) return p.e;
-      if (TITLE.test(fq) || / ai /.test(fq) && fqTokens.length <= 3) return p.e;
+      if (TITLE.test(fq) || fq.includes(' ' + p.last + ' la ai ')) return p.e;   // "anh Quân", "Lâm là ai" (còn "ai làm logo" thì KHÔNG phải tên người)
     }
     return null;
   }
@@ -215,8 +225,17 @@
   const more = e => e && e.more && e.more.length ? '\n\nBạn có thể hỏi thêm: ' + e.more.map(x => '"' + x + '"').join(' · ') : '';
   const OUT_SCOPE = () => 'Mình chưa tìm thấy thông tin về câu này. Mình trả lời được về: dự án Pipe Traffic là gì, nguyên lý & tính năng, so sánh với Metro, các bước sử dụng, thành viên, tiến độ từng tuần, quy tắc nhóm, liên hệ và video.\nVí dụ: ' + SUGGEST.slice(0, 3).map(x => '"' + x + '"').join(' · ') + '\nCần người thật? Mở tab Admin trong khung chat để nhắn cho admin (cần đăng nhập).';
 
-  async function ask(q) {
-    q = String(q || '').trim();
+  // Ghi lại câu hỏi bot chưa biết để admin dạy (mỗi câu một lần, tối đa 5 câu / lượt mở web)
+  const logged = new Set(); let logCount = 0;
+  function logMiss(q) {
+    const key = fold(q).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80);
+    if (!window.Store || !key || q.length < 3 || q.length > 200 || logged.has(key) || logCount >= 5) return;
+    logged.add(key); logCount++;
+    Promise.resolve().then(() => Store.put('botlogs', { id: 'q-' + key, q: q.slice(0, 200), ts: Date.now() })).catch(() => {});
+  }
+
+  async function ask(q, _hist, opt) {
+    q = String(q || '').trim(); const nolog = !!(opt && opt.nolog);
     if (!q) return 'Bạn hãy gõ câu hỏi nhé.';
     await ensure(); if (!index) build();
     const fq = norm(q), toks = fq.trim().split(' ');
@@ -232,19 +251,23 @@
       state.pos++; return n.e.a + more(n.e);
     }
 
+    // Câu admin đã dạy, khớp nguyên văn: trả lời đúng như đã dạy
+    const ex = dyn.find(e => e.taught && norm(e.t) === fq);
+    if (ex) { state = { list: [{ e: ex }], pos: 0 }; return ex.a; }
+
     // "Tuần 2 làm gì?"
     const wk = fq.match(/ tuan (\d+) /);
     if (wk && journeyByWeek[wk[1]]) { state = { list: [{ e: journeyByWeek[wk[1]] }], pos: 0 }; return journeyByWeek[wk[1]].a; }
 
     // Hỏi về một người cụ thể / "ai làm ...?"
     const person = findPerson(fq, toks);
-    if (person && !WHO.test(fq)) { state = { list: [{ e: person }], pos: 0 }; return person.a; }
+    if (person) { state = { list: [{ e: person }], pos: 0 }; return person.a; }
     let r = rank(q, WHO.test(fq) ? e => e.who : null);
-    if (WHO.test(fq) && (!r[0] || r[0].s < 4)) r = rank(q);   // hỏi "ai ..." mà không ra người nào thì tìm rộng hơn
+    if (WHO.test(fq) && (!r[0] || r[0].s < 4 || r[0].cov < .3)) r = rank(q);   // hỏi "ai ..." mà không ra người nào thì tìm rộng hơn
 
     // Ngưỡng tin cậy
     const top = r[0];
-    if (!top || top.s < 4) { state = { list: [], pos: 0 }; return OUT_SCOPE(); }
+    if (!top || top.s < 4 || top.cov < (WHO.test(fq) ? .3 : .55)) { state = { list: [], pos: 0 }; if (!nolog) logMiss(q); return OUT_SCOPE(); }
     state = { list: r.filter(x => x.s >= top.s * .45).slice(0, 4), pos: 0 };
     let ans = top.e.a + more(top.e);
     const next = r[1];
@@ -252,6 +275,6 @@
     return ans;
   }
 
-  window.PT_AI = { ask, suggest: SUGGEST, name: 'Trợ lý ảo Pipe Traffic', _debug: { rank: q => ensure().then(() => rank(q)), norm, pull } };
+  window.PT_AI = { ask, test: q => { dynAt = 0; return ask(q, null, { nolog: true }); }, reload: () => { dynAt = 0; }, suggest: SUGGEST, name: 'Trợ lý ảo Pipe Traffic', _debug: { rank: q => ensure().then(() => rank(q)), norm, pull } };
   setTimeout(() => ensure(), 1500);   // nạp dữ liệu sẵn để lần hỏi đầu trả lời nhanh
 })();
