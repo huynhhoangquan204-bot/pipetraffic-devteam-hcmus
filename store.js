@@ -177,7 +177,7 @@
     },
     me() { try { return JSON.parse(localStorage.getItem('pt_user')); } catch (e) { return null; } },
     setMe(u, keepAuth) {
-      u ? localStorage.setItem('pt_user', JSON.stringify({ id: u.id, name: u.name, gender: u.gender, email: u.email })) : localStorage.removeItem('pt_user');
+      u ? localStorage.setItem('pt_user', JSON.stringify({ id: u.id, name: u.name, gender: u.gender, email: u.email, avatar: u.avatar || '' })) : localStorage.removeItem('pt_user');
       if (!u && !keepAuth && useFb) fauth.signOut();
     },
     // ----- Admin (trang admin.html riêng). Firebase: đăng nhập bằng tài khoản Email/Password do bạn tạo.
@@ -306,14 +306,15 @@
       if (out.length > 300000) throw new Error('Ảnh ' + file.name + ' quá lớn để lưu');
       return out;
     },
-    // Ảnh đại diện: cắt vuông giữa ảnh, 256px
-    async avatar(file) {
+    // Ảnh đại diện: cắt vuông giữa ảnh, mặc định 256px (size, q tuỳ chọn; avatar người dùng dùng 160px)
+    async avatar(file, size, q) {
+      const S = size || 256;
       if (!/^image\//.test(file.type)) throw new Error('"' + file.name + '" không phải ảnh');
       const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Không đọc được ảnh')); i.src = URL.createObjectURL(file); });
-      const sz = Math.min(img.width, img.height), c = document.createElement('canvas'); c.width = c.height = 256;
-      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, 256, 256);
-      g.drawImage(img, (img.width - sz) / 2, (img.height - sz) / 2, sz, sz, 0, 0, 256, 256);
-      URL.revokeObjectURL(img.src); return c.toDataURL('image/jpeg', .85);
+      const sz = Math.min(img.width, img.height), c = document.createElement('canvas'); c.width = c.height = S;
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, S, S);
+      g.drawImage(img, (img.width - sz) / 2, (img.height - sz) / 2, sz, sz, 0, 0, S, S);
+      URL.revokeObjectURL(img.src); return c.toDataURL('image/jpeg', q || .85);
     },
     pdf(file) {
       return new Promise((ok, no) => {
@@ -322,5 +323,22 @@
         const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(new Error('Không đọc được PDF')); r.readAsDataURL(file);
       });
     }
+  };
+})();
+
+// Ảnh đại diện dùng chung cho index.html và admin.html: có ảnh thì hiện ảnh, chưa có thì hiện chữ cái đầu trên nền màu
+window.Avatar = (function () {
+  const COL = ['#0ea5e9', '#6366f1', '#06b6d4', '#10b981', '#f59e0b'];
+  const esc = x => String(x ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return {
+    ok: x => typeof x === 'string' && x.length < 60000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(x),   // chỉ nhận data URL ảnh
+    html(u, cls) {   // u = { name, avatar }; cls = 'sm' | 'lg' (kích thước)
+      u = u || {}; const name = String(u.name || '?').trim() || '?';
+      if (this.ok(u.avatar)) return '<img class="av ' + (cls || '') + '" src="' + u.avatar + '" alt="' + esc(name) + '">';
+      const c = COL[[...name].reduce((a, ch) => a + ch.charCodeAt(0), 0) % COL.length];
+      return '<span class="av ' + (cls || '') + '" style="background:' + c + '" aria-label="' + esc(name) + '">' + esc(name.charAt(0).toUpperCase()) + '</span>';
+    },
+    admin(cls) { return '<img class="av ' + (cls || '') + '" src="logo.jpg" alt="Admin" onerror="this.onerror=null;this.src=\'https://i.postimg.cc/tgyk09xn/logo2.jpg\'">'; },
+    ai(cls) { return '<span class="av ai ' + (cls || '') + '" aria-label="AI">AI</span>'; }
   };
 })();
