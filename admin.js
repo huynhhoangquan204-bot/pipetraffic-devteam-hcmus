@@ -301,8 +301,9 @@ async function comments() {
 /* ===== Tin nhắn: thời gian thực, đánh dấu cuộc trò chuyện chờ trả lời ===== */
 async function messages() {
   app.innerHTML = '<h1>Tin nhắn</h1><p class="sub">Tin mới hiện ngay, không cần tải lại. Cuộc trò chuyện đang chờ bạn trả lời được đánh dấu.</p><div id="mbox"><div class="loading">Đang tải…</div></div>';
-  let last = [], built = null;
-  const bubbles = ms => ms.map(m => `<div class="msg ${m.from === 'admin' ? 'me' : ''}"><small>${m.from === 'admin' ? 'Admin' : esc(m.userName)}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small><span>${esc(m.text)}</span></div>`).join('');
+  let last = [], built = null; const U = {};
+  try { (await Store.list('users')).forEach(u => { U[u.id] = u; }); } catch (e) {}   // để hiện avatar người dùng
+  const bubbles = ms => ms.map(m => { const ad = m.from === 'admin'; return `<div class="mrow ${ad ? 'me' : ''}">${ad ? Avatar.admin('sm') : Avatar.html(U[m.uid] || { name: m.userName }, 'sm')}<div class="msg ${ad ? 'me' : ''}"><small>${ad ? 'Admin' : esc(m.userName)}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small><span>${esc(m.text)}</span></div></div>`; }).join('');
   const draw = () => {
     const box = $('#mbox'); if (!box) return;
     const by = {}; last.forEach(m => (by[m.uid] = by[m.uid] || []).push(m));
@@ -322,7 +323,7 @@ async function messages() {
     } else {
       built = null; thread = null;
       const ids = Object.keys(by).sort((a, b) => by[b].at(-1).ts - by[a].at(-1).ts);
-      box.innerHTML = `<div class="card">${ids.map(id => { const l = by[id].at(-1); return `<div class="item"><div style="min-width:0"><b>${esc(l.userName)}</b> ${l.from === 'user' ? '<span class="tag run">Chờ trả lời</span>' : ''} <small class="muted">${fmt(l.ts)}</small><br><span class="muted">${l.from === 'admin' ? 'Bạn: ' : ''}${esc(l.text.slice(0, 80))}</span></div><button class="btn sm" data-th="${id}">Mở</button></div>`; }).join('') || '<p class="muted">Chưa có tin nhắn nào.</p>'}</div>`;
+      box.innerHTML = `<div class="card">${ids.map(id => { const l = by[id].at(-1); return `<div class="item"><div style="min-width:0;display:flex;gap:10px;align-items:center">${Avatar.html(U[id] || { name: l.userName })}<div style="min-width:0"><b>${esc(l.userName)}</b> ${l.from === 'user' ? '<span class="tag run">Chờ trả lời</span>' : ''} <small class="muted">${fmt(l.ts)}</small><br><span class="muted">${l.from === 'admin' ? 'Bạn: ' : ''}${esc(l.text.slice(0, 80))}</span></div></div><button class="btn sm" data-th="${id}">Mở</button></div>`; }).join('') || '<p class="muted">Chưa có tin nhắn nào.</p>'}</div>`;
       box.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { thread = b.dataset.th; draw(); });
     }
   };
@@ -332,7 +333,7 @@ async function messages() {
 
 async function users() {
   const us = await Store.list('users');
-  app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký.</p>${Store.uid() ? `<div class="banner">UID tài khoản admin của bạn: <code style="user-select:all">${esc(Store.uid())}</code><br>Giá trị này phải trùng với UID trong <b>firestore.rules</b> (hàm <code>isAdmin</code>).</div>` : ''}<div class="card">${us.map(u => `<div class="item"><div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
+  app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký.</p>${Store.uid() ? `<div class="banner">UID tài khoản admin của bạn: <code style="user-select:all">${esc(Store.uid())}</code><br>Giá trị này phải trùng với UID trong <b>firestore.rules</b> (hàm <code>isAdmin</code>).</div>` : ''}<div class="card">${us.map(u => `<div class="item"><div style="display:flex;gap:10px;align-items:center">${Avatar.html(u)}<div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small></div></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
   document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này?')) { await Store.del('users', b.dataset.d); render(); } });
 }
 
