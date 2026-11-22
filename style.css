@@ -3251,3 +3251,32 @@ body.adm .foot{
   flex-shrink:0;
   margin-top:auto
 }
+
+/* ---------- Trang cam kết quyền riêng tư (gọn) ---------- */
+.pt-app .pv{max-width:460px;padding:24px}
+.pt-app .pv-head{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.pt-app .pv-head h2{margin:0;font-size:1.2rem;line-height:1.25}
+.pt-app .pv-head p{margin:2px 0 0;font-size:.85rem}
+.pt-app .pv-ico{flex:none;width:44px;height:44px;border-radius:14px;background:#e0f2fe;color:var(--steel);display:flex;align-items:center;justify-content:center;font-size:1.2rem}
+.pt-app .pv-list{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}
+.pt-app .pv-list li{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px}
+.pt-app .pv-list li>i{flex:none;width:18px;margin-top:3px;text-align:center;color:var(--steel);font-size:.95rem}
+.pt-app .pv-list b{display:block;font-size:.88rem;color:#0f172a}
+.pt-app .pv-list span{display:block;font-size:.82rem;line-height:1.45;color:#64748b}
+.pt-app .pv-agree{display:flex;gap:10px;align-items:center;margin:0 0 4px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:12px;cursor:pointer;font-weight:500;font-size:.88rem;color:#334155}
+.pt-app .pv-agree input{width:18px;height:18px;flex:none;padding:0;accent-color:#0284c7}
+.pt-app .pv-ok{width:100%;margin-top:12px}
+.pt-app .pv-no{display:block;width:100%;margin:10px 0 0;padding:6px;background:none;border:0;font:inherit;font-size:.82rem;color:#94a3b8;cursor:pointer}
+.pt-app .pv-no:hover{color:#dc2626;text-decoration:underline}
+
+/* ---------- Hồ sơ: form sửa thông tin cá nhân ---------- */
+.pt-app .card.pf{max-width:520px}
+.pt-app .pf-note{margin-top:14px;font-size:.85rem}
+.pt-app .pf-hr{border:0;border-top:1px solid #e2e8f0;margin:22px 0 4px}
+.pt-app .pf-form{text-align:left}
+.pt-app .pf-form h3{margin:12px 0 0;font-size:1.05rem}
+.pt-app .pf-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.pt-app .pf-grid .full{grid-column:1/-1}
+.pt-app .pf-grid input:disabled{background:#f1f5f9;color:#94a3b8}
+.pt-app .pf-save{width:100%;margin-top:18px}
+@media(max-width:480px){.pt-app .pf-grid{grid-template-columns:1fr}}
