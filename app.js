@@ -112,7 +112,10 @@ function step(g, p) {
        <p style="margin-top:12px"><a href="#" id="forgot" class="plink">Quên mật khẩu?</a></p>`
     : `<p class="muted">${setPw ? 'Hãy đặt mật khẩu cho tài khoản.' : 'Tài khoản mới. Bước 2: điền thông tin.'}</p><form id="f">
        ${setPw ? '' : `<label>Tên hiển thị</label><input name="name" required maxlength="40">
-       <label>Giới tính</label><select name="gender"><option>Nam</option><option>Nữ</option><option>Khác</option></select>`}
+       <label>Giới tính</label><select name="gender"><option>Nam</option><option>Nữ</option><option>Khác</option></select>
+       <label>Ngày tháng năm sinh</label><input type="date" name="dob" required min="1900-01-01" max="${new Date().toISOString().slice(0, 10)}">
+       <label>Số điện thoại</label><input type="tel" name="phone" required inputmode="tel" pattern="[0-9+ .\\-]{9,15}" maxlength="15" placeholder="VD: 0901234567">
+       <label>Nghề nghiệp</label><input name="job" required maxlength="60" placeholder="VD: Sinh viên, kỹ sư, giáo viên…">`}
        <label>Mật khẩu (từ 6 ký tự)</label><input type="password" name="pw" minlength="6" required><button class="btn">${setPw ? 'Lưu mật khẩu' : 'Tạo tài khoản'}</button></form>`);
   const fg = $('#forgot');
   if (fg) fg.onclick = async e => {
@@ -125,9 +128,40 @@ function step(g, p) {
     try {
       let u = p;
       if (p) { if (!await Store.checkPw(g, f.get('pw'), p)) { $('#err').textContent = 'Sai mật khẩu.'; return; } }
-      else u = await Store.register(g, f.get('name').trim(), f.get('gender'), f.get('pw'));
-      Store.setMe(u); me = Store.me(); toast('Xin chào ' + me.name); location.hash = '#/'; setTimeout(() => openChat('admin'), 200);
+      else u = await Store.register(g, f.get('name').trim(), f.get('gender'), f.get('pw'),
+        { dob: f.get('dob'), phone: f.get('phone').trim(), job: f.get('job').trim() });
+      Store.setMe(u); me = Store.me(); toast('Xin chào ' + me.name);
+      if (!p) { location.hash = '#/privacy'; return; }            // tài khoản mới: phải đồng ý cam kết quyền riêng tư
+      location.hash = '#/'; setTimeout(() => openChat('admin'), 200);
     } catch (x) { $('#err').textContent = x.message || x.code; }
+  };
+}
+
+/* --- Trang cam kết quyền riêng tư: hiện ngay sau khi đăng ký, phải đồng ý mới dùng tiếp --- */
+async function privacy() {
+  if (!me) { location.hash = '#/login'; return; }
+  if (me.agreed !== false) { location.hash = '#/'; return; }
+  wrap(`<div class="card narrow"><h2>Cam kết quyền riêng tư</h2>
+  <p class="muted">Vui lòng đọc và đồng ý trước khi sử dụng tài khoản.</p>
+  <ul style="margin:12px 0 12px 18px;list-style:disc;line-height:1.7">
+    <li>Chúng tôi thu thập: tên, giới tính, ngày sinh, số điện thoại, nghề nghiệp và email Google của bạn.</li>
+    <li>Thông tin chỉ dùng để quản lý tài khoản, liên hệ và hỗ trợ bạn trong phạm vi dự án Pipe Traffic.</li>
+    <li>Chúng tôi không bán hay chia sẻ thông tin của bạn cho bên thứ ba khi chưa có sự đồng ý.</li>
+    <li>Bạn có quyền yêu cầu xem, chỉnh sửa hoặc xoá thông tin bất cứ lúc nào bằng cách nhắn cho admin.</li>
+  </ul>
+  <label style="display:flex;gap:8px;align-items:flex-start;margin:14px 0"><input type="checkbox" id="agree" style="margin-top:4px"><span>Tôi đã đọc và đồng ý với cam kết quyền riêng tư.</span></label>
+  <button class="btn" id="ok" disabled>Đồng ý và tiếp tục</button>
+  <button class="btn g" id="no" style="margin-top:8px">Không đồng ý (xoá tài khoản vừa tạo)</button>
+  <div class="err" id="err"></div></div>`);
+  $('#agree').onchange = e => { $('#ok').disabled = !e.target.checked; };
+  $('#ok').onclick = async () => {
+    try { await Store.agreePrivacy(me.id); me.agreed = true; Store.setMe({ ...me, privacyAgreed: true }, true); me = Store.me(); toast('Cảm ơn bạn đã đồng ý'); location.hash = '#/'; setTimeout(() => openChat('admin'), 200); }
+    catch (x) { $('#err').textContent = x.message || x.code; }
+  };
+  $('#no').onclick = async () => {
+    if (!confirm('Tài khoản vừa tạo sẽ bị xoá và bạn được đăng xuất. Tiếp tục?')) return;
+    try { await Store.del('users', me.id); } catch (x) { /* bỏ qua, vẫn đăng xuất */ }
+    Store.setMe(null); me = null; renderAuth(); toast('Đã huỷ đăng ký'); location.hash = '#/';
   };
 }
 
@@ -248,11 +282,12 @@ async function profile() {
 /* --- Điều hướng (hash), mỗi mục trên menu là một TRANG RIÊNG nhưng vẫn là một file SPA ---
    #/  ·  #/p/<id>  ·  #/login  ·  #/profile  ·  #/specs  #/journey  #/problems  #/team  #/video  #/faq  #/comments */
 const PAGES = ['specs', 'journey', 'problems', 'team', 'video', 'faq', 'comments'];   // mỗi tên ứng với <template id="tpl-...">
-const routes = { '': home, p: project, login, profile };
+const routes = { '': home, p: project, login, profile, privacy };
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
   if (r === 'chat') { location.replace('#/'); setTimeout(() => openChat(), 100); return; }   // link cũ #/chat -> về trang chủ và mở popup chat
+  if (me && me.agreed === false && r !== 'privacy') { location.replace('#/privacy'); return; }   // chưa đồng ý cam kết thì chỉ vào được trang này
   stopLive(); renderAuth(); ensureMsgs(); paintBadge(); toggleMobileMenu(true);
   setActive(PAGES.includes(r) ? r : (r === '' || r === 'p' ? 'projects' : ''));
   window.scrollTo(0, 0);
