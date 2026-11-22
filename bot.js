@@ -73,6 +73,12 @@
       a: 'Vào mục Bình luận trên web, điền họ tên (có thể ẩn danh), chọn số sao đánh giá, viết nội dung (tối đa 700 ký tự) rồi bấm Gửi. Bình luận sẽ hiện công khai sau khi admin duyệt.' },
     { id: 'account', t: 'Đăng nhập & nhắn tin cho admin', k: 'dang nhap, dang ky, tai khoan, google, nhan tin, nhan cho admin, gap admin, lien he admin, chat voi admin, mat khau, avatar, anh dai dien, ho so, quen mat khau',
       a: 'Bấm nút Đăng nhập trên menu: đăng nhập Google, rồi đặt tên, giới tính và mật khẩu cho tài khoản. Sau đó mở khung Chat, chọn tab Admin để nhắn trực tiếp cho admin; admin trả lời ngay trong khung này. Bạn cũng đổi ảnh đại diện được ở trang Hồ sơ.' },
+    { id: 'editprofile', t: 'Sửa thông tin cá nhân', k: 'sua thong tin, doi thong tin, chinh sua ho so, doi ten, doi so dien thoai, doi nghe nghiep, cap nhat thong tin, thong tin ca nhan, sua ho so, doi mat khau, doi avatar',
+      a: 'Bấm vào tên của bạn trên menu để mở trang Hồ sơ. Ở đó bạn đổi được ảnh đại diện, tên hiển thị, giới tính, ngày sinh, số điện thoại và nghề nghiệp, rồi bấm \"Lưu thông tin\". Email Google không đổi được.' },
+    { id: 'forgotpw', t: 'Quên mật khẩu', k: 'quen mat khau, lay lai mat khau, dat lai mat khau, khong nho mat khau, reset password, mat mat khau',
+      a: 'Vào Đăng nhập → đăng nhập Google → bấm \"Quên mật khẩu?\". Hệ thống sẽ gửi email đặt lại mật khẩu tới địa chỉ Google của bạn.' },
+    { id: 'delacc', t: 'Xoá tài khoản', k: 'xoa tai khoan, huy tai khoan, xoa thong tin, xoa du lieu, khong muon dung nua, dong tai khoan',
+      a: 'Bạn có quyền yêu cầu xoá thông tin bất cứ lúc nào: mở khung Chat, chọn tab Admin và nhắn yêu cầu xoá tài khoản. Nếu vừa đăng ký mà chưa muốn tiếp tục, bấm \"Không đồng ý\" ở bước cam kết quyền riêng tư để huỷ ngay.' },
     { id: 'bot', t: 'Trợ lý ảo là gì', k: 'ban la ai, bot la ai, ten ban, tro ly, chatbot, ai tra loi, ban la gi, ban ten gi, ai tao ra ban, ban duoc lam bang gi, thong minh',
       a: 'Mình là trợ lý ảo của Pipe Traffic, do nhóm tự viết (không dùng dịch vụ AI bên ngoài). Mình tìm câu trả lời trong nội dung của web này: dự án, nguyên lý, thành viên, tiến độ, liên hệ... Câu nào mình chưa biết, bạn có thể nhắn thẳng cho admin ở tab Admin.' }
   ];
@@ -197,6 +203,53 @@
     return res.sort((a, b) => b.s - a.s);
   }
 
+
+  // ---------- Hiểu câu hỏi tiếng Anh nhờ bộ dữ liệu Bitext (botintents.js) ----------
+  // Cách làm: mỗi câu mẫu -> vector TF-IDF (bỏ từ đệm tiếng Anh); câu hỏi mới so độ giống (cosine) với từng câu mẫu,
+  // lấy 5 câu giống nhất rồi bỏ phiếu theo nhóm ý đồ. Không đủ giống thì trả null để bot trả lời như cũ.
+  const EN_STOP = new Set(('i me my a an the to of in on for is are am be can could would you your it its do does did how what where when why please want need ' +
+    'tell us we with about and or if this that there have has get just let like would should will so as at by from help').split(' '));
+  const enTok = s => String(s || '').toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').split(' ').filter(w => w && !EN_STOP.has(w)).map(w => w.replace(/(ing|ed|es|s)$/, m => w.length > 4 ? '' : m));
+  let intentIdx = null;
+  function buildIntents() {
+    const data = window.PT_INTENTS || {}, docs = [], df = new Map();
+    Object.keys(data).forEach(g => data[g].forEach(u => { const t = enTok(u); if (!t.length) return; docs.push({ g, t: new Map(t.map(w => [w, 1])) }); new Set(t).forEach(w => df.set(w, (df.get(w) || 0) + 1)); }));
+    const N = docs.length || 1, idf = w => Math.log(1 + N / (df.get(w) || 1));
+    docs.forEach(d => { let n = 0; d.t.forEach((_, w) => { const v = idf(w); d.t.set(w, v); n += v * v; }); d.n = Math.sqrt(n) || 1; });
+    intentIdx = { docs, idf, N };
+  }
+  function classify(q) {
+    if (!window.PT_INTENTS) return null;
+    if (!intentIdx) buildIntents();
+    const qt = [...new Set(enTok(q))];
+    if (!qt.length) return null;
+    const qv = new Map(qt.map(w => [w, intentIdx.idf(w)])); let qn = 0; qv.forEach(v => { qn += v * v; }); qn = Math.sqrt(qn) || 1;
+    const hits = [];
+    intentIdx.docs.forEach(d => { let dot = 0, shared = 0; qv.forEach((v, w) => { const x = d.t.get(w); if (x) { dot += v * x; shared++; } }); if (shared) hits.push({ g: d.g, sim: dot / (qn * d.n), shared }); });
+    hits.sort((a, b) => b.sim - a.sim);
+    const top = hits.slice(0, 5); if (!top.length || top[0].sim < .45) return null;
+    const vote = {}; top.forEach(h => { vote[h.g] = (vote[h.g] || 0) + h.sim; });
+    let g = Object.keys(vote).sort((a, b) => vote[b] - vote[a])[0];
+    // Nói tới đơn hàng / thanh toán / giao hàng mà không nhắc tài khoản thì chắc chắn là ngoài phạm vi (tránh nhầm "cancel my order" thành xoá tài khoản)
+    if (/\b(orders?|refunds?|pay(ment|ments)?|invoices?|bills?|shipping|ship|deliver(y|ies)?|parcels?|packages?|tracking|purchases?|items?)\b/i.test(q) && !/\baccount\b/i.test(q)) g = 'shop';
+    return { g, sim: top[0].sim };
+  }
+  // Trả lời theo nhóm ý đồ: en = tiếng Anh (vì người hỏi viết tiếng Anh), vi = bản tiếng Việt
+  const INTENT_ANS = {
+    signup: { en: 'To create an account: click \"Đăng nhập\" on the menu → continue with Google → enter your name, gender, birth date, phone and job, set a password (6+ characters), then accept the privacy commitment.', vi: 'Tạo tài khoản: bấm Đăng nhập trên menu → tiếp tục với Google → điền tên, giới tính, ngày sinh, số điện thoại, nghề nghiệp, đặt mật khẩu từ 6 ký tự → đồng ý cam kết quyền riêng tư.' },
+    regproblem: { en: 'Sign-up needs a Google account first. Check that the password has 6+ characters and the phone number has 9–15 digits. Still stuck? Message the admin in Chat → Admin tab, or use the \"Liên hệ\" button.', vi: 'Đăng ký cần đăng nhập Google trước; mật khẩu từ 6 ký tự, số điện thoại 9–15 chữ số. Vẫn lỗi thì nhắn admin ở khung Chat (tab Admin) hoặc bấm nút Liên hệ.' },
+    password: { en: 'Forgot your password? Go to Đăng nhập → sign in with Google → click \"Quên mật khẩu?\". A reset email is sent to your Google address.', vi: 'Quên mật khẩu: Đăng nhập → đăng nhập Google → bấm Quên mật khẩu? để nhận email đặt lại.' },
+    edit: { en: 'Click your name on the menu to open your Profile. You can change your avatar, display name, gender, birth date, phone and job there. The Google email cannot be changed.', vi: 'Bấm vào tên của bạn trên menu để mở Hồ sơ: đổi avatar, tên, giới tính, ngày sinh, số điện thoại, nghề nghiệp. Email Google không đổi được.' },
+    switch: { en: 'To switch accounts, click \"Thoát\" (log out) on the menu, then sign in again with another Google account.', vi: 'Đổi tài khoản: bấm Thoát trên menu rồi đăng nhập lại bằng tài khoản Google khác.' },
+    delete: { en: 'You can ask to have your data deleted at any time: open Chat → Admin tab and send the request. If you just registered, choose \"Không đồng ý\" on the privacy step to cancel right away.', vi: 'Bạn có thể yêu cầu xoá thông tin bất cứ lúc nào: mở Chat → tab Admin và nhắn yêu cầu. Vừa đăng ký xong thì bấm Không đồng ý ở bước quyền riêng tư để huỷ ngay.' },
+    contact: { en: 'To reach a real person: log in, open Chat and choose the Admin tab, or click the \"Liên hệ\" button on the menu for the team’s contact details.', vi: 'Gặp người thật: đăng nhập, mở khung Chat và chọn tab Admin; hoặc bấm nút Liên hệ trên menu để xem thông tin liên hệ.' },
+    complaint: { en: 'Sorry to hear that. Please tell the admin in Chat → Admin tab, or leave feedback in the Comments section — the team reads both.', vi: 'Rất tiếc về điều đó. Bạn nhắn admin ở Chat → tab Admin hoặc để lại góp ý ở mục Bình luận để nhóm xem xét.' },
+    review: { en: 'You can leave a review in the Comments section: choose a star rating, write up to 700 characters and submit. It appears after the admin approves it.', vi: 'Để lại đánh giá ở mục Bình luận: chọn số sao, viết tối đa 700 ký tự rồi gửi. Bình luận hiện sau khi admin duyệt.' },
+    newsletter: { en: 'There is no newsletter. To follow the project, check the Journey page and the GitHub / YouTube links in the footer.', vi: 'Web chưa có bản tin email. Bạn theo dõi dự án qua trang Hành trình và các liên kết GitHub / YouTube ở chân trang.' },
+    shop: { en: 'Pipe Traffic is a student research project, not a shop, so there are no orders, payments, refunds or shipping here. Ask me about the project, the team or its progress instead.', vi: 'Pipe Traffic là dự án nghiên cứu của sinh viên, không bán hàng nên không có đơn hàng, thanh toán, hoàn tiền hay giao hàng. Bạn hỏi mình về dự án, thành viên hoặc tiến độ nhé.' }
+  };
+  const intentReply = q => { const c = classify(q); if (!c) return null; const a = INTENT_ANS[c.g]; return a ? a.en + '\n' + a.vi : null; };
+
   // ---------- Nhận ý đồ ----------
   const has = (fq, re) => re.test(fq);
   function smallTalk(fq) {
@@ -267,7 +320,11 @@
 
     // Ngưỡng tin cậy
     const top = r[0];
-    if (!top || top.s < 4 || top.cov < (WHO.test(fq) ? .3 : .55)) { state = { list: [], pos: 0 }; if (!nolog) logMiss(q); return OUT_SCOPE(); }
+    if (!top || top.s < 4 || top.cov < (WHO.test(fq) ? .3 : .55)) {
+      state = { list: [], pos: 0 };
+      const ir = intentReply(q); if (ir) return ir;          // câu hỏi tiếng Anh dạng hỗ trợ khách hàng (học từ bộ Bitext)
+      if (!nolog) logMiss(q); return OUT_SCOPE();
+    }
     state = { list: r.filter(x => x.s >= top.s * .45).slice(0, 4), pos: 0 };
     let ans = top.e.a + more(top.e);
     const next = r[1];
@@ -275,6 +332,6 @@
     return ans;
   }
 
-  window.PT_AI = { ask, test: q => { dynAt = 0; return ask(q, null, { nolog: true }); }, reload: () => { dynAt = 0; }, suggest: SUGGEST, name: 'Trợ lý ảo Pipe Traffic', _debug: { rank: q => ensure().then(() => rank(q)), norm, pull } };
+  window.PT_AI = { ask, test: q => { dynAt = 0; return ask(q, null, { nolog: true }); }, reload: () => { dynAt = 0; }, suggest: SUGGEST, name: 'Trợ lý ảo Pipe Traffic', _debug: { classify, rank: q => ensure().then(() => rank(q)), norm, pull } };
   setTimeout(() => ensure(), 1500);   // nạp dữ liệu sẵn để lần hỏi đầu trả lời nhanh
 })();
