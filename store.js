@@ -155,9 +155,9 @@
       const u = fauth.currentUser;
       try { await u.linkWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, pw)); } catch (e) { throw fbErr(e); }
     },
-    async register(g, name, gender, pw) {
+    async register(g, name, gender, pw, extra) {
       await ready;
-      const o = { id: g.uid, name, gender, email: g.email, ts: Date.now() };
+      const o = { id: g.uid, name, gender, email: g.email, ts: Date.now(), ...(extra || {}), privacyAgreed: false };
       if (useFb) { if (!g.hasPassword) await this.linkPw(pw); } else o.hash = await sha(pw);
       return this.put('users', o);
     },
@@ -170,6 +170,12 @@
       try { await u.reauthenticateWithCredential(firebase.auth.EmailAuthProvider.credential(u.email, pw)); return true; }
       catch (e) { if (BAD_PW.test(e.code || '')) return false; throw fbErr(e); }
     },
+    // Trang cam kết quyền riêng tư: lưu thời điểm người dùng đồng ý
+    async agreePrivacy(uid) {
+      const p = await this.profile(uid);
+      if (!p) throw new Error('Không tìm thấy hồ sơ.');
+      return this.put('users', { ...p, privacyAgreed: true, privacyTs: Date.now() });
+    },
     async resetPw(email) {
       await ready;
       if (!useFb) throw new Error('Chế độ thử không gửi được email.');
@@ -177,7 +183,7 @@
     },
     me() { try { return JSON.parse(localStorage.getItem('pt_user')); } catch (e) { return null; } },
     setMe(u, keepAuth) {
-      u ? localStorage.setItem('pt_user', JSON.stringify({ id: u.id, name: u.name, gender: u.gender, email: u.email, avatar: u.avatar || '' })) : localStorage.removeItem('pt_user');
+      u ? localStorage.setItem('pt_user', JSON.stringify({ id: u.id, name: u.name, gender: u.gender, email: u.email, avatar: u.avatar || '', agreed: u.privacyAgreed === false ? false : true })) : localStorage.removeItem('pt_user');
       if (!u && !keepAuth && useFb) fauth.signOut();
     },
     // ----- Admin (trang admin.html riêng). Firebase: đăng nhập bằng tài khoản Email/Password do bạn tạo.
