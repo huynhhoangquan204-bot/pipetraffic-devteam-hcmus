@@ -141,18 +141,18 @@ function step(g, p) {
 async function privacy() {
   if (!me) { location.hash = '#/login'; return; }
   if (me.agreed !== false) { location.hash = '#/'; return; }
-  wrap(`<div class="card narrow"><h2>Cam kết quyền riêng tư</h2>
-  <p class="muted">Vui lòng đọc và đồng ý trước khi sử dụng tài khoản.</p>
-  <ul style="margin:12px 0 12px 18px;list-style:disc;line-height:1.7">
-    <li>Chúng tôi thu thập: tên, giới tính, ngày sinh, số điện thoại, nghề nghiệp và email Google của bạn.</li>
-    <li>Thông tin chỉ dùng để quản lý tài khoản, liên hệ và hỗ trợ bạn trong phạm vi dự án Pipe Traffic.</li>
-    <li>Chúng tôi không bán hay chia sẻ thông tin của bạn cho bên thứ ba khi chưa có sự đồng ý.</li>
-    <li>Bạn có quyền yêu cầu xem, chỉnh sửa hoặc xoá thông tin bất cứ lúc nào bằng cách nhắn cho admin.</li>
-  </ul>
-  <label style="display:flex;gap:8px;align-items:flex-start;margin:14px 0"><input type="checkbox" id="agree" style="margin-top:4px"><span>Tôi đã đọc và đồng ý với cam kết quyền riêng tư.</span></label>
-  <button class="btn" id="ok" disabled>Đồng ý và tiếp tục</button>
-  <button class="btn g" id="no" style="margin-top:8px">Không đồng ý (xoá tài khoản vừa tạo)</button>
-  <div class="err" id="err"></div></div>`);
+  const pts = [['fa-user-shield', 'Thông tin thu thập', 'Tên, giới tính, ngày sinh, số điện thoại, nghề nghiệp và email Google.'],
+    ['fa-bullseye', 'Mục đích sử dụng', 'Chỉ để quản lý tài khoản và hỗ trợ bạn trong phạm vi dự án Pipe Traffic.'],
+    ['fa-handshake-slash', 'Không chia sẻ', 'Không bán hay chuyển cho bên thứ ba khi chưa có sự đồng ý của bạn.'],
+    ['fa-pen-to-square', 'Quyền của bạn', 'Xem, sửa ở trang Hồ sơ hoặc yêu cầu xoá bất cứ lúc nào qua tin nhắn cho admin.']];
+  wrap(`<div class="card narrow pv">
+    <div class="pv-head"><span class="pv-ico"><i class="fa-solid fa-shield-halved"></i></span>
+      <div><h2>Cam kết quyền riêng tư</h2><p class="muted">Vui lòng đọc và đồng ý trước khi sử dụng tài khoản.</p></div></div>
+    <ul class="pv-list">${pts.map(([i, t, d]) => `<li><i class="fa-solid ${i}"></i><div><b>${t}</b><span>${d}</span></div></li>`).join('')}</ul>
+    <label class="pv-agree"><input type="checkbox" id="agree"><span>Tôi đã đọc và đồng ý với cam kết quyền riêng tư.</span></label>
+    <button class="btn pv-ok" id="ok" disabled>Đồng ý và tiếp tục</button>
+    <button type="button" class="pv-no" id="no">Không đồng ý, huỷ đăng ký</button>
+    <div class="err" id="err"></div></div>`);
   $('#agree').onchange = e => { $('#ok').disabled = !e.target.checked; };
   $('#ok').onclick = async () => {
     try { await Store.agreePrivacy(me.id); me.agreed = true; Store.setMe({ ...me, privacyAgreed: true }, true); me = Store.me(); toast('Cảm ơn bạn đã đồng ý'); location.hash = '#/'; setTimeout(() => openChat('admin'), 200); }
@@ -267,16 +267,57 @@ async function setAvatar(get) {
 }
 async function profile() {
   if (!me) { location.hash = '#/login'; return; }
+  const v = k => esc(me[k] || '');
+  const sel = g => (me.gender === g ? ' selected' : '');
   wrap(`<a href="#/" class="plink">&larr; Trang chính</a>
-  <div class="card narrow pf"><div id="pfAv">${Avatar.html(me, 'lg')}</div>
-  <h1>${esc(me.name)}</h1><p class="muted">${esc(me.email)}</p>
-  <input type="file" id="pfFile" accept="image/*" hidden>
-  <div class="row" style="justify-content:center;gap:10px"><button class="btn" id="pfPick">${Avatar.ok(me.avatar) ? 'Đổi avatar' : 'Chọn avatar'}</button>${Avatar.ok(me.avatar) ? '<button class="btn ghost" id="pfDel">Xoá ảnh</button>' : ''}</div>
-  <p class="muted" style="margin-top:14px;font-size:.85rem">Ảnh được cắt vuông và thu nhỏ tự động. Avatar hiện cạnh tin nhắn của bạn trong khung chat.</p>
-  <div class="err" id="pfErr"></div></div>`);
+  <div class="card narrow pf">
+    <div id="pfAv">${Avatar.html(me, 'lg')}</div>
+    <h1>${esc(me.name)}</h1><p class="muted">${esc(me.email)}</p>
+    <input type="file" id="pfFile" accept="image/*" hidden>
+    <div class="row" style="justify-content:center;gap:10px"><button class="btn" id="pfPick">${Avatar.ok(me.avatar) ? 'Đổi avatar' : 'Chọn avatar'}</button>${Avatar.ok(me.avatar) ? '<button class="btn ghost" id="pfDel">Xoá ảnh</button>' : ''}</div>
+    <p class="muted pf-note">Ảnh được cắt vuông và thu nhỏ tự động, hiện cạnh tin nhắn của bạn trong khung chat.</p>
+    <div class="err" id="pfErr"></div>
+    <hr class="pf-hr">
+    <form id="pfForm" class="pf-form" autocomplete="off">
+      <h3>Thông tin cá nhân</h3>
+      <div class="pf-grid">
+        <div class="full"><label>Tên hiển thị</label><input name="name" required maxlength="40" value="${v('name')}"></div>
+        <div><label>Giới tính</label><select name="gender"><option${sel('Nam')}>Nam</option><option${sel('Nữ')}>Nữ</option><option${sel('Khác')}>Khác</option></select></div>
+        <div><label>Ngày sinh</label><input type="date" name="dob" required min="1900-01-01" max="${new Date().toISOString().slice(0, 10)}" value="${v('dob')}"></div>
+        <div class="full"><label>Số điện thoại</label><input type="tel" name="phone" required inputmode="tel" pattern="[0-9+ .\\-]{9,15}" maxlength="15" placeholder="VD: 0901234567" value="${v('phone')}"></div>
+        <div class="full"><label>Nghề nghiệp</label><input name="job" required maxlength="60" placeholder="VD: Sinh viên, kỹ sư, giáo viên…" value="${v('job')}"></div>
+        <div class="full"><label>Email (đăng nhập Google, không đổi được)</label><input value="${v('email')}" disabled></div>
+      </div>
+      <button class="btn pf-save" id="pfSave">Lưu thông tin</button>
+      <div class="err" id="pfFormErr"></div>
+    </form></div>`);
   $('#pfPick').onclick = () => $('#pfFile').click();
   $('#pfFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) setAvatar(() => Media.avatar(f, 160, .82)); };
   if ($('#pfDel')) $('#pfDel').onclick = () => setAvatar(async () => '');
+
+  // Điền sẵn thông tin đầy đủ từ máy chủ (bản lưu trên máy này có thể thiếu ngày sinh / số điện thoại / nghề nghiệp)
+  const form = $('#pfForm'); let server = null;
+  Store.profile(me.id).then(pr => {
+    server = pr; if (!pr || !document.body.contains(form)) return;
+    ['name', 'gender', 'dob', 'phone', 'job'].forEach(k => { const el = form.elements[k]; if (el && pr[k] && !el.dataset.touched && !el.value) el.value = pr[k]; });
+  }).catch(() => {});
+  form.addEventListener('input', e => { e.target.dataset.touched = 1; });
+  form.onsubmit = async e => {
+    e.preventDefault(); const err = $('#pfFormErr'), btn = $('#pfSave'); err.textContent = '';
+    const f = new FormData(form), d = { name: f.get('name').trim(), gender: f.get('gender'), dob: f.get('dob'), phone: f.get('phone').trim(), job: f.get('job').trim() };
+    if (!d.name) { err.textContent = 'Tên hiển thị không được để trống.'; return; }
+    btn.disabled = true; btn.textContent = 'Đang lưu…';
+    try {
+      const pr = server || await Store.profile(me.id);
+      if (!pr) throw new Error('Không tìm thấy hồ sơ trên máy chủ.');
+      await Store.put('users', { ...pr, ...d });
+      Object.assign(me, d); Store.setMe(me, true); renderAuth(); if (chatOpen()) drawChat();
+      toast('Đã cập nhật thông tin'); profile();
+    } catch (x) {
+      err.textContent = 'Chưa lưu được: ' + (x.message || x.code) + '. Nếu lỗi là "permission", admin cần cập nhật Firestore Rules để cho phép người dùng sửa hồ sơ của mình.';
+      btn.disabled = false; btn.textContent = 'Lưu thông tin';
+    }
+  };
 }
 
 /* --- Điều hướng (hash), mỗi mục trên menu là một TRANG RIÊNG nhưng vẫn là một file SPA ---
