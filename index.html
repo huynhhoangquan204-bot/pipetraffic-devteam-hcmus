@@ -102,10 +102,12 @@
                     <a data-r="video" href="#/video" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-circle-play text-xs text-sky-500"></i> Video</a>
                     <a data-r="faq" href="#/faq" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-solid fa-circle-question text-xs text-sky-500"></i> FAQ & Reviews</a>
                     <a data-r="comments" href="#/comments" class="hover:text-sky-600 transition-colors flex items-center gap-1.5 nav-link"><i class="fa-regular fa-message text-xs text-sky-500"></i> Bình Luận</a>
+                    <button type="button" data-search-open class="sr-btn" aria-label="Tìm kiếm" title="Tìm kiếm ( / )"><i class="fa-solid fa-magnifying-glass"></i></button>
                     <button type="button" data-chat-open class="hover:text-sky-600 transition-colors flex items-center gap-1.5 font-bold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-200"><i class="fa-solid fa-comments text-xs text-sky-500"></i> Chat</button>
                 </div>
                 <div id="authSlot" class="hidden xl:flex items-center gap-3 shrink-0"></div>
                 <div class="xl:hidden flex items-center gap-2">
+                    <button type="button" data-search-open class="sr-btn" aria-label="Tìm kiếm" style="width:40px;height:40px"><i class="fa-solid fa-magnifying-glass"></i></button>
                     <button type="button" data-chat-open aria-label="Mở khung chat" class="w-10 h-10 flex items-center justify-center rounded-lg bg-sky-600 text-white shadow-md shadow-sky-600/30"><i class="fa-solid fa-comment-dots"></i></button>
                     <button id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menu" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 rounded-lg bg-slate-100">
                         <i id="mobile-menu-icon" class="fa-solid fa-bars text-xl"></i>
@@ -952,6 +954,7 @@
     <script src="content.js?v=15"></script>
     <script src="botintents.js?v=1"></script>
     <script src="bot.js?v=16"></script>
-    <script src="app.js?v=16"></script>
+    <script src="search.js?v=1"></script>
+    <script src="app.js?v=17"></script>
 </body>
 </html>
