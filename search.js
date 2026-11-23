@@ -129,6 +129,8 @@
       let n = 0;
       for (const t of terms) { const c = e.f.split(t).length - 1, ct = e.ft.includes(t); if (!c && !ct) return; n += c + (ct ? 3 : 0); }
       if (terms.length > 1 && e.f.includes(phrase)) n += 5;
+      if (e.ft.startsWith(terms[0])) n += 4;
+      if (e.ft === phrase) n += 8;
       out.push({ e, score: n });
     });
     out.sort((a, b) => b.score - a.score);
@@ -214,11 +216,43 @@
     }, 60);
   }
 
+
+  /* ---------- Gợi ý khi gõ (giống Google): kết quả liên quan nhất lên đầu ---------- */
+  const sug = { items: [], i: -1, tok: 0, input: null, timer: 0 };
+  const sugBox = () => { let b = $id('srSug'); if (!b) { b = document.createElement('div'); b.id = 'srSug'; b.className = 'sr-sug'; b.hidden = true; b.setAttribute('role', 'listbox'); document.body.appendChild(b); } return b; };
+  function closeSug() { const b = $id('srSug'); if (b) { b.hidden = true; b.innerHTML = ''; } sug.i = -1; sug.tok++; }
+  function placeSug() {
+    const inp = sug.input; if (!inp) return;
+    const r = (inp.closest('.sr-nav, .sr-pform') || inp).getBoundingClientRect(), b = sugBox();
+    b.style.left = r.left + 'px'; b.style.top = (r.bottom + 6) + 'px'; b.style.width = r.width + 'px';
+  }
+  async function updateSug(inp) {
+    const q = inp.value.trim(); sug.input = inp;
+    if (!q) { closeSug(); return; }
+    const tok = ++sug.tok, index = await buildIndex();
+    if (tok !== sug.tok) return;                       // đã gõ tiếp hoặc đã đóng
+    const { terms, hits } = run(index, q), seen = new Set(), items = [];
+    for (const h of hits) { const k = h.e.page + '|' + (h.e.title || h.e.f.slice(0, 30)); if (seen.has(k)) continue; seen.add(k); items.push(h); if (items.length >= 7) break; }
+    const b = sugBox(); sug.i = -1; placeSug();
+    b.innerHTML = (items.length ? items.map(h => { const p = BY_KEY[h.e.page];
+        return `<a class="sr-sg" role="option" href="${esc(h.e.href)}" data-t="${esc(terms.join(' '))}" data-a="${esc(h.e.f.slice(0, 40))}"><i class="fa-solid ${p.icon}"></i><span><b>${markHtml(h.e.title || p.label, terms)}</b><small>${esc(p.label)}${h.e.f === h.e.ft ? '' : ' · ' + snippet(h.e.text, terms)}</small></span></a>`; }).join('')
+      + `<a class="sr-sg sr-sg-all" href="#/search/${encodeURIComponent(q.slice(0, 100))}"><i class="fa-solid fa-magnifying-glass"></i><span><b>Xem tất cả ${hits.length} kết quả cho “${esc(q)}”</b></span></a>`
+      : `<div class="sr-sg-none">Không có gợi ý cho “${esc(q)}”. Nhấn Enter để tìm trên toàn trang.</div>`);
+    b.hidden = false;
+  }
+  function moveSug(d) {
+    const rows = [...document.querySelectorAll('#srSug .sr-sg')]; if (!rows.length) return;
+    sug.i = (sug.i + d + rows.length + 1) % (rows.length + 1);          // thêm 1 nấc "không chọn gì"
+    if (sug.i === rows.length) sug.i = -1;
+    rows.forEach((r, n) => r.classList.toggle('on', n === sug.i));
+    if (sug.i >= 0) rows[sug.i].scrollIntoView({ block: 'nearest' });
+  }
+
   /* ---------- Thanh tìm kiếm trên menu ---------- */
   function go(q) {
     q = String(q || '').trim(); if (!q) return;
     const h = '#/search/' + encodeURIComponent(q.slice(0, 100));
-    closeBar();
+    closeBar(); closeSug();
     const n = $id('srNavInput'); if (n) { n.value = q; n.blur(); }
     if (location.hash === h && typeof window.route === 'function') window.route(); else location.hash = h;
   }
@@ -294,20 +328,37 @@
 @media(prefers-reduced-motion:reduce){.nav-chat,.nav-chat::before{animation:none}}
 @media(min-width:640px){.sr-btn{display:none}.nav-chat .nav-chat-t{display:inline}}
 @media(max-width:639px){.sr-nav{display:none}.sr-right{margin-left:auto}}
-@media(max-width:420px){.sr-logo>div{display:none}.sr-logo{margin-right:0}}`;
+@media(max-width:420px){.sr-logo>div{display:none}.sr-logo{margin-right:0}}
+.sr-sug{position:fixed;z-index:60;background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 18px 40px rgba(15,23,42,.18);padding:6px;max-height:min(70vh,520px);overflow-y:auto}
+.sr-sug[hidden]{display:none}
+.sr-sg{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:12px;color:inherit;text-decoration:none}
+.sr-sg:hover,.sr-sg.on{background:#f0f9ff}
+.sr-sg>i{flex:none;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#e0f2fe;color:#0284c7;font-size:.8rem}
+.sr-sg>span{min-width:0;flex:1}
+.sr-sg b{display:block;font-size:.92rem;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-sg small{display:block;font-size:.78rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr-sug mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 1px}
+.sr-sg-all{margin-top:4px;border-top:1px solid #e2e8f0;border-radius:0 0 12px 12px}.sr-sg-all b{color:#0284c7}
+.sr-sg-none{padding:14px;color:#64748b;font-size:.88rem}`;
     document.head.appendChild(css);
 
     const bar = document.createElement('div');
     bar.id = 'srBar'; bar.className = 'sr-bar'; bar.hidden = true;
     bar.innerHTML = `<form data-srform role="search"><div class="sr-pform"><i class="fa-solid fa-magnifying-glass"></i><input id="srInput" type="search" placeholder="Tìm trong website… (nhấn Enter)" autocomplete="off" enterkeyhint="search" maxlength="100" aria-label="Tìm kiếm"><button type="submit">Tìm</button></div><button type="button" class="sr-x" data-search-close aria-label="Đóng">&times;</button></form><div class="sr-hint">Gõ không dấu cũng được · Esc để đóng · phím tắt: / hoặc Ctrl+K</div>`;
-    document.body.appendChild(bar);
+    document.body.appendChild(bar); sugBox();
 
     document.addEventListener('submit', e => {
       const f = e.target.closest && e.target.closest('[data-srform]'); if (!f) return;
       e.preventDefault(); const i = f.querySelector('input'); go(i && i.value);
     });
+    const isSrInput = el => el && (el.id === 'srNavInput' || el.id === 'srInput');
+    document.addEventListener('input', e => { if (!isSrInput(e.target)) return; clearTimeout(sug.timer); sug.timer = setTimeout(() => updateSug(e.target), 90); });
+    document.addEventListener('focusin', e => { if (!isSrInput(e.target)) return; buildIndex(); if (e.target.value.trim()) updateSug(e.target); });   // nạp sẵn chỉ mục
+    addEventListener('resize', placeSug); addEventListener('hashchange', closeSug);
     document.addEventListener('click', e => {
       const t = e.target;
+      if (t.closest('#srSug')) setTimeout(closeSug, 0);
+      else if (!t.closest('.sr-nav, #srBar')) closeSug();
       if (t.closest('[data-search-open]')) { e.preventDefault(); const b = $id('srBar'); b && !b.hidden ? closeBar() : openBar(); return; }
       if (t.closest('[data-search-close]')) { closeBar(); return; }
       const a = t.closest('a[data-t]');
@@ -317,12 +368,17 @@
       const b = $id('srBar'); if (b && !b.hidden && !t.closest('#srBar')) closeBar();
     });
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { closeBar(); const n = $id('srNavInput'); if (n && document.activeElement === n) n.blur(); return; }
+      if (isSrInput(e.target) && !$id('srSug').hidden) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); moveSug(1); return; }
+        if (e.key === 'ArrowUp') { e.preventDefault(); moveSug(-1); return; }
+        if (e.key === 'Enter' && sug.i >= 0) { const r = document.querySelectorAll('#srSug .sr-sg')[sug.i]; if (r) { e.preventDefault(); r.click(); return; } }
+      }
+      if (e.key === 'Escape') { closeSug(); closeBar(); const n = $id('srNavInput'); if (n && document.activeElement === n) n.blur(); return; }
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || '')) || e.target.isContentEditable;
       if ((e.key === '/' && !typing && !e.ctrlKey && !e.metaKey) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openBar(); }
     });
   }
 
-  window.Search = { page, applyFind };
+  window.Search = { page, applyFind, close() { closeBar(); closeSug(); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
