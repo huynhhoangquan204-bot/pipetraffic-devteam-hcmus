@@ -323,7 +323,7 @@ async function profile() {
 /* --- Điều hướng (hash), mỗi mục trên menu là một TRANG RIÊNG nhưng vẫn là một file SPA ---
    #/  ·  #/p/<id>  ·  #/login  ·  #/profile  ·  #/specs  #/journey  #/problems  #/team  #/video  #/faq  #/comments */
 const PAGES = ['specs', 'journey', 'problems', 'team', 'video', 'faq', 'comments'];   // mỗi tên ứng với <template id="tpl-...">
-const routes = { '': home, p: project, login, profile, privacy };
+const routes = { '': home, p: project, login, profile, privacy, search: id => Search.page(id) };
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
@@ -335,11 +335,14 @@ async function route() {
   try {
     if (PAGES.includes(r)) {
       app.dataset.view = r; app.innerHTML = `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
-      fillContent(r); if (r === 'comments') { setRating(5); loadCommentsFromSheet(); }
+      const jobs = [fillContent(r)];
+      if (r === 'comments') { setRating(5); jobs.push(loadCommentsFromSheet()); }
+      Promise.allSettled(jobs).then(() => Search.applyFind());   // tìm kiếm: tô từ khoá + cuộn tới đoạn được chọn
     } else {
       app.dataset.view = r || 'home';
       if (r === 'p') app.innerHTML = '<div class="pt-app pt-32"><div class="loading">Đang tải…</div></div>';
       await (routes[r || ''] || home)(id);
+      Search.applyFind();
     }
   } catch (e) { wrap('<p class="err">Lỗi tải dữ liệu: ' + esc(e.message) + '</p>'); }
 }
