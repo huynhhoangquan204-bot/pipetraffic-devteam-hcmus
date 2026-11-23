@@ -210,6 +210,8 @@ function drawChat(busy) {
 }
 function openChat(tab) {
   const p = $('#chatPop'); if (!p) return;
+  if (typeof toggleMobileMenu === 'function') toggleMobileMenu(true);   // mở chat thì đóng menu
+  if (window.Search) Search.close();
   if (tab) chatTab = tab;
   if (!chatBound) {
     chatBound = true;
