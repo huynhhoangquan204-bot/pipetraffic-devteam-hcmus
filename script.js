@@ -19,6 +19,7 @@
     if (!m || !i) return;
     const closed = typeof force === 'boolean' ? (m.classList.toggle('hidden', force), force) : m.classList.toggle('hidden');
     i.className = closed ? 'fa-solid fa-bars text-xl' : 'fa-solid fa-xmark text-xl';
+    if (!closed) { if (typeof closeChat === 'function') closeChat(); if (window.Search) Search.close(); }   // mở menu thì đóng chat + gợi ý tìm kiếm
   }
 
   /* --- Tab 4.1 – 4.4 (mục Problems) --- */
