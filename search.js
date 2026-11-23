@@ -163,6 +163,7 @@
   async function page(raw) {
     let q; try { q = decodeURIComponent(raw || ''); } catch (e) { q = String(raw || ''); }
     q = q.trim().slice(0, 100);
+    const nv = $id('srNavInput'); if (nv && document.activeElement !== nv) nv.value = q;
     if (!q) { shell('', `<p class="sr-sum">Nhập từ khoá để tìm trong toàn bộ website.</p>${quickLinks()}`); const i = $id('srPageInput'); if (i) i.focus(); return; }
     shell(q, '<div id="srResults"><div class="loading">Đang tìm…</div></div>');
     const index = await buildIndex();
@@ -218,9 +219,12 @@
     q = String(q || '').trim(); if (!q) return;
     const h = '#/search/' + encodeURIComponent(q.slice(0, 100));
     closeBar();
+    const n = $id('srNavInput'); if (n) { n.value = q; n.blur(); }
     if (location.hash === h && typeof window.route === 'function') window.route(); else location.hash = h;
   }
   function openBar() {
+    const nav = $id('srNavInput');
+    if (nav && nav.offsetParent) { nav.focus(); nav.select(); return; }   // màn hình rộng: dùng ô tìm kiếm ngay trên menu
     const bar = $id('srBar'); if (!bar) return;
     if (typeof window.toggleMobileMenu === 'function') window.toggleMobileMenu(true);
     const inp = $id('srInput'); if (state.q && !inp.value) inp.value = state.q;
@@ -270,7 +274,27 @@
 .sr-quick a:hover{background:#e0f2fe}
 .sr-flash{outline:3px solid #38bdf8;outline-offset:6px;border-radius:12px;animation:srf 2.6s ease-out}
 @keyframes srf{0%,60%{outline-color:#38bdf8}100%{outline-color:transparent}}
-@media(max-width:640px){.sr-page{padding-top:100px}.sr-pform button{padding:9px 14px}}`;
+@media(max-width:640px){.sr-page{padding-top:100px}.sr-pform button{padding:9px 14px}}
+/* --- Menu luôn dạng hamburger: ô tìm kiếm kiểu Google ở giữa, Chat + hamburger bên phải --- */
+.sr-logo{margin-right:20px}.sr-right{margin-left:20px}
+.sr-nav{flex:1 1 auto;min-width:0;max-width:640px;margin-left:auto;margin-right:auto;height:46px;display:flex;align-items:center;gap:10px;padding:0 18px;background:#f1f5f9;border:1px solid transparent;border-radius:99px;transition:.15s}
+.sr-nav:hover{background:#fff;border-color:#e2e8f0;box-shadow:0 2px 10px rgba(15,23,42,.10)}
+.sr-nav:focus-within{background:#fff;border-color:#bae6fd;box-shadow:0 4px 18px rgba(2,132,199,.22)}
+.sr-nav>i{color:#64748b;font-size:.95rem}.sr-nav:focus-within>i{color:#0284c7}
+.sr-nav input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:16px;color:#0f172a;height:100%;-webkit-appearance:none;appearance:none}
+.sr-nav input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.sr-nav kbd{font:inherit;font-size:.72rem;font-weight:700;color:#94a3b8;border:1px solid #cbd5e1;border-radius:6px;padding:1px 7px;background:#fff}
+.sr-nav:focus-within kbd{display:none}
+#mobile-menu{position:absolute;right:16px;top:80px;width:min(360px,calc(100vw - 32px));max-height:calc(100vh - 100px);overflow:auto;border:1px solid #e2e8f0;border-radius:16px}
+.nav-chat{position:relative;width:auto!important;padding:0 14px;gap:8px;font-weight:700;font-size:.9rem;animation:chatGlow 1.9s ease-in-out infinite}
+.nav-chat .nav-chat-t{display:none}
+.nav-chat::before{content:"";position:absolute;inset:-2px;border-radius:inherit;border:2px solid rgba(56,189,248,.9);animation:chatRing 1.9s ease-out infinite;pointer-events:none}
+@keyframes chatGlow{0%,100%{box-shadow:0 0 6px 1px rgba(56,189,248,.45),0 0 0 0 rgba(14,165,233,.55);filter:brightness(1)}50%{box-shadow:0 0 22px 7px rgba(56,189,248,.85),0 0 0 6px rgba(14,165,233,0);filter:brightness(1.15)}}
+@keyframes chatRing{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.35,1.6);opacity:0}}
+@media(prefers-reduced-motion:reduce){.nav-chat,.nav-chat::before{animation:none}}
+@media(min-width:640px){.sr-btn{display:none}.nav-chat .nav-chat-t{display:inline}}
+@media(max-width:639px){.sr-nav{display:none}.sr-right{margin-left:auto}}
+@media(max-width:420px){.sr-logo>div{display:none}.sr-logo{margin-right:0}}`;
     document.head.appendChild(css);
 
     const bar = document.createElement('div');
@@ -293,7 +317,7 @@
       const b = $id('srBar'); if (b && !b.hidden && !t.closest('#srBar')) closeBar();
     });
     document.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { closeBar(); return; }
+      if (e.key === 'Escape') { closeBar(); const n = $id('srNavInput'); if (n && document.activeElement === n) n.blur(); return; }
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName || '')) || e.target.isContentEditable;
       if ((e.key === '/' && !typing && !e.ctrlKey && !e.metaKey) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) { e.preventDefault(); openBar(); }
     });
