@@ -75,33 +75,23 @@
     .pp-chip:hover{background:#e0f2fe}
     .pp-note{margin-top:14px;font-size:.82rem;color:#64748b;white-space:pre-wrap}
     /* Banner giới thiệu (popup) */
-    .pp-card.wb-card{max-width:540px;padding:0;color:#e2e8f0;background:linear-gradient(145deg,#0b2545 0%,#075985 55%,#4f46e5 100%);border:1px solid rgba(255,255,255,.12)}
+    .pp-card.wb-card{max-width:440px;padding:0;color:#e2e8f0;background:linear-gradient(145deg,#0b2545 0%,#075985 55%,#4f46e5 100%);border:1px solid rgba(255,255,255,.12)}
     .wb-card .pp-x{z-index:2;background:rgba(255,255,255,.16);color:#fff}
     .wb-card .pp-x:hover{background:rgba(255,255,255,.3)}
-    .wb{position:relative;padding:28px 22px 20px;text-align:center;overflow:hidden}
-    .wb::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 8%,rgba(56,189,248,.28),transparent 55%),radial-gradient(circle at 92% 92%,rgba(217,70,239,.22),transparent 50%);pointer-events:none}
-    .wb>*{position:relative}
-    .wb-top{display:flex;flex-direction:column;align-items:center;gap:10px}
-    .wb .wb-logo{width:64px;height:64px;border-radius:18px;object-fit:cover;box-shadow:0 0 0 3px rgba(255,255,255,.25)}
-    .wb .wb-badge{display:inline-flex;gap:8px;align-items:center;padding:6px 12px;border-radius:99px;background:rgba(56,189,248,.14);border:1px solid rgba(125,211,252,.3);color:#7dd3fc;font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase}
-    .wb .wb-badge i{color:#facc15}
-    .wb .wb-title{margin:14px 0 8px;font-size:1.55rem;line-height:1.25;font-weight:800;color:#fff}
+    .wb{padding:30px 24px 24px;text-align:center}
+    .wb .wb-logo{width:72px;height:72px;border-radius:20px;object-fit:cover;box-shadow:0 0 0 3px rgba(255,255,255,.25)}
+    .wb .wb-title{margin:14px 0 8px;font-size:1.45rem;line-height:1.25;font-weight:800;color:#fff}
     .wb .wb-title span{background:linear-gradient(90deg,#38bdf8,#a5b4fc,#f0abfc);-webkit-background-clip:text;background-clip:text;color:transparent}
-    .wb .wb-quote{margin:0 0 8px;font-size:.95rem;font-style:italic;font-weight:600;color:#7dd3fc}
-    .wb .wb-desc{margin:0 0 14px;font-size:.88rem;line-height:1.55;color:#cbd5e1}
-    .wb .wb-feats{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:8px;text-align:left}
-    .wb .wb-feats li{display:flex;gap:12px;align-items:center;padding:9px 12px;border-radius:14px;background:rgba(15,23,42,.45);border:1px solid rgba(148,163,184,.2)}
-    .wb .wb-feats i{flex:none;width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:rgba(255,255,255,.08);font-size:1.05rem}
-    .wb .wb-feats small{display:block;font-size:.68rem;color:#94a3b8}
-    .wb .wb-feats b{font-size:.86rem;color:#fff}
-    .wb .wb-credit{margin:0 0 14px;font-size:.75rem;color:#94a3b8}
-    .wb .wb-credit b{color:#7dd3fc}
+    .wb .wb-quote{margin:0 0 8px;font-size:.92rem;font-style:italic;font-weight:600;color:#7dd3fc}
+    .wb .wb-desc{margin:0 0 18px;font-size:.88rem;line-height:1.55;color:#cbd5e1}
     .wb .wb-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-    .wb .wb-btn{display:inline-flex;gap:6px;align-items:center;justify-content:center;padding:10px 16px;border-radius:12px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#e2e8f0;font-size:.85rem;font-weight:700;text-decoration:none}
+    .wb .wb-btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 18px;border:1px solid rgba(255,255,255,.25);border-radius:12px;background:rgba(255,255,255,.1);color:#e2e8f0;font:inherit;font-size:.88rem;font-weight:700;text-decoration:none;cursor:pointer}
     .wb .wb-btn:hover{background:rgba(255,255,255,.2)}
-    .wb .wb-btn.wb-p{background:linear-gradient(135deg,#0ea5e9,#6366f1);border-color:transparent;color:#fff;box-shadow:0 6px 18px rgba(14,165,233,.35)}
-    .wb .wb-skip{display:block;width:100%;margin-top:12px;padding:10px;border:0;border-radius:12px;background:#fff;color:#0369a1;font:inherit;font-weight:800;font-size:.9rem;cursor:pointer}
-    @media(max-width:480px){.wb .wb-title{font-size:1.3rem}.wb .wb-btn{flex:1 1 100%}}
+    .wb .wb-btn.wb-p{background:#fff;border-color:#fff;color:#0369a1}
+    @media(max-width:480px){.wb .wb-btn{flex:1 1 100%}}
+    /* Hình mờ Pipe Traffic phía sau mục dự án (multiply để nền trắng của logo biến mất) */
+    #projects{position:relative;overflow:hidden;isolation:isolate}
+    #projects::before{content:"";position:absolute;inset:0;z-index:-1;background:url(logo.jpg) center 40%/min(620px,90%) no-repeat;opacity:.09;mix-blend-mode:multiply;pointer-events:none}
     </style>
 </head>
 <body class="font-sans text-slate-800 bg-slate-50 antialiased w-full min-h-screen overflow-x-hidden flex flex-col">
@@ -227,25 +217,14 @@
     <!-- NỘI DUNG GỐC: sửa chữ/ảnh/link ở các khối <template> bên dưới -->
     <template id="tpl-hero">
     <div class="wb">
-        <div class="wb-top">
-            <img class="wb-logo" src="logo.jpg" alt="Logo Pipe Traffic" onerror="this.onerror=null;this.src='https://i.postimg.cc/tgyk09xn/logo2.jpg'">
-            <span class="wb-badge"><i class="fa-solid fa-bolt"></i> Dự án nghiên cứu HCMUS - ĐH Khoa học Tự nhiên</span>
-        </div>
-        <h2 class="wb-title">Pipe Traffic – Hệ thống giao thông <span>đường ống từ trường</span></h2>
+        <img class="wb-logo" src="logo.jpg" alt="Logo Pipe Traffic" onerror="this.onerror=null;this.src='https://i.postimg.cc/tgyk09xn/logo2.jpg'">
+        <h2 class="wb-title">Pipe Traffic – Giao thông <span>đường ống từ trường</span></h2>
         <p class="wb-quote">"Kết nối không giới hạn – Giải pháp giao thông xanh và thông minh cho tương lai."</p>
-        <p class="wb-desc">Đề xuất giải pháp di chuyển và vận chuyển thế hệ mới dựa trên công nghệ đường ống từ tính, giúp giải quyết triệt để vấn đề ùn tắc giao thông, không gian hẹp và chi phí hạ tầng đô thị.</p>
-        <ul class="wb-feats">
-            <li><i class="fa-solid fa-magnet" style="color:#38bdf8"></i><div><small>Động cơ truyền động</small><b>Lực từ trường không ma sát</b></div></li>
-            <li><i class="fa-solid fa-brain" style="color:#a5b4fc"></i><div><small>Trí tuệ nhân tạo (AI)</small><b>Đo khoảng cách &amp; ưu tiên khẩn cấp</b></div></li>
-            <li><i class="fa-solid fa-house-circle-check" style="color:#67e8f9"></i><div><small>Điểm kết nối hạ tầng</small><b>Lắp đặt tận hộ gia đình &amp; tòa nhà</b></div></li>
-        </ul>
-        <p class="wb-credit"><i class="fa-solid fa-pen-nib"></i> Logo nhóm được thiết kế chính thức bởi <b>Nguyễn Giàu</b> · Design Lead</p>
+        <p class="wb-desc">Dự án nghiên cứu của sinh viên HCMUS về hệ thống di chuyển và vận chuyển bằng đường ống từ tính, giúp giảm ùn tắc và chi phí hạ tầng đô thị.</p>
         <div class="wb-actions">
-            <a href="#/problems" class="wb-btn wb-p">Khám phá giải pháp</a>
-            <a href="#/video" class="wb-btn"><i class="fa-solid fa-play"></i> Xem video demo</a>
-            <a href="#" data-chat-open class="wb-btn"><i class="fa-solid fa-comments"></i> Đóng góp ý kiến</a>
+            <button type="button" class="wb-btn wb-p" data-welcome-close>Xem các dự án</button>
+            <a href="#/problems" class="wb-btn">Khám phá giải pháp</a>
         </div>
-        <button type="button" class="wb-skip" data-welcome-close>Xem các dự án ↓</button>
     </div>
     </template>
 
@@ -911,8 +890,8 @@
     <script src="botintents.js?v=1"></script>
     <script src="bot.js?v=16"></script>
     <script src="attach.js?v=3"></script>
-    <script src="messenger.js?v=2"></script>
+    <script src="messenger.js?v=3"></script>
     <script src="search.js?v=3"></script>
-    <script src="app.js?v=21"></script>
+    <script src="app.js?v=22"></script>
 </body>
 </html>
