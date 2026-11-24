@@ -172,9 +172,9 @@
 
     <!-- KHUNG CHAT CHUNG (popup): mở bằng nút Chat cạnh menu -->
     <div id="chatPop" class="pp-chat" hidden role="dialog" aria-label="Khung chat">
-        <div class="pp-head"><div><b>Trò chuyện</b><small>Chat với Admin hoặc trợ lý ảo</small></div><button type="button" class="pp-x" data-chat-close aria-label="Đóng khung chat">&times;</button></div>
+        <div class="ms-head"><div class="ms-hav" id="chatHav"></div><div class="ms-htx"><b id="chatName">Admin Pipe Traffic</b><small id="chatSub"></small></div><button type="button" class="ms-hx" data-chat-close aria-label="Đóng khung chat">&times;</button></div>
         <div class="pp-tabs"><button type="button" data-ct="admin">Admin</button><button type="button" data-ct="ai">Trợ lý</button></div>
-        <div class="pp-log" id="chatLog"></div>
+        <div class="pp-log ms-log" id="chatLog"></div>
         <form class="pp-form" id="chatForm"><input name="t" maxlength="1000" autocomplete="off" placeholder="Nhập tin nhắn…"><button type="submit">Gửi</button></form>
     </div>
 
@@ -947,8 +947,9 @@
     <script src="content.js?v=15"></script>
     <script src="botintents.js?v=1"></script>
     <script src="bot.js?v=16"></script>
-    <script src="attach.js?v=1"></script>
+    <script src="attach.js?v=2"></script>
+    <script src="messenger.js?v=1"></script>
     <script src="search.js?v=3"></script>
-    <script src="app.js?v=19"></script>
+    <script src="app.js?v=20"></script>
 </body>
 </html>
