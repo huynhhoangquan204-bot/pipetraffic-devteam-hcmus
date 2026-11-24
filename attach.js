@@ -2,7 +2,7 @@
    Dùng chung cho khung chat người dùng và trang admin.
    Lưu trữ (không cần Firebase Storage):
    - Hình ảnh: nén còn ~260KB, lưu thẳng trong tin nhắn (trường "media").
-   - Video (6MB), tệp (4MB), tin nhắn thoại (3MB / 2 phút): cắt thành mảnh ~700KB lưu ở bộ sưu tập "chunks",
+   - Video (25MB), tệp (4MB), tin nhắn thoại (3MB / 2 phút): cắt thành mảnh ~700KB lưu ở bộ sưu tập "chunks",
      chỉ tải về khi người nhận bấm xem / nghe / tải.
    - Cảm xúc: bộ sưu tập "reacts" (mỗi người 1 cảm xúc / tin nhắn). Thu hồi: tin nhắn bị xoá nội dung, đánh dấu recalled.
    - Chat với AI: mọi thứ chỉ hiện tại máy này; AI CHƯA xem / nghe được tệp. */
@@ -13,8 +13,9 @@
   const PH_TXT = { img: '🖼️ Hình ảnh', video: '🎬 Video', audio: '🎤 Tin nhắn thoại', file: '📄 Tệp đính kèm' };
   const PH = new Set([ATT_TXT, ...Object.values(PH_TXT)]);
   const MAX_FILES = 4, CHUNK = 700000, MAX_INLINE = 880000, MAX_REC = 120;
+  const MAX_CHUNKS = 50;                               // 50 mảnh x 700KB (base64) ≈ 25MB dữ liệu gốc; muốn tăng video thì tăng cả maxVideo() lẫn số này
   const demo = () => !!(window.Store && Store.mode === 'demo');
-  const maxVideo = () => demo() ? 1200000 : 6 * 1024 * 1024;
+  const maxVideo = () => demo() ? 1200000 : 25 * 1024 * 1024;   // chế độ thật: 25MB (trước là 6MB)
   const maxFile = () => demo() ? 1200000 : 4 * 1024 * 1024;
   const maxAudio = () => demo() ? 1200000 : 3 * 1024 * 1024;
   const IMG_OK = /^data:image\/(jpeg|png|webp|gif);base64,/i;
@@ -53,14 +54,18 @@
   async function upload(it, uid, by, prog) {
     const dataUrl = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(new Error('Không đọc được tệp')); r.readAsDataURL(it.file); });
     const b64 = dataUrl.slice(dataUrl.indexOf(',') + 1), n = Math.ceil(b64.length / CHUNK);
+    if (n > MAX_CHUNKS) throw new Error('Tệp quá lớn để gửi trong chat. Hãy đưa lên YouTube/Drive rồi dán link.');
     const mid = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), done = [];
-    try {
-      for (let i = 0; i < n; i++) {
-        const id = mid + '_' + i;
-        await Store.put('chunks', { id, mid, i, uid, by, data: b64.slice(i * CHUNK, (i + 1) * CHUNK), ts: Date.now() + i });
-        done.push(id); if (prog) prog(i + 1, n);
+    let next = 0, fin = 0, fail = null;
+    const worker = async () => {                      // 3 mảnh được ghi song song cho nhanh; lỗi ở mảnh nào thì dừng cả tệp
+      while (!fail && next < n) {
+        const i = next++, id = mid + '_' + i;
+        try { await Store.put('chunks', { id, mid, i, uid, by, data: b64.slice(i * CHUNK, (i + 1) * CHUNK), ts: Date.now() + i }); done.push(id); if (prog) prog(++fin, n); }
+        catch (x) { fail = fail || x; }
       }
-    } catch (x) { for (const id of done) { try { await Store.del('chunks', id); } catch (_) { /* không xoá được thì bỏ qua */ } } throw x; }
+    };
+    await Promise.all(Array.from({ length: Math.min(3, n) }, worker));
+    if (fail) { for (const id of done) { try { await Store.del('chunks', id); } catch (_) { /* không xoá được thì bỏ qua */ } } throw fail; }
     if (it.t === 'video') return { t: 'video', mid, n, mime: it.mime, size: it.size, name: safeName(it.name) };
     if (it.t === 'audio') return { t: 'audio', mid, n, mime: it.mime, size: it.size, dur: it.dur };
     return { t: 'file', mid, n, size: it.size, name: safeName(it.name) };
@@ -76,7 +81,7 @@
       if (!Array.isArray(list) || !list.length) return '';
       return '<div class="at-media">' + list.slice(0, 6).map(m => {
         if (!m) return '';
-        const mid = m.mid && MID.test(m.mid) ? m.mid : '', n = Math.min(16, Math.max(1, +m.n || 1)), blob = /^blob:/.test(m.src || '') ? m.src : '';
+        const mid = m.mid && MID.test(m.mid) ? m.mid : '', n = Math.min(MAX_CHUNKS, Math.max(1, +m.n || 1)), blob = /^blob:/.test(m.src || '') ? m.src : '';
         if (m.t === 'img' && IMG_OK.test(m.src || '')) return `<img class="at-img" src="${e(m.src)}" alt="Ảnh đính kèm" loading="lazy" onclick="Media.open(this.src)">`;
         if (m.t === 'video') {
           if (mid && cache[mid]) return `<video class="at-vid" controls playsinline preload="metadata" src="${e(cache[mid])}"></video>`;
@@ -101,7 +106,13 @@
     // Tải các mảnh về, ghép lại thành blob URL
     async load(mid, n, mime) {
       if (cache[mid]) return cache[mid];
-      const parts = await Promise.all(Array.from({ length: n }, (_, i) => Store.get('chunks', mid + '_' + i)));
+      const parts = new Array(n); let next = 0;
+      const worker = async () => { while (next < n) { const i = next++; parts[i] = await Store.get('chunks', mid + '_' + i); } };
+      try { await Promise.all(Array.from({ length: Math.min(6, n) }, worker)); }
+      catch (x) {
+        if (/Rules Firestore|permission/i.test((x && (x.message + x.code)) || '')) throw new Error('Chưa có quyền tải tệp này. Cần cho phép tài khoản đã đăng nhập ĐỌC bộ sưu tập "chunks" trong Firestore Rules.');
+        throw x;
+      }
       if (parts.some(p => !p || typeof p.data !== 'string')) throw new Error('Tệp chưa tải đủ hoặc đã bị xoá.');
       const bufs = parts.map(p => { const bin = atob(p.data), a = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) a[k] = bin.charCodeAt(k); return a; });
       return cache[mid] = URL.createObjectURL(new Blob(bufs, { type: mime }));
@@ -303,8 +314,9 @@
         return `<button type="button" class="rx-chip${c.some(r => r.uid === uid) ? ' on' : ''}" data-react="${k}" data-mid="${e(id)}" title="${KLABEL[k]}">${KINDS[k]}${c.length > 1 ? ' ' + c.length : ''}</button>`;
       }).join('');
     },
-    actbtn(id, mine) {                                  // nút ☺ cạnh bong bóng (thả cảm xúc / thu hồi)
-      return `<button type="button" class="rx-btn" data-rx="${e(id)}" data-mine="${mine ? 1 : 0}" aria-label="Thả cảm xúc${mine ? ' hoặc thu hồi' : ''}" title="Thả cảm xúc${mine ? ' / thu hồi' : ''}">☺</button>`;
+    actbtn(id, mine) {                                  // nút ☺ (thả cảm xúc) + ↩ (thu hồi, chỉ tin của mình) cạnh bong bóng
+      return `<button type="button" class="rx-btn" data-rx="${e(id)}" data-mine="${mine ? 1 : 0}" aria-label="Thả cảm xúc${mine ? ' hoặc thu hồi' : ''}" title="Thả cảm xúc${mine ? ' / thu hồi' : ''}">☺</button>`
+        + (mine ? `<button type="button" class="rx-btn rx-undo" data-recall="${e(id)}" aria-label="Thu hồi tin nhắn" title="Thu hồi tin nhắn">↩</button>` : '');
     },
     pop(btn) {
       if (toggled(btn)) return;
@@ -331,7 +343,7 @@
       if (!confirm('Thu hồi tin nhắn này? Nội dung sẽ bị xoá khỏi cuộc trò chuyện.')) return;
       try {
         await Store.put('messages', { id: m.id, uid: m.uid, userName: m.userName || '', from: m.from, ts: m.ts, text: '', recalled: true, projectId: m.projectId || '', projectName: m.projectName || '' });
-        for (const x of (m.media || [])) if (x && x.mid && MID.test(x.mid)) for (let i = 0; i < Math.min(16, +x.n || 1); i++) { try { await Store.del('chunks', x.mid + '_' + i); } catch (_) { /* không xoá được thì bỏ qua */ } }
+        for (const x of (m.media || [])) if (x && x.mid && MID.test(x.mid)) for (let i = 0; i < Math.min(MAX_CHUNKS, +x.n || 1); i++) { try { await Store.del('chunks', x.mid + '_' + i); } catch (_) { /* không xoá được thì bỏ qua */ } }
       } catch (x) { say(x.message || 'Chưa thu hồi được'); }
     }
   };
@@ -347,7 +359,7 @@
     const b = t.closest('[data-at-mid]'); if (!b || b.disabled) return;           // bấm xem video / nghe thoại / tải tệp
     const kind = b.dataset.kind || 'video', label = b.innerHTML; b.disabled = true; b.textContent = 'Đang tải…';
     try {
-      const url = await Attach.load(b.dataset.atMid, Math.min(16, +b.dataset.n || 1), kind === 'file' ? 'application/octet-stream' : b.dataset.mime);
+      const url = await Attach.load(b.dataset.atMid, Math.min(MAX_CHUNKS, +b.dataset.n || 1), kind === 'file' ? 'application/octet-stream' : b.dataset.mime);
       if (kind === 'file') {
         const nm = b.dataset.name || 'tep', dl = document.createElement('a'); dl.href = url; dl.download = nm; document.body.appendChild(dl); dl.click(); dl.remove();
         if (b.isConnected) { const a = document.createElement('a'); a.className = 'at-load'; a.href = url; a.download = nm; a.innerHTML = label; b.replaceWith(a); }
@@ -391,10 +403,13 @@ button.at-rm{position:absolute;top:2px;right:2px;width:20px;height:20px;padding:
 .rc{font-style:italic;opacity:.65}
 .at-media{display:flex;flex-direction:column;gap:6px;margin-top:6px}
 .at-img{max-width:240px;width:100%;max-height:220px;border-radius:12px;cursor:zoom-in;display:block;object-fit:cover}
-.at-vid{max-width:260px;width:100%;max-height:260px;border-radius:12px;background:#000;display:block}
+.at-vid{width:260px;max-width:100%;max-height:300px;border-radius:12px;background:#000;display:block}
 .at-aud{width:230px;max-width:100%;height:38px;display:block}
 .at-load{display:inline-block;border:0;border-radius:12px;background:rgba(15,23,42,.08);padding:10px 14px;font:inherit;font-weight:700;color:inherit;cursor:pointer;text-align:left;text-decoration:none;word-break:break-all}
 .me .at-load{background:rgba(255,255,255,.22)}
+.at-load[data-kind=video]{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.35)}   /* luôn nhìn thấy, kể cả khi bong bóng không có nền (tin chỉ có video) */
+.at-load[data-kind=video]:hover{filter:brightness(1.08)}
+.rx-btn.rx-undo:hover{color:#be123c}
 .vc-bar{position:absolute;inset:0;z-index:6;display:flex;align-items:center;gap:10px;padding:6px 12px;background:#fff;border-radius:inherit}
 .vc-bar[hidden]{display:none}
 .vc-dot{flex:none;width:10px;height:10px;border-radius:50%;background:#ef4444;animation:vcp 1s ease-in-out infinite}
