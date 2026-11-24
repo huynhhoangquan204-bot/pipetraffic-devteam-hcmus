@@ -89,11 +89,8 @@
     .wb .wb-btn:hover{background:rgba(255,255,255,.2)}
     .wb .wb-btn.wb-p{background:#fff;border-color:#fff;color:#0369a1}
     @media(max-width:480px){.wb .wb-btn{flex:1 1 100%}}
-    /* Hình mờ Pipe Traffic phía sau mục dự án (multiply để nền trắng của logo biến mất) */
-    #projects{position:relative;overflow:hidden;isolation:isolate}
-    #projects::before{content:"";position:absolute;inset:0;z-index:-1;background:url(logo.jpg) center 40%/min(620px,90%) no-repeat;opacity:.09;mix-blend-mode:multiply;pointer-events:none}
     /* Nền động toàn trang (bg.gif). Chỉnh độ che phủ của các khối nội dung bằng --veil (0 = trong suốt, 1 = đặc) */
-    :root{--veil:.8}
+    :root{--veil:.55}
     body{background-color:#12061a}
     body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(10,5,20,.3),rgba(10,5,20,.3)),url(bg.gif) center/cover no-repeat #12061a;image-rendering:pixelated;pointer-events:none}
     @media(prefers-reduced-motion:reduce){body::before{background-image:linear-gradient(rgba(10,5,20,.3),rgba(10,5,20,.3)),url(bg-still.jpg)}}
