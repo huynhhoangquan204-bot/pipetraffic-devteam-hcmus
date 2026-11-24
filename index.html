@@ -92,6 +92,17 @@
     /* Hình mờ Pipe Traffic phía sau mục dự án (multiply để nền trắng của logo biến mất) */
     #projects{position:relative;overflow:hidden;isolation:isolate}
     #projects::before{content:"";position:absolute;inset:0;z-index:-1;background:url(logo.jpg) center 40%/min(620px,90%) no-repeat;opacity:.09;mix-blend-mode:multiply;pointer-events:none}
+    /* Nền động toàn trang (bg.gif). Chỉnh độ che phủ của các khối nội dung bằng --veil (0 = trong suốt, 1 = đặc) */
+    :root{--veil:.8}
+    body{background-color:#12061a}
+    body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(10,5,20,.3),rgba(10,5,20,.3)),url(bg.gif) center/cover no-repeat #12061a;image-rendering:pixelated;pointer-events:none}
+    @media(prefers-reduced-motion:reduce){body::before{background-image:linear-gradient(rgba(10,5,20,.3),rgba(10,5,20,.3)),url(bg-still.jpg)}}
+    #app section{backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+    #app section[class*="bg-white"]{background-color:rgba(255,255,255,var(--veil))}
+    #app section[class*="bg-slate-50"]{background-color:rgba(248,250,252,var(--veil))}
+    #app section[class*="bg-slate-100"]{background-color:rgba(241,245,249,var(--veil))}
+    #app section[class*="bg-slate-900"]{background-color:rgba(15,23,42,var(--veil))}
+    #app>.pt-app{background:rgba(255,255,255,.9);border-radius:0 0 24px 24px}   /* trang dự án / đăng nhập / hồ sơ: bảng sáng để chữ dễ đọc trên nền động */
     </style>
 </head>
 <body class="font-sans text-slate-800 bg-slate-50 antialiased w-full min-h-screen overflow-x-hidden flex flex-col">
