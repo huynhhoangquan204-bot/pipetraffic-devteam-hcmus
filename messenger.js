@@ -134,7 +134,7 @@
 .ms-row.them .ms-rx{right:-6px}
 .ms-rx .rx-chip{border:0;background:#fff;color:#444;box-shadow:0 1px 4px rgba(0,0,0,.28);border-radius:99px;padding:1px 6px;font-size:.78rem;line-height:1.5;cursor:pointer}
 .ms-rx .rx-chip.on{box-shadow:0 0 0 2px #0866ff,0 1px 4px rgba(0,0,0,.2)}
-.ms-act{flex:none;align-self:center;opacity:0;transition:opacity .15s}
+.ms-act{flex:none;align-self:center;display:flex;align-items:center;opacity:0;transition:opacity .15s}
 .ms-row:hover .ms-act,.ms-act:focus-within{opacity:1}
 @media(hover:none){.ms-act{opacity:.55}}
 .ms-act .rx-btn{opacity:1;margin:0;width:28px;height:28px;padding:0;border-radius:50%;background:none;color:#65676b;font-size:1.05rem;display:flex;align-items:center;justify-content:center}
@@ -152,14 +152,46 @@ form.ms-form button.at-btn{flex:none;width:34px;height:34px;padding:0;margin:0;b
 form.ms-form button.at-btn:hover{background:#f0f2f5;border-color:transparent}
 form.ms-form button.at-btn svg{width:24px;height:24px;fill:currentColor}
 form.ms-form .ms-field{flex:1;min-width:0;display:flex;align-items:center;background:#f0f2f5;border-radius:20px;padding:0 4px 0 14px}
-form.ms-form .ms-field input,form.ms-form .ms-field textarea{flex:1;min-width:0;width:auto;margin:0;border:0;border-radius:0;background:none;box-shadow:none;outline:0;padding:9px 0;font:inherit;font-size:16px;line-height:1.3;color:#050505;resize:none;max-height:120px}
+form.ms-form .ms-field input,form.ms-form .ms-field textarea{flex:1;min-width:0;width:auto;margin:0;border:0;border-radius:0;background:none;box-shadow:none;outline:0;padding:9px 0;font:inherit;font-size:16px;line-height:1.3;color:#050505;resize:none;max-height:120px;min-height:0;height:auto;overflow-y:auto}
 form.ms-form .ms-field input:disabled,form.ms-form .ms-field textarea:disabled{background:none}
 form.ms-form:has(input:disabled) .ms-tools,form.ms-form:has(input:disabled) .ms-field{opacity:.45;pointer-events:none}
-form.ms-form button.ms-send{flex:none;align-self:flex-end;width:38px!important;height:38px!important;min-width:0!important;padding:0!important;border:0!important;border-radius:50%!important;background:none!important;box-shadow:none!important;color:#0866ff!important;font-size:1.55rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transform:none!important}
+form.ms-form button.ms-send{flex:none;align-self:flex-end;width:38px!important;height:38px!important;min-width:0!important;padding:0!important;border:0!important;border-radius:50%!important;background:none!important;box-shadow:none!important;color:#0866ff!important;font-size:1.55rem;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transform:none!important;margin:0!important;min-height:0!important}
 form.ms-form button.ms-send:hover{background:#f0f2f5!important}
 form.ms-form button.ms-send svg{width:24px;height:24px;fill:currentColor}
 form.ms-form button.ms-send .ms-prog{font-size:.7rem;font-weight:700}
 form.ms-form button.ms-send:disabled{opacity:.4}
-.vc-bar{background:#fff}`;
+.vc-bar{background:#fff}
+/* ---------- MÀU SẮC (xanh dương → tím → hồng, đồng bộ với bong bóng của mình) ---------- */
+#chatPop.pp-chat{background:#fbfdff}
+#chatPop .ms-head{background:linear-gradient(115deg,#0ea5e9 0%,#6366f1 55%,#d946ef 100%);border-bottom:0}
+#chatPop .ms-htx b{color:#fff}
+#chatPop .ms-htx small{color:rgba(255,255,255,.88)}
+.ms-hav .av{box-shadow:0 0 0 2px rgba(255,255,255,.95)}
+.ms-hav .dot{background:#4ade80;border-color:#6366f1}
+#chatPop .ms-hx{background:rgba(255,255,255,.22);color:#fff}
+#chatPop .ms-hx:hover{background:rgba(255,255,255,.36)}
+#chatPop .pp-tabs{background:#eef2ff;padding:8px 12px}
+#chatPop .pp-tabs button{background:#fff;color:#4f46e5;box-shadow:0 1px 2px rgba(79,70,229,.18)}
+#chatPop .pp-tabs button.on{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.4)}
+#chatPop .ms-log,.pt-app .ms-log,.adm .ms-log{background:radial-gradient(circle at 12% 0%,#e0f2fe 0,rgba(224,242,254,0) 46%),radial-gradient(circle at 100% 100%,#fae8ff 0,rgba(250,232,255,0) 46%),#fbfdff}
+.pt-app .ms-log,.adm .ms-log{border-color:#dbeafe}
+.ms-sep{padding:2px 10px;border-radius:99px;background:#e0e7ff;color:#4f46e5}
+.ms-row.them .ms-b:not(.ms-mo):not(.ms-big):not(.ms-rc){background:linear-gradient(135deg,#eef2ff,#e0f2fe);color:#1e293b;box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.ms-row.them.ai .ms-b:not(.ms-mo):not(.ms-big):not(.ms-rc){background:linear-gradient(135deg,#ecfeff,#dcfce7)}
+.ms-row.me .ms-b:not(.ms-mo):not(.ms-big):not(.ms-rc){box-shadow:0 2px 6px rgba(99,102,241,.28)}
+.ms-typing i{background:#6366f1}
+.ms-act .rx-btn:hover{background:#eef2ff}
+.ms-rx .rx-chip{box-shadow:0 1px 4px rgba(99,102,241,.35)}
+form.ms-form{border-top:1px solid #e0e7ff}
+form.ms-form .ms-field{background:#eef2ff;transition:box-shadow .15s,background .15s}
+form.ms-form .ms-field:focus-within{background:#e0e7ff;box-shadow:0 0 0 2px #a5b4fc}
+form.ms-form .ms-tools button.at-btn:nth-child(1){color:#6366f1}
+form.ms-form .ms-tools button.at-btn:nth-child(2){color:#22c55e}
+form.ms-form .ms-tools button.at-btn:nth-child(3){color:#f97316}
+form.ms-form button.at-btn.at-emo{color:#f59e0b}
+form.ms-form button.at-btn:hover{background:#eef2ff}
+form.ms-form button.ms-send{color:#6366f1!important}
+form.ms-form button.ms-send:hover{background:#eef2ff!important}
+.vc-bar button.vc-send{background:linear-gradient(135deg,#0ea5e9,#6366f1)}`;
   document.head.appendChild(css);
 })();
