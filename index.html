@@ -89,14 +89,47 @@
     .wb .wb-btn:hover{background:rgba(255,255,255,.2)}
     .wb .wb-btn.wb-p{background:#fff;border-color:#fff;color:#0369a1}
     @media(max-width:480px){.wb .wb-btn{flex:1 1 100%}}
-    /* Nền động toàn trang (bg.gif): các khối nội dung không còn nền màu, chỉ làm mờ phần nền phía sau (kính mờ).
-       --blur = độ mờ; --lift = độ sáng phần nền sau khối sáng màu (tăng nếu chữ tối khó đọc, giảm để thấy GIF tối hơn) */
-    :root{--blur:12px;--lift:2.6}
+
+    /* Nền động toàn trang (bg.gif) & Kính mờ nổi bật nội dung */
+    :root{--blur:14px}
     body{background-color:#12061a}
-    body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(10,5,20,.3),rgba(10,5,20,.3)),url(bg.gif) center/cover no-repeat #12061a;image-rendering:pixelated;pointer-events:none}
-    @media(prefers-reduced-motion:reduce){body::before{background-image:linear-gradient(rgba(10,5,20,.3),rgba(10,5,20,.3)),url(bg-still.jpg)}}
-    #app section[class*="bg-white"],#app section[class*="bg-slate-50"],#app section[class*="bg-slate-100"],#app>.pt-app{background-color:transparent;-webkit-backdrop-filter:blur(var(--blur)) brightness(var(--lift)) saturate(.7);backdrop-filter:blur(var(--blur)) brightness(var(--lift)) saturate(.7)}
-    #app section[class*="bg-slate-900"]{background-color:transparent;-webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur))}
+    body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(10,5,20,.35),rgba(10,5,20,.35)),url(bg.gif) center/cover no-repeat #12061a;image-rendering:pixelated;pointer-events:none}
+    @media(prefers-reduced-motion:reduce){body::before{background-image:linear-gradient(rgba(10,5,20,.35),rgba(10,5,20,.35)),url(bg-still.jpg)}}
+
+    /* Làm nổi thanh menu trên cùng */
+    nav.glass-card{background-color:rgba(255,255,255,.92) !important;-webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur))}
+
+    /* Khối nền sáng: Phủ trắng mờ 86% giúp chữ tối cực kỳ sắc nét */
+    #app section[class*="bg-white"],
+    #app>.pt-app{
+        background-color:rgba(255,255,255,.86) !important;
+        -webkit-backdrop-filter:blur(var(--blur));
+        backdrop-filter:blur(var(--blur));
+        border-bottom:1px solid rgba(255,255,255,.6);
+    }
+
+    /* Khối nền xám nhạt: Phủ xám xanh mờ 84% để phân tách với khối trắng */
+    #app section[class*="bg-slate-50"],
+    #app section[class*="bg-slate-100"]{
+        background-color:rgba(241,245,249,.84) !important;
+        -webkit-backdrop-filter:blur(var(--blur));
+        backdrop-filter:blur(var(--blur));
+        border-bottom:1px solid rgba(255,255,255,.5);
+    }
+
+    /* Khối nền tối (Journey, Comments): Phủ xanh đen mờ 85% + viền sáng nhẹ */
+    #app section[class*="bg-slate-900"]{
+        background-color:rgba(15,23,42,.85) !important;
+        -webkit-backdrop-filter:blur(var(--blur));
+        backdrop-filter:blur(var(--blur));
+        border-top:1px solid rgba(56,189,248,.2);
+        border-bottom:1px solid rgba(56,189,248,.2);
+    }
+
+    /* Làm các thẻ con (card) bên trong nổi khối rõ hơn */
+    #app .rounded-2xl, #app .rounded-3xl {
+        box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.08);
+    }
     </style>
 </head>
 <body class="font-sans text-slate-800 bg-slate-50 antialiased w-full min-h-screen overflow-x-hidden flex flex-col">
