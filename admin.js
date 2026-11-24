@@ -303,8 +303,9 @@ async function comments() {
 async function messages() {
   app.innerHTML = '<h1>Tin nhắn</h1><p class="sub">Tin mới hiện ngay, không cần tải lại. Cuộc trò chuyện đang chờ bạn trả lời được đánh dấu.</p><div id="mbox"><div class="loading">Đang tải…</div></div>';
   let last = [], built = null; const U = {};
+  Msgx.ctx = { uid: () => (Store.uid && Store.uid()) || 'admin', th: id => (last.find(m => m.id === id) || {}).uid, find: id => last.find(m => m.id === id), redraw: () => draw() };
   try { (await Store.list('users')).forEach(u => { U[u.id] = u; }); } catch (e) {}   // để hiện avatar người dùng
-  const bubbles = ms => ms.map(m => { const ad = m.from === 'admin'; return `<div class="mrow ${ad ? 'me' : ''}">${ad ? Avatar.admin('sm') : Avatar.html(U[m.uid] || { name: m.userName }, 'sm')}<div class="msg ${ad ? 'me' : ''}"><small>${ad ? 'Admin' : esc(m.userName)}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small>${m.media && m.media.length && m.text === Attach.ATT_TXT ? '' : `<span>${esc(m.text)}</span>`}${Attach.html(m.media)}</div></div>`; }).join('');
+  const bubbles = ms => ms.map(m => { const ad = m.from === 'admin'; return `<div class="mrow ${ad ? 'me' : ''}">${ad ? Avatar.admin('sm') : Avatar.html(U[m.uid] || { name: m.userName }, 'sm')}<div class="msg ${ad ? 'me' : ''}"><small>${ad ? 'Admin' : esc(m.userName)}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small>${Msgx.body(m.text, m.media, m.recalled)}${Msgx.foot(m.id, Msgx.get(m.id), Msgx.ctx.uid(), ad, m.recalled)}</div></div>`; }).join('');
   const draw = () => {
     const box = $('#mbox'); if (!box) return;
     const by = {}; last.forEach(m => (by[m.uid] = by[m.uid] || []).push(m));
@@ -313,13 +314,13 @@ async function messages() {
         built = thread;
         box.innerHTML = '<a href="#" id="back" class="plink">&larr; Tất cả hội thoại</a><div class="card" style="margin-top:10px"><h2 id="tname"></h2><div class="chat" id="log"></div><form id="f"><textarea name="t" placeholder="Trả lời… (kéo thả, Ctrl+V hoặc bấm 📎 để gửi ảnh / video)"></textarea><button class="btn">Gửi trả lời</button></form></div>';
         $('#back').onclick = e => { e.preventDefault(); thread = null; built = null; draw(); };
-        const at = Attach.composer({ form: $('#f'), text: null, zone: $('#f').closest('.card'), label: 'Đính kèm' });
+        const at = Attach.composer({ form: $('#f'), text: $('#f').elements.t, zone: $('#f').closest('.card'), label: 'Đính kèm' });
         $('#f').onsubmit = async e => {
           e.preventDefault(); const t = e.target.elements.t.value.trim(); if (!t && !at.has()) return;
           const th = thread, u = last.find(m => m.uid === th), btn = e.target.querySelector('button.btn'), lbl = btn.textContent; btn.disabled = true;
           try {
-            const media = at.has() ? await at.build({ uid: th, progress: (i, n) => { btn.textContent = 'Đang tải ' + i + '/' + n + '…'; } }) : [];
-            await Store.put('messages', { uid: th, userName: u ? u.userName : '', from: 'admin', text: t || Attach.ATT_TXT, ...(media.length ? { media } : {}), projectId: '', projectName: '' });
+            const media = at.has() ? await at.build({ uid: th, by: 'admin', progress: (i, n) => { btn.textContent = 'Đang tải ' + i + '/' + n + '…'; } }) : [];
+            await Store.put('messages', { uid: th, userName: u ? u.userName : '', from: 'admin', text: t || Attach.txt(media), ...(media.length ? { media } : {}), projectId: '', projectName: '' });
             e.target.elements.t.value = ''; at.clear();
           } catch (x) { toast(x.message); }
           btn.disabled = false; btn.textContent = lbl;
@@ -335,6 +336,7 @@ async function messages() {
       box.querySelectorAll('[data-th]').forEach(b => b.onclick = () => { thread = b.dataset.th; draw(); });
     }
   };
+  live.push(Store.listen('reacts', null, rs => { Msgx.setReacts(rs); draw(); }, () => {}));
   live.push(Store.listen('messages', null, ms => { last = ms; draw(); }, er => { const b = $('#mbox'); if (b) b.innerHTML = '<p class="err">' + esc(er.message) + '</p>'; }));
 }
 
