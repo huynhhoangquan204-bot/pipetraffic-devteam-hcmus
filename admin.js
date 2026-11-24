@@ -104,8 +104,25 @@ function mediaCollect(links) {
   return items;
 }
 
+// Ảnh nền thẻ dự án: thu nhỏ còn tối đa 960px, JPEG, ~150KB cho trang chính tải nhanh
+async function bgShrink(file) {
+  if (!/^image\//.test(file.type)) throw new Error('"' + file.name + '" không phải ảnh');
+  const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Không đọc được ảnh')); i.src = URL.createObjectURL(file); });
+  let max = 960, q = .75, out;
+  for (let k = 0; k < 6; k++) {
+    const sc = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
+    c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+    out = c.toDataURL('image/jpeg', q); if (out.length <= 150000) break; max *= .8; q = Math.max(.5, q - .07);
+  }
+  URL.revokeObjectURL(img.src);
+  if (out.length > 300000) throw new Error('Ảnh quá lớn để lưu, hãy chọn ảnh khác');
+  return out;
+}
+
 async function projects() {
   const ps = await Store.list('projects'), e = ps.find(p => p.id === editing) || {};
+  let bg = /^data:image\/(jpeg|png|webp);base64,/.test(e.bgImg || '') ? e.bgImg : '';
   const pct = v => Math.min(100, Math.max(0, Math.round(+v || 0))), P = pct(e.progress);
   app.innerHTML = `<h1>Dự án</h1><p class="sub">Thêm, sửa hoặc xoá dự án hiển thị trên trang chính.</p>
   <div class="card"><h2>${e.id ? 'Sửa dự án' : 'Thêm dự án'}</h2><form id="f"><label>Tên</label><input name="name" required value="${esc(e.name)}">
@@ -113,10 +130,14 @@ async function projects() {
   <div class="two"><div><label>Trạng thái</label><select name="status">${['Kế hoạch', 'Đang làm', 'Tạm dừng', 'Hoàn thành'].map(s => `<option ${e.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
   <div><label>Tiến độ (%)</label><div class="prog"><input type="range" id="pr" min="0" max="100" step="1" value="${P}" aria-label="Kéo để chỉnh tiến độ"><input type="text" id="pn" name="progress" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" value="${P}" aria-label="Tiến độ (%)"></div></div></div>
   <label>Chủ dự án</label><input name="owner" value="${esc(e.owner || 'Admin')}">
+  <label>Ảnh nền thẻ dự án (hiện ở trang chính, tự thu nhỏ cho nhẹ)</label><input type="file" id="pbg" accept="image/*"><div class="pthumbs" id="pbgPrev"></div>
   <button class="btn">${e.id ? 'Lưu thay đổi' : 'Thêm dự án'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form></div>
-  <div class="card" style="margin-top:14px">${ps.map(p => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${pct(p.progress)}%</small></div>
+  <div class="card" style="margin-top:14px">${ps.map(p => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${pct(p.progress)}%${p.bgImg ? ' · có ảnh nền' : ''}</small></div>
   <div><button class="btn ghost sm" data-e="${p.id}">Sửa</button> <button class="btn danger" data-d="${p.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có dự án.</p>'}</div>`;
   // Ô tiến độ: ô chữ (không dùng type=number nên lăn chuột / phím mũi tên không làm đổi số) + thanh kéo, luôn giữ trong 0–100
+  const drawBg = () => { $('#pbgPrev').innerHTML = bg ? `<div class="pth" style="width:120px"><img src="${esc(bg)}" alt="Ảnh nền"><button type="button" id="pbgRm" aria-label="Bỏ ảnh nền">×</button></div>` : ''; if ($('#pbgRm')) $('#pbgRm').onclick = () => { bg = ''; drawBg(); }; };
+  drawBg();
+  $('#pbg').onchange = async ev => { const f = ev.target.files[0]; ev.target.value = ''; if (!f) return; try { bg = await bgShrink(f); drawBg(); } catch (x) { toast(x.message); } };
   const pr = $('#pr'), pn = $('#pn');
   pr.oninput = () => { pn.value = pr.value; };
   pn.oninput = () => { pn.value = pn.value.replace(/\D/g, '').slice(0, 3); if (pn.value !== '') { pn.value = pct(pn.value); pr.value = pn.value; } };
@@ -127,7 +148,9 @@ async function projects() {
     const progress = pct(f.progress);
     try {
       // Dự án không còn lưu ảnh / video / PDF: stripMedia xoá luôn các trường tệp cũ của bản ghi này
-      await Store.put('projects', { ...stripMedia(e), name: f.name.trim(), desc: f.desc, status: f.status, progress, owner: f.owner });
+      const o = { ...stripMedia(e), name: f.name.trim(), desc: f.desc, status: f.status, progress, owner: f.owner };
+      if (bg) o.bgImg = bg; else delete o.bgImg;
+      await Store.put('projects', o);
     } catch (x) { return toast(x.message); }
     editing = null; toast('Đã lưu · tiến độ ' + progress + '%'); render();
   };
