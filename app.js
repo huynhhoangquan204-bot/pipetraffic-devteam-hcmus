@@ -61,9 +61,9 @@ function setActive(key) {
   document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('nav-on', a.dataset.r === key));
 }
 
-/* --- Trang chủ: banner + giới thiệu + danh sách dự án + CTA. Phần tĩnh hiện ngay, dự án tải sau --- */
+/* --- Trang chủ: danh sách dự án + CTA (phần giới thiệu đã gom thành banner popup, xem showWelcome) --- */
 async function home() {
-  app.innerHTML = tpl('tpl-hero') + `<section id="projects" class="py-20 bg-slate-50"><div class="pt-app max-w-5xl mx-auto px-4">
+  app.innerHTML = `<section id="projects" class="pt-32 pb-20 bg-slate-50"><div class="pt-app max-w-5xl mx-auto px-4">
   <h2 class="sec">Các dự án</h2><p class="sub">Tình hình cập nhật hằng tuần của Pipe Traffic Dev Team.</p>
   <div id="projBox"><div class="loading">Đang tải dự án…</div></div></div></section>` + tpl('tpl-cta');
   const box = $('#projBox');
@@ -266,7 +266,18 @@ async function openContact() {
 }
 const closeContact = () => { const m = $('#contact-modal'); if (m) m.hidden = true; };
 
+/* --- Banner giới thiệu (popup): hiện 1 lần mỗi phiên khi vào trang chủ, tắt bằng ×, nút "Xem các dự án", bấm ra ngoài hoặc Esc.
+   Nội dung sửa trong index.html, <template id="tpl-hero">. Muốn hiện lại: xoá khoá pt_welcome trong sessionStorage (hoặc mở tab mới). --- */
+function closeWelcome() { const m = $('#welcome-modal'); if (m) m.hidden = true; }
+function showWelcome() {
+  const m = $('#welcome-modal'), body = $('#welcomeBody'), html = tpl('tpl-hero'); if (!m || !body || !html) return;
+  try { if (sessionStorage.getItem('pt_welcome')) return; sessionStorage.setItem('pt_welcome', '1'); } catch (x) { /* không lưu được thì vẫn hiện */ }
+  body.innerHTML = html; m.hidden = false;
+}
+
 document.addEventListener('click', e => {
+  if (e.target.closest('[data-welcome-close]') || e.target.id === 'welcome-modal') { closeWelcome(); return; }
+  if (e.target.closest('#welcome-modal a, #welcome-modal [data-chat-open]')) closeWelcome();   // bấm link / nút chat trong banner: đóng banner rồi đi tiếp
   const qb = e.target.closest('[data-q]'); if (qb) { const f = $('#chatForm'); if (f && !f.t.disabled) { f.t.value = qb.dataset.q; f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event('submit', { cancelable: true })); } return; }
   const ct = e.target.closest('[data-ct]'); if (ct) { if (chatAt && chatTab !== ct.dataset.ct) chatAt.clear(); chatTab = ct.dataset.ct; if (chatTab === 'admin') markSeen(); drawChat(); return; }
   if (e.target.closest('[data-chat-open]')) { e.preventDefault(); toggleChat(); return; }
@@ -274,7 +285,7 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-contact]')) { e.preventDefault(); openContact(); return; }
   if (e.target.closest('[data-contact-close]') || e.target.id === 'contact-modal') closeContact();
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeContact(); closeChat(); } });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeWelcome(); closeContact(); closeChat(); } });
 
 /* --- Hồ sơ: đổi avatar. Ảnh cắt vuông, thu nhỏ 160px, lưu vào hồ sơ người dùng (users) và hiện cạnh tin nhắn trong chat --- */
 async function setAvatar(get) {
@@ -378,4 +389,5 @@ const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off
     await Promise.race([route(), new Promise(r => setTimeout(r, 4000))]);   // chờ tối đa 4 giây rồi mở trang
   } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
   hideSplash();
+  if (!location.hash.replace(/^#\/?/, '')) showWelcome();   // chỉ hiện banner khi vào đúng trang chủ
 })();
