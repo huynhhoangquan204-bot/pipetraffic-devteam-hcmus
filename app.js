@@ -73,7 +73,9 @@ async function home() {
     box.innerHTML = (Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : '') +
     `<div class="pgrid">${ps.map(p => {
       const last = us.filter(u => u.projectId === p.id).pop();
-      return `<a class="card" href="#/p/${p.id}"><div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
+      const bgOk = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.bgImg || '') && p.bgImg.length < 400000;
+      const bgSt = bgOk ? ` style="background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.93) 72%),url('${p.bgImg}');background-size:cover;background-position:center"` : '';
+      return `<a class="card"${bgSt} href="#/p/${p.id}"><div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
       <p class="muted" style="margin:0">${esc(p.desc)}</p>
       <div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small>
       ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}</p>` : ''}</a>`;
