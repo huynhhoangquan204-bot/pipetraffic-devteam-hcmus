@@ -120,7 +120,7 @@
 .ms-row.me.p-mid .ms-b{border-top-right-radius:5px;border-bottom-right-radius:5px}
 .ms-row.me.p-last .ms-b{border-top-right-radius:5px}
 .ms-b.ms-big,.ms-row.me .ms-b.ms-big{background:none;padding:0;font-size:2.4rem;line-height:1.15;color:inherit}
-.ms-b.ms-mo,.ms-row.me .ms-b.ms-mo{background:none;padding:0;overflow:hidden;border-radius:18px}
+.ms-b.ms-mo,.ms-row.me .ms-b.ms-mo{background:none;padding:0;overflow:visible;border-radius:18px}
 .ms-mo .at-media{margin:0}
 .ms-mo .at-img,.ms-mo .at-vid{border-radius:18px;max-width:240px}
 .ms-b.ms-rc,.ms-row.me .ms-b.ms-rc{background:none;border:1px solid #d0d3d8;color:#8a8d91;font-size:.85rem;font-style:italic}
