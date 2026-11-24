@@ -29,6 +29,15 @@
   const say = m => { try { if (typeof toast === 'function') return toast(m); } catch (x) { /* dùng alert */ } alert(m); };
   const EMOJIS = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '🙂', '😉', '😊', '😍', '🥰', '😘', '😋', '😎', '🤩', '🥳', '🤔', '😐', '😴', '😢', '😭', '😤', '😡', '🥺', '😱', '🤗', '👍', '👎', '👏', '🙏', '💪', '👌', '✌️', '🤝', '👋', '🔥', '✨', '💯', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '💔', '🎉', '🎁', '🚀', '⭐', '🌈', '☀️', '🌙', '⚡', '🚇', '🚆', '🛠️', '💡', '📌', '📷', '🎬', '🎵', '✅', '❌', '⚠️', '❓'];
 
+
+  const ICON = {   // biểu tượng kiểu Messenger (SVG, tô theo màu chữ)
+    plus: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 7v10M7 12h10" stroke="#fff" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg>',
+    image: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="19" height="16" rx="3.5"/><circle cx="8.5" cy="9.5" r="1.8" fill="#fff"/><path d="M4 18l5-5 3 3 3-3.5 5 5.5z" fill="#fff"/></svg>',
+    mic: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5M8.5 21.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>',
+    smile: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="8.8" cy="10" r="1.4" fill="#fff"/><circle cx="15.2" cy="10" r="1.4" fill="#fff"/><path d="M7.6 14c1 2.2 2.8 3.2 4.4 3.2s3.4-1 4.4-3.2" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>',
+    send: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.6 20.6 21.4 12 2.6 3.4l-.1 6.7L15 12 2.5 13.9z"/></svg>'
+  };
+
   /* ---------- Bảng nổi dùng chung (menu 📎, emoji, cảm xúc): chỉ mở một cái một lúc ---------- */
   let floatEl = null;
   function closeFloat() { if (floatEl) { floatEl.remove(); floatEl = null; } }
@@ -108,17 +117,32 @@
       const tray = document.createElement('div'); tray.className = 'at-tray'; tray.hidden = true;
       form.parentNode.insertBefore(tray, form);
       const file = document.createElement('input'); file.type = 'file'; file.multiple = true; file.hidden = true;
-      const mk = (txt, title, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'at-btn' + (adm ? ' at-adm' : '') + (cls ? ' ' + cls : ''); b.title = title; b.setAttribute('aria-label', title); b.textContent = txt; return b; };
-      const emoBtn = text ? mk('😊', 'Chèn emoji') : null;
+      const mk = (svg, title, cls) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'at-btn' + (cls ? ' ' + cls : ''); b.title = title; b.setAttribute('aria-label', title); b.innerHTML = svg; return b; };
+      const emoBtn = text ? mk(ICON.smile, 'Chèn emoji', 'at-emo') : null;
       const canRec = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
-      const micBtn = canRec ? mk('🎤', 'Ghi âm tin nhắn thoại') : null;
-      const clipBtn = mk('📎' + (adm ? ' Đính kèm' : ''), 'Đính kèm hình ảnh, tệp hoặc video (cũng có thể kéo thả hoặc Ctrl+V)');
+      const micBtn = canRec ? mk(ICON.mic, 'Ghi âm tin nhắn thoại') : null;
+      const clipBtn = mk(ICON.plus, 'Đính kèm hình ảnh, tệp hoặc video (cũng có thể kéo thả hoặc Ctrl+V)');
+      const imgBtn = mk(ICON.image, 'Gửi hình ảnh');
       const submit = form.querySelector('button[type=submit], button:not([type])');
-      [emoBtn, micBtn, clipBtn].forEach(b => { if (b) form.insertBefore(b, submit); });
+      // Bố cục: [＋ 🖼 🎤] [ ô nhập + 😊 ] [👍 / gửi]
+      form.classList.add('ms-form'); if (submit) submit.classList.add('ms-send');
+      const tools = document.createElement('div'); tools.className = 'ms-tools';
+      [clipBtn, imgBtn, micBtn].forEach(b => { if (b) tools.appendChild(b); });
+      const field = document.createElement('div'); field.className = 'ms-field';
+      if (text) { text.parentNode.insertBefore(field, text); field.appendChild(text); if (emoBtn) field.appendChild(emoBtn); }
+      form.insertBefore(tools, text ? field : submit);
       form.appendChild(file);
+      // Nút bên phải: 👍 khi chưa gõ gì, mũi tên gửi khi đã có chữ / tệp
+      function sync() {
+        if (!submit) return;
+        const empty0 = !items.length && !(text && text.value.trim());
+        submit.classList.toggle('ms-like', empty0); submit.innerHTML = empty0 ? '👍' : ICON.send;
+        submit.setAttribute('aria-label', empty0 ? 'Gửi lượt thích' : 'Gửi');
+        if (text && text.tagName === 'TEXTAREA' && !text.value) text.style.height = '';
+      }
 
       const draw = () => {
-        tray.hidden = !items.length;
+        tray.hidden = !items.length; sync();
         tray.innerHTML = items.map((it, i) => `<div class="at-th${it.t === 'file' || it.t === 'audio' ? ' at-fl' : ''}">${
           it.t === 'img' ? `<img src="${e(it.src)}" alt="">`
           : it.t === 'video' ? `<video src="${e(it.url)}" muted preload="metadata"></video><span class="at-play">▶</span><small>${size(it.size)}</small>`
@@ -148,8 +172,8 @@
       }
       const submitForm = () => { if (form.requestSubmit) form.requestSubmit(); else form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); };
       const ctl = form._at = {
-        add, has: () => items.length > 0, count: () => items.length,
-        clear() { items.splice(0).forEach(it => { if (it.url && !it.keep) URL.revokeObjectURL(it.url); }); draw(); },
+        add, sync, has: () => items.length > 0, count: () => items.length,
+        clear() { items.splice(0).forEach(it => { if (it.url && !it.keep) URL.revokeObjectURL(it.url); }); draw(); setTimeout(sync, 0); },
         // Trả về mảng media để lưu vào tin nhắn. local:true = chat AI (không tải lên máy chủ). by: 'user' | 'admin'
         async build(o = {}) {
           const inline = items.filter(i => i.t === 'img').reduce((s, i) => s + i.src.length, 0);
@@ -173,7 +197,19 @@
         openFloat(m, clipBtn);
       };
       file.onchange = () => { add(file.files); file.value = ''; };
+      imgBtn.onclick = () => { if (text && text.disabled) return; closeFloat(); file.accept = 'image/*'; file.click(); };
       tray.addEventListener('click', ev => { const r = ev.target.closest('[data-rm]'); if (!r) return; const it = items.splice(+r.dataset.rm, 1)[0]; if (it && it.url) URL.revokeObjectURL(it.url); draw(); });
+
+      if (text) {                                           // Enter gửi (Shift+Enter xuống dòng); ô trống thì Enter không gửi 👍
+        text.addEventListener('input', () => { sync(); if (text.tagName === 'TEXTAREA') { text.style.height = 'auto'; text.style.height = Math.min(120, text.scrollHeight) + 'px'; } });
+        text.addEventListener('keydown', ev => {
+          if (ev.key !== 'Enter' || ev.shiftKey || ev.isComposing) return;
+          if (!items.length && !text.value.trim()) { ev.preventDefault(); return; }
+          if (text.tagName === 'TEXTAREA') { ev.preventDefault(); submitForm(); }
+        });
+        if (text.tagName === 'TEXTAREA') text.rows = 1;
+      }
+      sync();
 
       /* --- nút 😊: chèn emoji vào ô nhập --- */
       if (emoBtn) emoBtn.onclick = () => {
@@ -261,6 +297,15 @@
       }).join('');
       return `<div class="rx-foot">${chips}<button type="button" class="rx-btn" data-rx="${e(id)}" data-mine="${mine ? 1 : 0}" aria-label="Thả cảm xúc${mine ? ' hoặc thu hồi' : ''}" title="Thả cảm xúc${mine ? ' / thu hồi' : ''}">☺</button></div>`;
     },
+    chips(id, list, uid) {                              // cảm xúc bám mép bong bóng
+      return Object.keys(KINDS).map(k => {
+        const c = (list || []).filter(r => r.k === k); if (!c.length) return '';
+        return `<button type="button" class="rx-chip${c.some(r => r.uid === uid) ? ' on' : ''}" data-react="${k}" data-mid="${e(id)}" title="${KLABEL[k]}">${KINDS[k]}${c.length > 1 ? ' ' + c.length : ''}</button>`;
+      }).join('');
+    },
+    actbtn(id, mine) {                                  // nút ☺ cạnh bong bóng (thả cảm xúc / thu hồi)
+      return `<button type="button" class="rx-btn" data-rx="${e(id)}" data-mine="${mine ? 1 : 0}" aria-label="Thả cảm xúc${mine ? ' hoặc thu hồi' : ''}" title="Thả cảm xúc${mine ? ' / thu hồi' : ''}">☺</button>`;
+    },
     pop(btn) {
       if (toggled(btn)) return;
       const mid = btn.dataset.rx, p = document.createElement('div'); p.id = 'rxPop'; p.setAttribute('role', 'menu');
@@ -326,10 +371,6 @@
 .at-th .at-ico{position:absolute;left:0;right:0;top:10px;text-align:center;font-size:1.5rem}
 .at-th small{position:absolute;left:0;right:0;bottom:0;background:rgba(15,23,42,.65);color:#fff;font-size:.6rem;text-align:center;padding:1px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 button.at-rm{position:absolute;top:2px;right:2px;width:20px;height:20px;padding:0;border:0;border-radius:50%;background:rgba(15,23,42,.75);color:#fff;font-size:.95rem;line-height:1;cursor:pointer}
-button.at-btn.at-btn{flex:none;width:30px;height:30px;padding:0;border:1px solid #cbd5e1;border-radius:50%;background:#fff;color:#475569;font-size:.95rem;font-weight:400;line-height:1;cursor:pointer}
-button.at-btn.at-adm{width:auto;height:auto;padding:8px 12px;margin:8px 8px 0 0;border-radius:10px;font-size:.9rem;font-weight:600}
-button.at-btn:hover{background:#f0f9ff;border-color:#7dd3fc}
-input:disabled ~ .at-btn,textarea:disabled ~ .at-btn{opacity:.4;pointer-events:none}
 .at-menu,.emo-panel,#rxPop{position:fixed;z-index:90;background:#fff;border:1px solid #e2e8f0;box-shadow:0 14px 34px rgba(15,23,42,.22)}
 .at-menu{display:flex;flex-direction:column;padding:6px;border-radius:14px;min-width:170px}
 .at-menu button{border:0;background:none;text-align:left;padding:9px 12px;border-radius:9px;font:inherit;font-size:.9rem;color:#0f172a;cursor:pointer}
