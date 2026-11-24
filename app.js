@@ -168,8 +168,9 @@ async function privacy() {
 /* --- Khung chat chung (popup): bấm nút Chat cạnh menu để mở / đóng. Hai tab: Admin (tin nhắn thật, cần đăng nhập) và AI ---
    Gắn AI: trong config.js hoặc một file <script> riêng, khai báo
    window.PT_AI = { ask: async (cauHoi, lichSu) => 'câu trả lời' };  (lichSu = [{role:'user'|'ai', text}]) */
+let chatAt = null, chatBusy = false;
 const aiHist = []; let chatBound = false, chatTab = 'admin', msgs = [], unread = 0, msgOff = null, msgFor = null;
-const bub = (cls, label, text) => `<div class="pp-row ${cls}">${cls === 'me' ? Avatar.html(me || { name: 'Bạn' }, 'sm') : cls === 'ai' ? Avatar.ai('sm') : Avatar.admin('sm')}<div class="pp-msg ${cls}"><small>${label}</small><span>${esc(text)}</span></div></div>`;
+const bub = (cls, label, text, media) => `<div class="pp-row ${cls}">${cls === 'me' ? Avatar.html(me || { name: 'Bạn' }, 'sm') : cls === 'ai' ? Avatar.ai('sm') : Avatar.admin('sm')}<div class="pp-msg ${cls}"><small>${label}</small>${media && media.length && text === Attach.ATT_TXT ? '' : `<span>${esc(text)}</span>`}${Attach.html(media)}</div></div>`;
 const aiOn = () => !!(window.PT_AI && typeof window.PT_AI.ask === 'function');
 const chatOpen = () => { const p = $('#chatPop'); return !!p && !p.hidden; };
 
@@ -196,7 +197,7 @@ function drawChat(busy) {
   if (chatTab === 'ai') {
     const on = aiOn(); inp.disabled = btn.disabled = !on;
     inp.placeholder = on ? 'Hỏi trợ lý về Pipe Traffic…' : 'Trợ lý sẽ được thêm sau';
-    log.innerHTML = (aiHist.map(m => bub(m.role === 'user' ? 'me' : 'ai', m.role === 'user' ? 'Bạn' : 'Trợ lý ảo', m.text)).join('')
+    log.innerHTML = (aiHist.map(m => bub(m.role === 'user' ? 'me' : 'ai', m.role === 'user' ? 'Bạn' : 'Trợ lý ảo', m.text, m.media)).join('')
       || `<div class="pp-empty">${on ? 'Xin chào! Mình là trợ lý ảo của Pipe Traffic. Bạn muốn hỏi gì?<div class="pp-chips">' + ((window.PT_AI.suggest || []).map(q => `<button type="button" class="pp-chip" data-q="${esc(q)}">${esc(q)}</button>`).join('')) + '</div>' : 'Trợ lý sẽ được thêm sau.'}</div>`) + (busy ? bub('ai', 'Trợ lý ảo', 'Đang trả lời…') : '');
     log.scrollTop = log.scrollHeight; return;
   }
@@ -205,7 +206,7 @@ function drawChat(busy) {
     log.innerHTML = '<div class="pp-empty">Đăng nhập để nhắn tin cho admin.<br><a class="pp-btn" href="#/login" data-chat-close>Đăng nhập</a></div>'; return;
   }
   inp.disabled = btn.disabled = false; inp.placeholder = 'Nhắn cho admin…';
-  log.innerHTML = msgs.map(m => bub(m.from === 'user' ? 'me' : '', `${m.from === 'user' ? 'Bạn' : 'Admin'} · ${fmt(m.ts)}`, m.text)).join('') || '<div class="pp-empty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
+  log.innerHTML = msgs.map(m => bub(m.from === 'user' ? 'me' : '', `${m.from === 'user' ? 'Bạn' : 'Admin'} · ${fmt(m.ts)}`, m.text, m.media)).join('') || '<div class="pp-empty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
   if (stick) log.scrollTop = log.scrollHeight;
 }
 function openChat(tab) {
@@ -215,16 +216,24 @@ function openChat(tab) {
   if (tab) chatTab = tab;
   if (!chatBound) {
     chatBound = true;
+    chatAt = Attach.composer({ form: $('#chatForm'), text: $('#chatForm').t, zone: $('#chatPop') });   // 📎 / kéo thả / Ctrl+V
     $('#chatForm').onsubmit = async e => {
-      e.preventDefault(); const inp = e.target.t, t = inp.value.trim(); if (!t || inp.disabled) return;
+      e.preventDefault(); const inp = e.target.t, btn = e.target.querySelector('button[type=submit]'), has = !!(chatAt && chatAt.has()), t = inp.value.trim();
+      if ((!t && !has) || inp.disabled || chatBusy) return;
       if (chatTab === 'ai') {
-        inp.value = ''; const before = aiHist.slice(); aiHist.push({ role: 'user', text: t }); drawChat(true);
-        try { aiHist.push({ role: 'ai', text: String(await window.PT_AI.ask(t, before)) }); }
+        let media = []; try { media = has ? await chatAt.build({ local: true }) : []; } catch (x) { toast(x.message); return; }   // chat AI: tệp chỉ hiện tại máy này
+        if (chatAt) chatAt.clear(); inp.value = ''; const before = aiHist.slice(); aiHist.push({ role: 'user', text: t || Attach.ATT_TXT, media }); drawChat(true);
+        try { aiHist.push({ role: 'ai', text: t ? String(await window.PT_AI.ask(t, before)) + (media.length ? '\n\n(Mình chưa xem được ảnh/video nên chỉ trả lời dựa trên chữ bạn viết.)' : '') : 'Mình đã nhận tệp của bạn nhưng hiện chưa xem được ảnh hay video. Bạn mô tả bằng chữ giúp mình nhé.' }); }
         catch (x) { aiHist.push({ role: 'ai', text: 'Trợ lý chưa trả lời được: ' + (x.message || x) }); }
         drawChat(); inp.focus();
       } else {
-        try { await Store.put('messages', { uid: me.id, userName: me.name, from: 'user', text: t, projectId: '', projectName: '' }); inp.value = ''; }
-        catch (x) { toast('Gửi chưa được: ' + x.message); }
+        const lbl = btn.textContent; chatBusy = true; btn.disabled = true;
+        try {
+          const media = has ? await chatAt.build({ uid: me.id, progress: (i, n) => { btn.textContent = 'Đang tải ' + i + '/' + n + '…'; } }) : [];
+          await Store.put('messages', { uid: me.id, userName: me.name, from: 'user', text: t || Attach.ATT_TXT, ...(media.length ? { media } : {}), projectId: '', projectName: '' });
+          inp.value = ''; if (chatAt) chatAt.clear();
+        } catch (x) { toast('Gửi chưa được: ' + x.message); }
+        chatBusy = false; btn.disabled = false; btn.textContent = lbl;
       }
     };
   }
@@ -247,7 +256,7 @@ const closeContact = () => { const m = $('#contact-modal'); if (m) m.hidden = tr
 
 document.addEventListener('click', e => {
   const qb = e.target.closest('[data-q]'); if (qb) { const f = $('#chatForm'); if (f && !f.t.disabled) { f.t.value = qb.dataset.q; f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event('submit', { cancelable: true })); } return; }
-  const ct = e.target.closest('[data-ct]'); if (ct) { chatTab = ct.dataset.ct; if (chatTab === 'admin') markSeen(); drawChat(); return; }
+  const ct = e.target.closest('[data-ct]'); if (ct) { if (chatAt && chatTab !== ct.dataset.ct) chatAt.clear(); chatTab = ct.dataset.ct; if (chatTab === 'admin') markSeen(); drawChat(); return; }
   if (e.target.closest('[data-chat-open]')) { e.preventDefault(); toggleChat(); return; }
   if (e.target.closest('[data-chat-close]')) { closeChat(); return; }
   if (e.target.closest('[data-contact]')) { e.preventDefault(); openContact(); return; }
