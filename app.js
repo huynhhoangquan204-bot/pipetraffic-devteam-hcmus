@@ -175,7 +175,7 @@ Msgx.ctx = {
   uid: () => me && me.id, th: () => me && me.id, find: id => msgs.find(m => m.id === id), redraw: () => drawChat(),
   ai: {   // chat với AI: cảm xúc / thu hồi chỉ áp dụng trên máy này
     react(i, k) { const m = aiHist[i]; if (m) { m.r = m.r === k ? '' : k; drawChat(); } },
-    recall(i) { const m = aiHist[i]; if (m && confirm('Thu hồi tin nhắn này?')) { aiHist[i] = { role: m.role, text: '', recalled: true }; drawChat(); } }
+    recall(i) { const m = aiHist[i]; if (m && confirm('Thu hồi tin nhắn này?')) { aiHist[i] = { ts: m.ts, role: m.role, text: '', recalled: true }; drawChat(); } }
   }
 };
 const aiOn = () => !!(window.PT_AI && typeof window.PT_AI.ask === 'function');
@@ -202,22 +202,24 @@ function ensureMsgs() {
 
 function drawChat(busy) {
   const log = $('#chatLog'), form = $('#chatForm'); if (!log || !form) return;
+  Chat.header(chatTab, msgs);
   document.querySelectorAll('[data-ct]').forEach(b => b.classList.toggle('on', b.dataset.ct === chatTab));
   const inp = form.t, btn = form.querySelector('button[type=submit]'), stick = !log.children.length || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
   if (chatTab === 'ai') {
     const on = aiOn(); inp.disabled = btn.disabled = !on;
     inp.placeholder = on ? 'Hỏi trợ lý về Pipe Traffic…' : 'Trợ lý sẽ được thêm sau';
-    log.innerHTML = (aiHist.map((m, i) => bub(m.role === 'user' ? 'me' : 'ai', m.role === 'user' ? 'Bạn' : 'Trợ lý ảo', m.text, m.media, { id: 'ai:' + i, list: m.r ? [{ uid: 'me', k: m.r }] : [], uid: 'me', mine: m.role === 'user', recalled: m.recalled })).join('')
-      || `<div class="pp-empty">${on ? 'Xin chào! Mình là trợ lý ảo của Pipe Traffic. Bạn muốn hỏi gì?<div class="pp-chips">' + ((window.PT_AI.suggest || []).map(q => `<button type="button" class="pp-chip" data-q="${esc(q)}">${esc(q)}</button>`).join('')) + '</div>' : 'Trợ lý sẽ được thêm sau.'}</div>`) + (busy ? bub('ai', 'Trợ lý ảo', 'Đang trả lời…') : '');
-    log.scrollTop = log.scrollHeight; return;
+    log.innerHTML = (Chat.render(aiHist.map((m, i) => ({ id: 'ai:' + i, who: m.role === 'user' ? 'me' : 'ai', mine: m.role === 'user', ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, list: m.r ? [{ uid: 'me', k: m.r }] : [], uid: 'me', av: Avatar.ai('sm') })))
+      || `<div class="pp-empty">${on ? 'Xin chào! Mình là trợ lý ảo của Pipe Traffic. Bạn muốn hỏi gì?<div class="pp-chips">' + ((window.PT_AI.suggest || []).map(q => `<button type="button" class="pp-chip" data-q="${esc(q)}">${esc(q)}</button>`).join('')) + '</div>' : 'Trợ lý sẽ được thêm sau.'}</div>`) + (busy ? Chat.typing(Avatar.ai('sm')) : '');
+    log.scrollTop = log.scrollHeight; Chat.paint(log); return;
   }
   if (!me) {
     inp.disabled = btn.disabled = true; inp.placeholder = 'Đăng nhập để nhắn tin cho admin';
     log.innerHTML = '<div class="pp-empty">Đăng nhập để nhắn tin cho admin.<br><a class="pp-btn" href="#/login" data-chat-close>Đăng nhập</a></div>'; return;
   }
   inp.disabled = btn.disabled = false; inp.placeholder = 'Nhắn cho admin…';
-  log.innerHTML = msgs.map(m => bub(m.from === 'user' ? 'me' : '', `${m.from === 'user' ? 'Bạn' : 'Admin'} · ${fmt(m.ts)}`, m.text, m.media, { id: m.id, uid: me.id, mine: m.from === 'user', recalled: m.recalled })).join('') || '<div class="pp-empty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
+  log.innerHTML = Chat.render(msgs.map(m => ({ id: m.id, who: m.from === 'user' ? 'me' : 'them', mine: m.from === 'user', ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, list: Msgx.get(m.id), uid: me.id, av: Avatar.admin('sm') }))) || '<div class="pp-empty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
   if (stick) log.scrollTop = log.scrollHeight;
+  Chat.paint(log);
 }
 function openChat(tab) {
   const p = $('#chatPop'); if (!p) return;
@@ -228,22 +230,22 @@ function openChat(tab) {
     chatBound = true;
     chatAt = Attach.composer({ form: $('#chatForm'), text: $('#chatForm').t, zone: $('#chatPop') });   // 📎 / kéo thả / Ctrl+V
     $('#chatForm').onsubmit = async e => {
-      e.preventDefault(); const inp = e.target.t, btn = e.target.querySelector('button[type=submit]'), has = !!(chatAt && chatAt.has()), t = inp.value.trim();
+      e.preventDefault(); const inp = e.target.t, btn = e.target.querySelector('button[type=submit]'), has = !!(chatAt && chatAt.has()), t = inp.value.trim() || (!has && e.submitter && e.submitter.classList.contains('ms-like') ? '👍' : '');
       if ((!t && !has) || inp.disabled || chatBusy) return;
       if (chatTab === 'ai') {
         let media = []; try { media = has ? await chatAt.build({ local: true }) : []; } catch (x) { toast(x.message); return; }   // chat AI: tệp chỉ hiện tại máy này
-        if (chatAt) chatAt.clear(); inp.value = ''; const before = aiHist.slice(); aiHist.push({ role: 'user', text: t || Attach.txt(media), media }); drawChat(true);
-        try { aiHist.push({ role: 'ai', text: t ? String(await window.PT_AI.ask(t, before)) + (media.length ? '\n\n(Mình chưa xem hay nghe được tệp đính kèm nên chỉ trả lời dựa trên chữ bạn viết.)' : '') : 'Mình đã nhận tệp của bạn nhưng hiện chưa xem được ảnh, video, tệp hay nghe được tin nhắn thoại. Bạn mô tả bằng chữ giúp mình nhé.' }); }
-        catch (x) { aiHist.push({ role: 'ai', text: 'Trợ lý chưa trả lời được: ' + (x.message || x) }); }
+        if (chatAt) chatAt.clear(); inp.value = ''; const before = aiHist.slice(); aiHist.push({ ts: Date.now(), role: 'user', text: t || Attach.txt(media), media }); drawChat(true);
+        try { aiHist.push({ ts: Date.now(), role: 'ai', text: t ? String(await window.PT_AI.ask(t, before)) + (media.length ? '\n\n(Mình chưa xem hay nghe được tệp đính kèm nên chỉ trả lời dựa trên chữ bạn viết.)' : '') : 'Mình đã nhận tệp của bạn nhưng hiện chưa xem được ảnh, video, tệp hay nghe được tin nhắn thoại. Bạn mô tả bằng chữ giúp mình nhé.' }); }
+        catch (x) { aiHist.push({ ts: Date.now(), role: 'ai', text: 'Trợ lý chưa trả lời được: ' + (x.message || x) }); }
         drawChat(); inp.focus();
       } else {
-        const lbl = btn.textContent; chatBusy = true; btn.disabled = true;
+        chatBusy = true; btn.disabled = true;
         try {
-          const media = has ? await chatAt.build({ uid: me.id, by: 'user', progress: (i, n) => { btn.textContent = 'Đang tải ' + i + '/' + n + '…'; } }) : [];
+          const media = has ? await chatAt.build({ uid: me.id, by: 'user', progress: (i, n) => { btn.innerHTML = '<small class="ms-prog">' + i + '/' + n + '</small>'; } }) : [];
           await Store.put('messages', { uid: me.id, userName: me.name, from: 'user', text: t || Attach.txt(media), ...(media.length ? { media } : {}), projectId: '', projectName: '' });
           inp.value = ''; if (chatAt) chatAt.clear();
         } catch (x) { toast('Gửi chưa được: ' + x.message); }
-        chatBusy = false; btn.disabled = false; btn.textContent = lbl;
+        chatBusy = false; btn.disabled = false; if (chatAt) chatAt.sync();
       }
     };
   }
