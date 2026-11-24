@@ -304,18 +304,25 @@ async function messages() {
   app.innerHTML = '<h1>Tin nhắn</h1><p class="sub">Tin mới hiện ngay, không cần tải lại. Cuộc trò chuyện đang chờ bạn trả lời được đánh dấu.</p><div id="mbox"><div class="loading">Đang tải…</div></div>';
   let last = [], built = null; const U = {};
   try { (await Store.list('users')).forEach(u => { U[u.id] = u; }); } catch (e) {}   // để hiện avatar người dùng
-  const bubbles = ms => ms.map(m => { const ad = m.from === 'admin'; return `<div class="mrow ${ad ? 'me' : ''}">${ad ? Avatar.admin('sm') : Avatar.html(U[m.uid] || { name: m.userName }, 'sm')}<div class="msg ${ad ? 'me' : ''}"><small>${ad ? 'Admin' : esc(m.userName)}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small><span>${esc(m.text)}</span></div></div>`; }).join('');
+  const bubbles = ms => ms.map(m => { const ad = m.from === 'admin'; return `<div class="mrow ${ad ? 'me' : ''}">${ad ? Avatar.admin('sm') : Avatar.html(U[m.uid] || { name: m.userName }, 'sm')}<div class="msg ${ad ? 'me' : ''}"><small>${ad ? 'Admin' : esc(m.userName)}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small>${m.media && m.media.length && m.text === Attach.ATT_TXT ? '' : `<span>${esc(m.text)}</span>`}${Attach.html(m.media)}</div></div>`; }).join('');
   const draw = () => {
     const box = $('#mbox'); if (!box) return;
     const by = {}; last.forEach(m => (by[m.uid] = by[m.uid] || []).push(m));
     if (thread && by[thread]) {
       if (built !== thread) {
         built = thread;
-        box.innerHTML = '<a href="#" id="back" class="plink">&larr; Tất cả hội thoại</a><div class="card" style="margin-top:10px"><h2 id="tname"></h2><div class="chat" id="log"></div><form id="f"><textarea name="t" required placeholder="Trả lời…"></textarea><button class="btn">Gửi trả lời</button></form></div>';
+        box.innerHTML = '<a href="#" id="back" class="plink">&larr; Tất cả hội thoại</a><div class="card" style="margin-top:10px"><h2 id="tname"></h2><div class="chat" id="log"></div><form id="f"><textarea name="t" placeholder="Trả lời… (kéo thả, Ctrl+V hoặc bấm 📎 để gửi ảnh / video)"></textarea><button class="btn">Gửi trả lời</button></form></div>';
         $('#back').onclick = e => { e.preventDefault(); thread = null; built = null; draw(); };
+        const at = Attach.composer({ form: $('#f'), text: null, zone: $('#f').closest('.card'), label: 'Đính kèm' });
         $('#f').onsubmit = async e => {
-          e.preventDefault(); const t = e.target.elements.t.value.trim(); if (!t) return; const u = last.find(m => m.uid === thread);
-          try { await Store.put('messages', { uid: thread, userName: u ? u.userName : '', from: 'admin', text: t, projectId: '', projectName: '' }); e.target.elements.t.value = ''; } catch (x) { toast(x.message); }
+          e.preventDefault(); const t = e.target.elements.t.value.trim(); if (!t && !at.has()) return;
+          const th = thread, u = last.find(m => m.uid === th), btn = e.target.querySelector('button.btn'), lbl = btn.textContent; btn.disabled = true;
+          try {
+            const media = at.has() ? await at.build({ uid: th, progress: (i, n) => { btn.textContent = 'Đang tải ' + i + '/' + n + '…'; } }) : [];
+            await Store.put('messages', { uid: th, userName: u ? u.userName : '', from: 'admin', text: t || Attach.ATT_TXT, ...(media.length ? { media } : {}), projectId: '', projectName: '' });
+            e.target.elements.t.value = ''; at.clear();
+          } catch (x) { toast(x.message); }
+          btn.disabled = false; btn.textContent = lbl;
         };
       }
       $('#tname').textContent = by[thread][0].userName;
