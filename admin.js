@@ -305,30 +305,30 @@ async function messages() {
   let last = [], built = null; const U = {};
   Msgx.ctx = { uid: () => (Store.uid && Store.uid()) || 'admin', th: id => (last.find(m => m.id === id) || {}).uid, find: id => last.find(m => m.id === id), redraw: () => draw() };
   try { (await Store.list('users')).forEach(u => { U[u.id] = u; }); } catch (e) {}   // để hiện avatar người dùng
-  const bubbles = ms => ms.map(m => { const ad = m.from === 'admin'; return `<div class="mrow ${ad ? 'me' : ''}">${ad ? Avatar.admin('sm') : Avatar.html(U[m.uid] || { name: m.userName }, 'sm')}<div class="msg ${ad ? 'me' : ''}"><small>${ad ? 'Admin' : esc(m.userName)}${m.projectName ? ' · ' + esc(m.projectName) : ''} · ${fmt(m.ts)}</small>${Msgx.body(m.text, m.media, m.recalled)}${Msgx.foot(m.id, Msgx.get(m.id), Msgx.ctx.uid(), ad, m.recalled)}</div></div>`; }).join('');
+  const bubbles = ms => Chat.render(ms.map(m => { const ad = m.from === 'admin'; return { id: m.id, who: ad ? 'me' : 'them', mine: ad, ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, list: Msgx.get(m.id), uid: Msgx.ctx.uid(), av: Avatar.html(U[m.uid] || { name: m.userName }, 'sm') }; }));
   const draw = () => {
     const box = $('#mbox'); if (!box) return;
     const by = {}; last.forEach(m => (by[m.uid] = by[m.uid] || []).push(m));
     if (thread && by[thread]) {
       if (built !== thread) {
         built = thread;
-        box.innerHTML = '<a href="#" id="back" class="plink">&larr; Tất cả hội thoại</a><div class="card" style="margin-top:10px"><h2 id="tname"></h2><div class="chat" id="log"></div><form id="f"><textarea name="t" placeholder="Trả lời… (kéo thả, Ctrl+V hoặc bấm 📎 để gửi ảnh / video)"></textarea><button class="btn">Gửi trả lời</button></form></div>';
+        box.innerHTML = '<a href="#" id="back" class="plink">&larr; Tất cả hội thoại</a><div class="card" style="margin-top:10px"><h2 id="tname"></h2><div class="chat ms-log" id="log"></div><form id="f"><textarea name="t" placeholder="Trả lời… (kéo thả, Ctrl+V hoặc bấm 📎 để gửi ảnh / video)"></textarea><button class="btn">Gửi trả lời</button></form></div>';
         $('#back').onclick = e => { e.preventDefault(); thread = null; built = null; draw(); };
         const at = Attach.composer({ form: $('#f'), text: $('#f').elements.t, zone: $('#f').closest('.card'), label: 'Đính kèm' });
         $('#f').onsubmit = async e => {
-          e.preventDefault(); const t = e.target.elements.t.value.trim(); if (!t && !at.has()) return;
-          const th = thread, u = last.find(m => m.uid === th), btn = e.target.querySelector('button.btn'), lbl = btn.textContent; btn.disabled = true;
+          e.preventDefault(); const t = e.target.elements.t.value.trim() || (!at.has() && e.submitter && e.submitter.classList.contains('ms-like') ? '👍' : ''); if (!t && !at.has()) return;
+          const th = thread, u = last.find(m => m.uid === th), btn = e.target.querySelector('button.ms-send'); btn.disabled = true;
           try {
-            const media = at.has() ? await at.build({ uid: th, by: 'admin', progress: (i, n) => { btn.textContent = 'Đang tải ' + i + '/' + n + '…'; } }) : [];
+            const media = at.has() ? await at.build({ uid: th, by: 'admin', progress: (i, n) => { btn.innerHTML = '<small class="ms-prog">' + i + '/' + n + '</small>'; } }) : [];
             await Store.put('messages', { uid: th, userName: u ? u.userName : '', from: 'admin', text: t || Attach.txt(media), ...(media.length ? { media } : {}), projectId: '', projectName: '' });
             e.target.elements.t.value = ''; at.clear();
           } catch (x) { toast(x.message); }
-          btn.disabled = false; btn.textContent = lbl;
+          btn.disabled = false; at.sync();
         };
       }
       $('#tname').textContent = by[thread][0].userName;
       const log = $('#log'), stick = !log.children.length || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
-      log.innerHTML = bubbles(by[thread]); if (stick) log.scrollTop = log.scrollHeight;
+      log.innerHTML = bubbles(by[thread]); if (stick) log.scrollTop = log.scrollHeight; Chat.paint(log);
     } else {
       built = null; thread = null;
       const ids = Object.keys(by).sort((a, b) => by[b].at(-1).ts - by[a].at(-1).ts);
