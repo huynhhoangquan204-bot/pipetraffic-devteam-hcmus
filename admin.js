@@ -127,6 +127,10 @@ function mediaCollect(links) {
 // Ảnh nền thẻ dự án: thu nhỏ còn tối đa 960px, JPEG, ~150KB cho trang chính tải nhanh
 async function bgShrink(file) {
   if (!/^image\//.test(file.type)) throw new Error('"' + file.name + '" không phải ảnh');
+  if (file.type === 'image/gif') {   // GIF: giữ nguyên để còn chuyển động (nén lại sẽ mất động), giới hạn ~650KB vì mỗi bản ghi Firestore tối đa 1MB
+    if (file.size > 650000) throw new Error('GIF nặng ' + Math.round(file.size / 1024) + 'KB, tối đa ~650KB. Hãy nén GIF (ezgif.com) hoặc chọn ảnh tĩnh.');
+    return await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => no(new Error('Không đọc được GIF')); r.readAsDataURL(file); });
+  }
   const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('Không đọc được ảnh')); i.src = URL.createObjectURL(file); });
   let max = 960, q = .75, out;
   for (let k = 0; k < 6; k++) {
@@ -142,7 +146,7 @@ async function bgShrink(file) {
 
 async function projects() {
   const ps = await Store.list('projects'), e = ps.find(p => p.id === editing) || {};
-  let bg = /^data:image\/(jpeg|png|webp);base64,/.test(e.bgImg || '') ? e.bgImg : '';
+  let bg = /^data:image\/(jpeg|png|webp|gif);base64,/.test(e.bgImg || '') ? e.bgImg : '';
   const pct = v => Math.min(100, Math.max(0, Math.round(+v || 0))), P = pct(e.progress);
   app.innerHTML = `<h1>Dự án</h1><p class="sub">Thêm, sửa hoặc xoá dự án hiển thị trên trang chính.</p>
   <div class="card"><h2>${e.id ? 'Sửa dự án' : 'Thêm dự án'}</h2><form id="f"><label>Tên</label><input name="name" required value="${esc(e.name)}">
@@ -150,7 +154,7 @@ async function projects() {
   <div class="two"><div><label>Trạng thái</label><select name="status">${['Kế hoạch', 'Đang làm', 'Tạm dừng', 'Hoàn thành'].map(s => `<option ${e.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
   <div><label>Tiến độ (%)</label><div class="prog"><input type="range" id="pr" min="0" max="100" step="1" value="${P}" aria-label="Kéo để chỉnh tiến độ"><input type="text" id="pn" name="progress" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" value="${P}" aria-label="Tiến độ (%)"></div></div></div>
   <label>Chủ dự án</label><input name="owner" value="${esc(e.owner || 'Admin')}">
-  <label>Ảnh minh hoạ dự án (hiện đầu thẻ ở trang chính, tự thu nhỏ cho nhẹ)</label><input type="file" id="pbg" accept="image/*"><div class="pthumbs" id="pbgPrev"></div>
+  <label>Ảnh bìa dự án (hiện giữa đầu thẻ; ảnh tĩnh tự thu nhỏ, hỗ trợ GIF động ≤ 650KB)</label><input type="file" id="pbg" accept="image/*"><div class="pthumbs" id="pbgPrev"></div>
   <button class="btn">${e.id ? 'Lưu thay đổi' : 'Thêm dự án'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form></div>
   <div class="card" style="margin-top:14px">${ps.map(p => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${pct(p.progress)}%${p.bgImg ? ' · có ảnh nền' : ''}</small></div>
   <div><button class="btn ghost sm" data-e="${p.id}">Sửa</button> <button class="btn danger" data-d="${p.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có dự án.</p>'}</div>`;
@@ -386,7 +390,7 @@ async function messages() {
 
 async function users() {
   const us = await Store.list('users');
-  app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký.</p>${Store.uid() ? `<div class="banner">UID tài khoản admin của bạn: <code style="user-select:all">${esc(Store.uid())}</code><br>Giá trị này phải trùng với UID trong <b>firestore.rules</b> (hàm <code>isAdmin</code>).</div>` : ''}<div class="card">${us.map(u => `<div class="item"><div style="display:flex;gap:10px;align-items:center">${Avatar.html(u)}<div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small>${u.phone || u.dob || u.job ? `<br><small>${esc(u.dob || '')} · ${esc(u.phone || '')} · ${esc(u.job || '')}</small>` : ''}${u.privacyAgreed === false ? '<br><small class="err">Chưa đồng ý cam kết quyền riêng tư</small>' : ''}</div></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
+  app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký.</p><div class="card">${us.map(u => `<div class="item"><div style="display:flex;gap:10px;align-items:center">${Avatar.html(u)}<div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small>${u.phone || u.dob || u.job ? `<br><small>${esc(u.dob || '')} · ${esc(u.phone || '')} · ${esc(u.job || '')}</small>` : ''}${u.privacyAgreed === false ? '<br><small class="err">Chưa đồng ý cam kết quyền riêng tư</small>' : ''}</div></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
   document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này?')) { await Store.del('users', b.dataset.d); render(); } });
 }
 
