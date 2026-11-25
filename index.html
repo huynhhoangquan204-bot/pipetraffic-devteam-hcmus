@@ -89,33 +89,54 @@
     .wb .wb-btn:hover{background:rgba(255,255,255,.2)}
     .wb .wb-btn.wb-p{background:#fff;border-color:#fff;color:#0369a1}
     @media(max-width:480px){.wb .wb-btn{flex:1 1 100%}}
-    /* Nền động toàn trang (bg.gif): các khối nội dung không còn nền màu, chỉ làm mờ phần nền phía sau (kính mờ).
-       --blur = độ mờ; --lift = độ sáng phần nền sau khối sáng màu (tăng nếu chữ tối khó đọc, giảm để thấy GIF tối hơn) */
-    :root{--blur:12px;--lift:2.6}
-    body{background-color:#12061a}
-    body::before{content:"";position:fixed;inset:0;z-index:-1;background:linear-gradient(rgba(10,5,20,.3),rgba(10,5,20,.3)),url(bg.gif) center/cover no-repeat #12061a;image-rendering:pixelated;pointer-events:none}
-    @media(prefers-reduced-motion:reduce){body::before{background-image:linear-gradient(rgba(10,5,20,.3),rgba(10,5,20,.3)),url(bg-still.jpg)}}
-    #app section[class*="bg-white"],#app section[class*="bg-slate-50"],#app section[class*="bg-slate-100"],#app>.pt-app{background-color:transparent;-webkit-backdrop-filter:blur(var(--blur)) brightness(var(--lift)) saturate(.7);backdrop-filter:blur(var(--blur)) brightness(var(--lift)) saturate(.7)}
-    #app section[class*="bg-slate-900"]{background-color:transparent;-webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur))}
+        /* ===== BẮT ĐẦU: Nền trắng mặc định ===== */
+    body{background-color:#fff}
+    #app section[class*="bg-slate-50"],#app section[class*="bg-slate-100"]{background-color:#fff} /* <--- SỬA Ở ĐÂY: các khối xám nhạt thành trắng */
+
+    /* ===== BẮT ĐẦU: Menu trượt bên trái (nằm dưới Navbar, dừng ở mép trên Footer) ===== */
+    #mobile-menu.side-drawer{position:fixed;left:0;right:auto;top:80px;bottom:0;width:280px;max-width:85vw;max-height:none;z-index:40;
+      background:#fff;border:0;border-right:1px solid #e2e8f0;border-radius:0;box-shadow:4px 0 24px rgba(15,23,42,.08);
+      padding:16px 20px;overflow-y:auto;transform:translateX(-100%);visibility:hidden;transition:transform .25s ease,visibility .25s}
+    #mobile-menu.side-drawer.open{transform:none;visibility:visible}
+
+    /* ===== BẮT ĐẦU: Banner Cookie ===== */
+    .ck-bar{position:fixed;z-index:65;left:16px;bottom:16px;max-width:520px;display:flex;align-items:center;gap:16px;padding:14px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:16px;box-shadow:0 12px 32px rgba(15,23,42,.14);color:#334155;font-size:.85rem;line-height:1.45}
+    .ck-bar[hidden]{display:none}
+    .ck-bar p{margin:0;flex:1}
+    .ck-act{display:flex;gap:8px;flex:none}
+    .ck-act button{font:inherit;font-weight:600;font-size:.85rem;padding:8px 16px;border-radius:99px;cursor:pointer}
+    .ck-no{background:#fff;color:#475569;border:1px solid #cbd5e1}
+    .ck-yes{background:#0284c7;color:#fff;border:1px solid #0284c7}
+    @media(max-width:560px){.ck-bar{left:8px;right:8px;bottom:8px;flex-direction:column;align-items:stretch}.ck-act{justify-content:flex-end}}
+
+    /* ===== BẮT ĐẦU: 2 nút CTA ở mục Các dự án ===== */
+    .home-cta{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 28px}
+    .home-cta .btn{margin-top:0;min-width:190px;text-align:center}
     </style>
 </head>
-<body class="font-sans text-slate-800 bg-slate-50 antialiased w-full min-h-screen overflow-x-hidden flex flex-col">
+    <body class="font-sans text-slate-800 bg-slate-50 antialiased w-full min-h-screen overflow-x-hidden flex flex-col"><body class="font-sans text-slate-800 bg-white antialiased w-full min-h-screen overflow-x-hidden flex flex-col"> <!-- <--- SỬA Ở ĐÂY: bg-slate-50 -> bg-white -->
 
     <!-- MÀN HÌNH CHỜ: hiện ngay khi mở web, tự ẩn khi trang đã sẵn sàng -->
     <div id="splash" role="status" aria-label="Đang tải"><img src="logo.jpg" onerror="this.onerror=null;this.src='https://i.postimg.cc/tgyk09xn/logo2.jpg'" alt=""><b>PIPE TRAFFIC</b><div class="ring"></div></div>
 
 
-    <!-- THANH MENU -->
+    <!-- BẮT ĐẦU: Thanh điều hướng (Navbar) -->
     <nav class="fixed top-0 left-0 right-0 z-50 glass-card border-b border-slate-200/80 shadow-sm w-full">
         <div class="w-full px-4 sm:px-8 lg:px-12">
             <div class="flex justify-between h-20 items-center w-full">
-                <a href="#/" class="sr-logo flex items-center gap-3 group shrink-0">
-                    <img src="logo.jpg" onerror="this.onerror=null;this.src='https://i.postimg.cc/tgyk09xn/logo2.jpg'" alt="Logo" class="w-11 h-11 rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform">
-                    <div>
-                        <span class="text-xl font-extrabold tracking-tight text-slate-900 block leading-none">PIPE TRAFFIC</span>
-                        <span class="text-[10px] font-bold text-sky-600 tracking-wider uppercase">Dự Án Nghiên Cứu HCMUS</span>
-                    </div>
-                </a>
+                <!-- Nút ☰ + Logo: nằm bên trái -->  <!-- <--- SỬA Ở ĐÂY -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <button id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Mở menu" aria-controls="mobile-menu" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 rounded-lg bg-slate-100">
+                        <i id="mobile-menu-icon" class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                    <a href="#/" class="sr-logo flex items-center gap-3 group shrink-0">
+                        <img src="logo.jpg" onerror="this.onerror=null;this.src='https://i.postimg.cc/tgyk09xn/logo2.jpg'" alt="Logo" class="w-11 h-11 rounded-2xl object-cover shadow-md group-hover:scale-105 transition-transform">
+                        <div>
+                            <span class="text-xl font-extrabold tracking-tight text-slate-900 block leading-none">PIPE TRAFFIC</span>
+                            <span class="text-[10px] font-bold text-sky-600 tracking-wider uppercase">Dự Án Nghiên Cứu HCMUS</span>
+                        </div>
+                    </a>
+                </div>
                 <form class="sr-nav" data-srform role="search">
                     <i class="fa-solid fa-magnifying-glass"></i>
                     <input id="srNavInput" type="search" name="q" placeholder="Tìm trong website…" autocomplete="off" enterkeyhint="search" maxlength="100" aria-label="Tìm kiếm">
@@ -125,26 +146,28 @@
                 <div class="sr-right flex items-center gap-2">
                     <button type="button" data-search-open class="sr-btn" aria-label="Tìm kiếm" style="width:40px;height:40px"><i class="fa-solid fa-magnifying-glass"></i></button>
                     <button type="button" data-chat-open aria-label="Mở khung chat" class="nav-chat w-10 h-10 flex items-center justify-center rounded-lg bg-sky-600 text-white shadow-md shadow-sky-600/30"><i class="fa-solid fa-comment-dots"></i><span class="nav-chat-t">Chat</span></button>
-                    <button id="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menu" class="text-slate-700 hover:text-slate-900 focus:outline-none p-2 rounded-lg bg-slate-100">
-                        <i id="mobile-menu-icon" class="fa-solid fa-bars text-xl"></i>
-                    </button>
+                    <!-- (đã chuyển nút ☰ sang bên trái) -->  <!-- <--- SỬA Ở ĐÂY -->
                 </div>
             </div>
         </div>
-        <div id="mobile-menu" class="hidden border-t border-slate-200 bg-white px-6 pt-4 pb-6 space-y-3 shadow-xl">
-            <a href="#/" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-folder-open text-sky-500 mr-2"></i> Dự Án</a>
-            <a href="#/specs" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-gears text-sky-500 mr-2"></i> Đặc Điểm Kỹ Thuật & Hạ Tầng</a>
-            <a href="#/journey" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-timeline text-sky-500 mr-2"></i> Hành Trình (Journey)</a>
-            <a href="#/team" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-users text-sky-500 mr-2"></i> Thành Viên & Quy Tắc</a>
-            <a href="#/problems" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
-            <a href="#/video" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-play text-sky-500 mr-2"></i> Video Demo</a>
-            <a href="#/faq" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-question text-sky-500 mr-2"></i> Đánh Giá & FAQ</a>
-            <a href="#/comments" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-regular fa-message text-sky-500 mr-2"></i> Bình Luận</a>
-            <button type="button" data-chat-open onclick="toggleMobileMenu(true)" class="block w-full text-left py-2 text-sky-600 font-bold border-b border-slate-100"><i class="fa-solid fa-comments text-sky-500 mr-2"></i> Mở khung chat</button>
-            <button type="button" data-contact onclick="toggleMobileMenu(true)" class="block w-full text-left py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-address-book text-sky-500 mr-2"></i> Liên Hệ</button>
-            <div id="authSlotM"></div>
-        </div>
     </nav>
+    <!-- KẾT THÚC: Navbar -->
+
+    <!-- BẮT ĐẦU: Menu trượt bên trái (đặt NGOÀI <nav> để bám đúng vị trí) -->  <!-- <--- THÊM MỚI -->
+    <aside id="mobile-menu" class="side-drawer space-y-3" aria-hidden="true">
+        <a href="#/" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-folder-open text-sky-500 mr-2"></i> Dự Án</a>
+        <a href="#/specs" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-gears text-sky-500 mr-2"></i> Đặc Điểm Kỹ Thuật & Hạ Tầng</a>
+        <a href="#/journey" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-timeline text-sky-500 mr-2"></i> Hành Trình (Journey)</a>
+        <a href="#/team" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-users text-sky-500 mr-2"></i> Thành Viên & Quy Tắc</a>
+        <a href="#/problems" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
+        <a href="#/video" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-play text-sky-500 mr-2"></i> Video Demo</a>
+        <a href="#/faq" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-question text-sky-500 mr-2"></i> Đánh Giá & FAQ</a>
+        <a href="#/comments" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-regular fa-message text-sky-500 mr-2"></i> Bình Luận</a>
+        <button type="button" data-chat-open onclick="toggleMobileMenu(true)" class="block w-full text-left py-2 text-sky-600 font-bold border-b border-slate-100"><i class="fa-solid fa-comments text-sky-500 mr-2"></i> Mở khung chat</button>
+        <button type="button" data-contact onclick="toggleMobileMenu(true)" class="block w-full text-left py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-address-book text-sky-500 mr-2"></i> Liên Hệ</button>
+        <div id="authSlotM"></div>
+    </aside>
+    <!-- KẾT THÚC: Menu trượt bên trái -->
 
     <main id="app" class="flex-1"></main>
 
@@ -216,6 +239,15 @@
             <div id="contactBody"></div>
         </div>
     </div>
+    <!-- BẮT ĐẦU: Banner Cookie -->  <!-- <--- THÊM MỚI -->
+    <div id="cookie-bar" class="ck-bar" role="dialog" aria-label="Thông báo cookie" hidden>
+        <p>Website dùng bộ nhớ trình duyệt (cookie) để ghi nhớ đăng nhập và cải thiện trải nghiệm.</p>
+        <div class="ck-act">
+            <button type="button" class="ck-no" data-cookie="declined">Từ chối</button>
+            <button type="button" class="ck-yes" data-cookie="accepted">Chấp nhận</button>
+        </div>
+    </div>
+    <!-- KẾT THÚC: Banner Cookie -->
 
     <div id="toast" class="toast" role="status"></div>
 
@@ -868,35 +900,25 @@
     </section>
     </template>
 
+    <!-- BẮT ĐẦU: Tiêu đề đầu trang chủ (tối giản) -->  <!-- <--- SỬA Ở ĐÂY -->
     <template id="tpl-cta">
-<section id="cta" class="py-20 gradient-bg text-white w-full">
-        <div class="w-full px-4 sm:px-8 lg:px-16 text-center space-y-6">
-            <h2 class="text-3xl sm:text-5xl font-extrabold">Cùng Tiên Phong Tương Lai Giao Thông Thông Minh</h2>
-            <p class="text-slate-300 text-base sm:text-lg max-w-3xl mx-auto">
-                Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) nghiên cứu và phát triển.
-            </p>
-            <div class="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="#" data-contact class="px-8 py-4 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-base shadow-lg shadow-sky-500/30 transition-all">
-                    Liên Hệ Nhóm Dự Án
-                </a>
-                <a href="#/problems" class="px-8 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-base transition-all">
-                    Xem Đồ Án Chi Tiết
-                </a>
-            </div>
+<section id="cta" class="pt-32 pb-6 bg-white w-full">
+        <div class="w-full px-4 sm:px-8 lg:px-16 text-center">
+            <h2 class="text-3xl sm:text-5xl font-extrabold text-slate-900 leading-tight max-w-3xl mx-auto">Cùng Tiên Phong Tương Lai Giao Thông Thông Minh</h2>
         </div>
     </section>
     </template>
-
+    <!-- KẾT THÚC: Tiêu đề đầu trang chủ -->
 
     <script src="config.js"></script>
     <script src="store.js?v=14"></script>
-    <script src="script.js?v=15"></script>
+    <script src="script.js?v=16"></script>
     <script src="content.js?v=15"></script>
     <script src="botintents.js?v=1"></script>
     <script src="bot.js?v=16"></script>
     <script src="attach.js?v=3"></script>
     <script src="messenger.js?v=3"></script>
     <script src="search.js?v=3"></script>
-    <script src="app.js?v=22"></script>
+    <script src="app.js?v=23"></script>
 </body>
 </html>
