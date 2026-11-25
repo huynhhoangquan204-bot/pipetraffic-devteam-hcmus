@@ -45,7 +45,7 @@
     { key: 'problems', label: 'Bài toán & giải pháp', href: '#/problems', icon: 'fa-microchip',       tpls: ['tpl-problems'] },
     { key: 'video',    label: 'Video demo',           href: '#/video',    icon: 'fa-circle-play',     tpls: ['tpl-video'] },
     { key: 'faq',      label: 'Đánh giá & FAQ',       href: '#/faq',      icon: 'fa-circle-question', tpls: ['tpl-faq'] },
-    { key: 'comments', label: 'Bình luận',            href: '#/comments', icon: 'fa-message',         tpls: ['tpl-comments'] }
+    { key: 'comments', label: 'Bình luận',            href: '#/video', icon: 'fa-message',         tpls: ['tpl-comments'] }
   ];
   const BY_KEY = Object.fromEntries(PAGES.map(p => [p.key, p]));
 
