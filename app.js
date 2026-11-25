@@ -233,6 +233,20 @@ const Notify = (() => {
   return { show, paint, toggle, watchUpdates, on };
 })();
 document.addEventListener('click', e => { if (e.target.closest('[data-notify]')) { e.preventDefault(); Notify.toggle(); } });
+/* Mỗi lần vào web, nếu người dùng chưa đồng ý (và chưa chặn / chưa tự tắt) thì hiện thanh hỏi. "Để sau" chỉ ẩn trong phiên này, lần vào sau hỏi lại. */
+function askNotify() {
+  const bar = $('#notify-bar'); if (!bar || !('Notification' in window)) return;
+  let snooze = null, off = null; try { snooze = sessionStorage.getItem('pt_nt_snooze'); off = localStorage.getItem('pt_notify'); } catch (x) { /* vẫn hỏi */ }
+  if (Notification.permission === 'granted') { if (off !== 'off' && !Notify.on()) { try { localStorage.setItem('pt_notify', 'on'); localStorage.setItem('pt_nt_upd', Date.now()); } catch (x) {} Notify.watchUpdates(); Notify.paint(); } return; }
+  if (Notification.permission === 'denied' || snooze) return;     // đã bị chặn thì trình duyệt không cho hỏi lại
+  const show = () => { const w = $('#welcome-modal'); if (w && !w.hidden) return setTimeout(show, 1000); if (!Notify.on()) bar.hidden = false; };   // đợi banner giới thiệu đóng rồi mới hỏi
+  setTimeout(show, 1800);
+  bar.addEventListener('click', async e => {
+    const b = e.target.closest('[data-nt]'); if (!b) return;
+    bar.hidden = true;
+    if (b.dataset.nt === 'yes') await Notify.toggle(); else { try { sessionStorage.setItem('pt_nt_snooze', '1'); } catch (x) {} }
+  });
+}
 
 /* Chấm đỏ trên nút Chat khi admin vừa trả lời; tin nhắn của người đăng nhập cập nhật ngay (thời gian thực) */
 const paintBadge = () => document.querySelectorAll('[data-chat-open]').forEach(a => a.classList.toggle('has-dot', !!me && unread > 0));
@@ -453,6 +467,6 @@ const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off
     Notify.paint(); Notify.watchUpdates();
     await Promise.race([route(), new Promise(r => setTimeout(r, 4000))]);   // chờ tối đa 4 giây rồi mở trang
   } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
-  hideSplash();
+  hideSplash(); askNotify();
   if (!location.hash.replace(/^#\/?/, '')) showWelcome();   // chỉ hiện banner khi vào đúng trang chủ
 })();
