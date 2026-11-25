@@ -5,7 +5,7 @@ const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('
 let tab = 'projects', editing = null, thread = null;
 
 function login() {
-  $('#nav').innerHTML = '';
+  $('#nav').innerHTML = ''; admToggle(true); $('#admMenu').innerHTML = ''; $('#admBtn').hidden = true;
   const fb = Store.mode === 'firebase', noMail = fb && !(window.APP_CONFIG || {}).adminEmail, inf = Store.info();
   const status = fb
     ? `<p class="muted" style="font-size:.8rem;margin:8px 0 0">Kết nối: Firebase ✓ · Dự án: ${esc(inf.project)} · Email admin: ${esc(inf.email || '(chưa điền)')}</p>`
@@ -41,12 +41,32 @@ function startBadges() {
 }
 const stopBadges = () => { badgeOff.splice(0).forEach(f => f()); pendCmt = waitMsg = pendBot = 0; };
 
+/* --- Menu ☰ bên trái (giống trang chính): dừng ở mép trên footer --- */
+const admMenu = $('#admMenu'), admBtn = $('#admBtn');
+function admFit() {
+  const f = document.querySelector('.foot');
+  admMenu.style.bottom = f ? Math.max(0, innerHeight - f.getBoundingClientRect().top) + 'px' : '0px';
+}
+function admToggle(force) {   // true = đóng, false = mở, bỏ trống = đảo trạng thái
+  const open = typeof force === 'boolean' ? !force : !admMenu.classList.contains('open');
+  admMenu.classList.toggle('open', open);
+  admBtn.textContent = open ? '✕' : '☰';
+  admBtn.setAttribute('aria-expanded', String(open));
+  if (open) admFit();
+}
+admBtn.onclick = () => admToggle();
+addEventListener('scroll', admFit, { passive: true }); addEventListener('resize', admFit);
+addEventListener('keydown', e => { if (e.key === 'Escape') admToggle(true); });
+document.addEventListener('click', e => { if (admMenu.classList.contains('open') && !e.target.closest('#admMenu, #admBtn')) admToggle(true); });
+
 function nav() {
   const old = Date.now() - (+localStorage.getItem('pt_last_backup') || 0) > 7 * 864e5;
-  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️', 'Tuần'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬', 'Video'], ['comments', 'Bình luận', '💬', '', pendCmt], ['messages', 'Tin nhắn', '✉️', '', waitMsg], ['bot', 'Dạy Bot', '🤖', 'Bot', pendBot], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
-  $('#nav').innerHTML = '<div class="tabs">' + t.map(([k, v, ic, s, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}"><span class="ic">${ic}</span><span class="lb-l">${v}</span><span class="lb-s">${s || v}</span>${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('') + '</div><button id="out">Thoát</button>';
-  document.querySelectorAll('#nav [data-t]').forEach(x => x.onclick = e => { e.preventDefault(); tab = x.dataset.t; editing = null; thread = null; render(); });
-  $('#out').onclick = async () => { stopLive(); stopBadges(); await Store.adminLogout(); login(); };
+  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬'], ['comments', 'Bình luận', '💬', pendCmt], ['messages', 'Tin nhắn', '✉️', waitMsg], ['bot', 'Dạy Bot', '🤖', pendBot], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
+  admBtn.hidden = false;   // các tab chuyển vào menu ☰, trên thanh chỉ còn nút Thoát
+  admMenu.innerHTML = t.map(([k, v, ic, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}"><span>${ic}</span><span>${v}</span>${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('');
+  $('#nav').innerHTML = '<button id="out">Thoát</button>';
+  admMenu.querySelectorAll('[data-t]').forEach(x => x.onclick = e => { e.preventDefault(); tab = x.dataset.t; editing = null; thread = null; admToggle(true); render(); });
+  $('#out').onclick = async () => { admToggle(true); stopLive(); stopBadges(); await Store.adminLogout(); login(); };
 }
 
 
@@ -130,7 +150,7 @@ async function projects() {
   <div class="two"><div><label>Trạng thái</label><select name="status">${['Kế hoạch', 'Đang làm', 'Tạm dừng', 'Hoàn thành'].map(s => `<option ${e.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
   <div><label>Tiến độ (%)</label><div class="prog"><input type="range" id="pr" min="0" max="100" step="1" value="${P}" aria-label="Kéo để chỉnh tiến độ"><input type="text" id="pn" name="progress" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" value="${P}" aria-label="Tiến độ (%)"></div></div></div>
   <label>Chủ dự án</label><input name="owner" value="${esc(e.owner || 'Admin')}">
-  <label>Ảnh nền thẻ dự án (hiện ở trang chính, tự thu nhỏ cho nhẹ)</label><input type="file" id="pbg" accept="image/*"><div class="pthumbs" id="pbgPrev"></div>
+  <label>Ảnh minh hoạ dự án (hiện đầu thẻ ở trang chính, tự thu nhỏ cho nhẹ)</label><input type="file" id="pbg" accept="image/*"><div class="pthumbs" id="pbgPrev"></div>
   <button class="btn">${e.id ? 'Lưu thay đổi' : 'Thêm dự án'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form></div>
   <div class="card" style="margin-top:14px">${ps.map(p => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${pct(p.progress)}%${p.bgImg ? ' · có ảnh nền' : ''}</small></div>
   <div><button class="btn ghost sm" data-e="${p.id}">Sửa</button> <button class="btn danger" data-d="${p.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có dự án.</p>'}</div>`;
