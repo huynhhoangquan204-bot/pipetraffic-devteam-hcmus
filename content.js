@@ -214,7 +214,7 @@
       const poster = `<img src="${e(cover)}" alt="Video Cover" class="w-full h-full object-cover opacity-50 group-hover:opacity-40 transition-opacity">`;
       const label = `<div class="absolute text-center p-6"><span class="w-20 h-20 rounded-full bg-sky-600 text-white text-2xl flex items-center justify-center shadow-lg shadow-sky-600/50 hover:scale-110 transition-transform mx-auto mb-4"><i class="fa-solid fa-play ml-1"></i></span>
         ${v.playTitle ? `<p class="text-white font-bold text-xl">${e(v.playTitle)}</p>` : ''}${v.playSub ? `<p class="text-slate-300 text-sm mt-1">${e(v.playSub)}</p>` : ''}</div>`;
-      const frame = 'w-full rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-slate-800 aspect-video relative flex items-center justify-center group mb-12';
+      const frame = 'w-full rounded-3xl overflow-hidden shadow-2xl bg-slate-950 border border-slate-800 aspect-video relative flex items-center justify-center group yt-vp';
       let player;
       if (emb && emb.k === 'video') player = `<div class="${frame}"><video controls preload="metadata" poster="${e(cover)}" src="${e(emb.src)}" style="position:absolute;inset:0;width:100%;height:100%"></video></div>`;
       else if (emb) player = `<div class="${frame}"><iframe src="${e(emb.src)}" allowfullscreen loading="lazy" allow="fullscreen; picture-in-picture" style="position:absolute;inset:0;width:100%;height:100%;border:0"></iframe></div>`;
@@ -225,10 +225,10 @@
         s = String(s); const i = s.indexOf('|'), a = i < 0 ? '' : s.slice(0, i).trim(), b = i < 0 ? s.trim() : s.slice(i + 1).trim();
         return `<div class="pt-3 flex flex-col sm:flex-row gap-4 justify-between">${a ? `<span class="font-bold text-slate-900 shrink-0 w-40">${e(a)}</span>` : ''}<p class="grow">${rich(b).replace(/\*(.+?)\*/g, '<em>$1</em>')}</p></div>`;
       }).join('');
-      const scenes = rows ? `<div class="w-full bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
+      const scenes = rows ? `<div class="yt-vs w-full bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
         <h4 class="font-bold text-slate-900 text-lg mb-6 flex items-center gap-2"><i class="fa-solid fa-clapperboard text-sky-600"></i> ${e(v.scenesTitle)}</h4>
         <div class="space-y-4 text-sm text-slate-700 divide-y divide-slate-100">${rows}</div></div>` : '';
-      return `<div class="w-full px-4 sm:px-8 lg:px-16"><div class="text-center max-w-4xl mx-auto mb-12">
+      return `<div class="w-full px-4 sm:px-8 lg:px-16"><div class="yt-vh text-center max-w-4xl mx-auto mb-12">
         ${v.tag ? `<h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">${e(v.tag)}</h2>` : ''}<p class="text-3xl font-extrabold text-slate-900">${e(v.title)}</p></div>${player}${scenes}</div>`;
     },
 
