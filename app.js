@@ -78,7 +78,7 @@ async function home() {
     box.innerHTML = (Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : '') +
     `<div class="pgrid">${ps.map(p => {
       const last = us.filter(u => u.projectId === p.id).pop();
-      const imgOk = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.bgImg || '') && p.bgImg.length < 400000;
+      const imgOk = /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(p.bgImg || '') && p.bgImg.length < 900000;
       const cover = imgOk ? `<img class="pcover" src="${p.bgImg}" alt="${esc(p.name)}" loading="lazy">` : '';   // ảnh minh hoạ rõ nét trên đầu thẻ, không còn làm nền mờ
       return `<a class="card" href="#/p/${p.id}">${cover}<div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
       <p class="muted" style="margin:0">${esc(p.desc)}</p>
@@ -93,6 +93,7 @@ async function project(id) {
   const us = (await Store.list('updates')).filter(u => u.projectId === id).reverse();
   wrap(`<a href="#/" class="plink">&larr; Tất cả dự án</a>
   <div class="row" style="margin-top:12px"><h1>${esc(p.name)}</h1>${badge(p.status)}</div>
+  ${/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(p.bgImg || '') && p.bgImg.length < 900000 ? `<img class="pcover pcover-hero" src="${p.bgImg}" alt="${esc(p.name)}">` : ''}
   <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${esc(p.owner)}</p>
   <div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
   <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2></div>
@@ -187,6 +188,52 @@ Msgx.ctx = {
 const aiOn = () => !!(window.PT_AI && typeof window.PT_AI.ask === 'function');
 const chatOpen = () => { const p = $('#chatPop'); return !!p && !p.hidden; };
 
+/* --- Thông báo từ website (Notification API của trình duyệt) ---
+   Bật bằng nút "Bật thông báo" trong menu ☰. Nhận thông báo khi: (1) admin trả lời tin nhắn, (2) có cập nhật tiến độ mới của dự án.
+   Chỉ hoạt động khi trang đang mở (kể cả ở tab nền). Lựa chọn lưu ở khoá pt_notify. */
+const Notify = (() => {
+  const can = () => 'Notification' in window;
+  const get = k => { try { return localStorage.getItem(k); } catch (x) { return null; } };
+  const set = (k, v) => { try { localStorage.setItem(k, v); } catch (x) { /* bỏ qua */ } };
+  const on = () => can() && Notification.permission === 'granted' && get('pt_notify') === 'on';
+  let offUpd = null, updInit = false;
+  function show(title, body, go) {
+    if (!on()) return;
+    try {
+      const n = new Notification(title, { body: String(body || '').slice(0, 140), icon: 'logo.jpg', tag: 'pt-' + go });
+      n.onclick = () => { window.focus(); n.close(); if (go === 'chat') openChat('admin'); else if (go) location.hash = go; };
+    } catch (x) { /* một số trình duyệt di động chỉ cho thông báo qua service worker */ }
+  }
+  function paint() {
+    const b = $('#notifyTxt'), btn = $('#notifyBtn'); if (!b || !btn) return;
+    btn.querySelector('i').className = on() ? 'fa-solid fa-bell text-sky-500 mr-2' : 'fa-regular fa-bell-slash text-slate-400 mr-2';
+    b.textContent = !can() ? 'Trình duyệt chưa hỗ trợ thông báo' : on() ? 'Tắt thông báo' : (Notification.permission === 'denied' ? 'Thông báo đang bị chặn' : 'Bật thông báo');
+  }
+  // theo dõi cập nhật tiến độ mới (updates): lần đầu chỉ ghi mốc, không báo dồn
+  function watchUpdates() {
+    if (offUpd) { offUpd(); offUpd = null; }
+    updInit = false;
+    if (!on()) return;
+    offUpd = Store.listen('updates', null, list => {
+      const last = +get('pt_nt_upd') || 0, top = list.reduce((m, u) => Math.max(m, u.ts || 0), 0);
+      if (updInit) list.filter(u => (u.ts || 0) > last).slice(-3).forEach(u => show('Cập nhật mới · ' + (u.week || 'Pipe Traffic'), u.title || u.content, '#/'));
+      updInit = true; if (top > last) set('pt_nt_upd', top);
+    }, () => {});
+  }
+  async function toggle() {
+    if (!can()) return toast('Trình duyệt này chưa hỗ trợ thông báo.');
+    if (on()) { set('pt_notify', 'off'); watchUpdates(); paint(); return toast('Đã tắt thông báo.'); }
+    if (Notification.permission === 'denied') return toast('Thông báo đang bị chặn: bấm biểu tượng ổ khoá cạnh địa chỉ trang, cho phép "Thông báo" rồi thử lại.');
+    let perm = Notification.permission;
+    if (perm !== 'granted') { try { perm = await Notification.requestPermission(); } catch (x) { perm = 'denied'; } }
+    if (perm !== 'granted') { paint(); return toast('Bạn chưa cho phép thông báo.'); }
+    set('pt_notify', 'on'); set('pt_nt_upd', Date.now()); watchUpdates(); paint();
+    toast('Đã bật thông báo.'); show('Pipe Traffic', 'Thông báo đã được bật. Bạn sẽ nhận tin khi admin trả lời hoặc có cập nhật mới.', '');
+  }
+  return { show, paint, toggle, watchUpdates, on };
+})();
+document.addEventListener('click', e => { if (e.target.closest('[data-notify]')) { e.preventDefault(); Notify.toggle(); } });
+
 /* Chấm đỏ trên nút Chat khi admin vừa trả lời; tin nhắn của người đăng nhập cập nhật ngay (thời gian thực) */
 const paintBadge = () => document.querySelectorAll('[data-chat-open]').forEach(a => a.classList.toggle('has-dot', !!me && unread > 0));
 const markSeen = () => { if (me) localStorage.setItem('pt_seen_' + me.id, Date.now()); unread = 0; paintBadge(); };
@@ -198,7 +245,13 @@ function ensureMsgs() {
   Msgx.setReacts([]);
   msgFor = id; msgs = []; unread = 0; paintBadge();
   if (!id) return;
+  let first = true;
   msgOff = Store.listen('messages', { where: ['uid', '==', id] }, ms => {
+    if (!first) {   // tin admin mới đến lúc khung chat đang đóng hoặc tab đang ở nền thì báo
+      const known = new Set(msgs.map(m => m.id)), fresh = ms.filter(m => m.from === 'admin' && !m.recalled && !known.has(m.id));
+      if (fresh.length && !(chatOpen() && chatTab === 'admin' && !document.hidden)) { const m = fresh[fresh.length - 1]; Notify.show('Admin Pipe Traffic', m.text, 'chat'); }
+    }
+    first = false;
     msgs = ms;
     if (chatOpen() && chatTab === 'admin') { markSeen(); drawChat(); }
     else { const seen = +localStorage.getItem('pt_seen_' + id) || 0; unread = ms.filter(m => m.from === 'admin' && m.ts > seen).length; paintBadge(); }
@@ -397,6 +450,7 @@ const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off
   try {
     await Store.init(); me = Store.me(); applyLinks(); addEventListener('hashchange', route);
     if (me) Store.profile(me.id).then(pr => { if (me && pr && Avatar.ok(pr.avatar) && pr.avatar !== me.avatar) { me.avatar = pr.avatar; Store.setMe(me, true); renderAuth(); if (chatOpen()) drawChat(); } }).catch(() => {});
+    Notify.paint(); Notify.watchUpdates();
     await Promise.race([route(), new Promise(r => setTimeout(r, 4000))]);   // chờ tối đa 4 giây rồi mở trang
   } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
   hideSplash();
