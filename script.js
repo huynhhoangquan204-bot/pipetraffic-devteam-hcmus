@@ -13,14 +13,31 @@
   if (typeof window.esc !== 'function') window.esc = esc;
   if (typeof window.toast !== 'function') window.toast = toast;
 
-  /* --- Menu điện thoại --- */
+  /* --- Menu trượt bên trái --- */
+  // Bấm ☰ để mở/đóng. toggleMobileMenu(true) = đóng, toggleMobileMenu(false) = mở.   // <--- SỬA Ở ĐÂY
   function toggleMobileMenu(force) {
     const m = $('#mobile-menu'), i = $('#mobile-menu-icon');
     if (!m || !i) return;
-    const closed = typeof force === 'boolean' ? (m.classList.toggle('hidden', force), force) : m.classList.toggle('hidden');
-    i.className = closed ? 'fa-solid fa-bars text-xl' : 'fa-solid fa-xmark text-xl';
-    if (!closed) { if (typeof closeChat === 'function') closeChat(); if (window.Search) Search.close(); }   // mở menu thì đóng chat + gợi ý tìm kiếm
+    const open = typeof force === 'boolean' ? !force : !m.classList.contains('open');
+    m.classList.toggle('open', open);
+    m.setAttribute('aria-hidden', String(!open));
+    i.className = open ? 'fa-solid fa-xmark text-xl' : 'fa-solid fa-bars text-xl';
+    if (open) { fitSideMenu(); if (typeof closeChat === 'function') closeChat(); if (window.Search) Search.close(); }   // mở menu thì đóng chat + gợi ý tìm kiếm
   }
+
+  // Menu luôn dừng ở mép trên Footer: khi cuộn tới cuối trang, đáy menu được đẩy lên theo   // <--- THÊM MỚI
+  function fitSideMenu() {
+    const m = $('#mobile-menu'), f = document.querySelector('footer');
+    if (!m || !f) return;
+    m.style.bottom = Math.max(0, window.innerHeight - f.getBoundingClientRect().top) + 'px';
+  }
+  window.addEventListener('scroll', fitSideMenu, { passive: true });
+  window.addEventListener('resize', fitSideMenu);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') toggleMobileMenu(true); });   // Esc đóng menu
+  document.addEventListener('click', e => {                                                         // bấm ra ngoài thì đóng menu
+    const m = $('#mobile-menu');
+    if (m && m.classList.contains('open') && !e.target.closest('#mobile-menu, #mobile-menu-btn')) toggleMobileMenu(true);
+  });
 
   /* --- Tab 4.1 – 4.4 (mục Problems) --- */
   function switchTab(name) {
@@ -118,6 +135,19 @@
     } catch (e) { toast('Gửi chưa được. ' + (debugOn() ? e.message : 'Vui lòng thử lại sau ít phút.')); }
     btn.disabled = false; btn.style.opacity = 1; btn.innerHTML = html;
   }
+
+  /* --- Banner Cookie: nhớ lựa chọn trong localStorage (khoá pt_cookie) --- */   // <--- THÊM MỚI
+  (function initCookie() {
+    const bar = $('#cookie-bar'); if (!bar) return;
+    let saved = null; try { saved = localStorage.getItem('pt_cookie'); } catch (x) { /* không đọc được thì vẫn hiện banner */ }
+    if (saved) return;                                       // đã chọn rồi: không hiện lại
+    setTimeout(() => { bar.hidden = false; }, 800);          // đợi màn hình chờ tắt rồi mới hiện
+    bar.addEventListener('click', e => {
+      const b = e.target.closest('[data-cookie]'); if (!b) return;
+      try { localStorage.setItem('pt_cookie', b.dataset.cookie); } catch (x) { /* bỏ qua */ }
+      bar.hidden = true;
+    });
+  })();
 
   // Các hàm được gọi từ onclick="..." trong HTML phải nằm trên window
   Object.assign(window, { toggleMobileMenu, switchTab, openMemberModal, closeMemberModal, setRating, toggleIdentityFields, updateCharCount, addEmoji, handleCommentSubmit, loadCommentsFromSheet });
