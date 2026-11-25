@@ -42,7 +42,7 @@ async function fillContent(r) {
   if (r === 'video') {   // Video demo: dữ liệu admin nhập (site/video); chưa có thì giữ nội dung mẫu trong index.html
     const box = $('#video'); if (!box) return;
     let d = null; try { d = await Promise.race([siteDoc('video'), new Promise(ok => setTimeout(() => ok(null), 2500))]); } catch (e) {}
-    if (d && $('#video') === box) box.innerHTML = Content.video(d);
+    if ($('#video') === box) box.innerHTML = Content.video(d);   // d rỗng thì Content.video dùng nội dung mặc định
   }
 }
 
