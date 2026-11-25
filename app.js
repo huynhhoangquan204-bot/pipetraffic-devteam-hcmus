@@ -63,9 +63,15 @@ function setActive(key) {
 
 /* --- Trang chủ: danh sách dự án + CTA (phần giới thiệu đã gom thành banner popup, xem showWelcome) --- */
 async function home() {
-  app.innerHTML = `<section id="projects" class="pt-32 pb-20 bg-slate-50"><div class="pt-app max-w-5xl mx-auto px-4">
-  <h2 class="sec">Các dự án</h2><p class="sub">Tình hình cập nhật hằng tuần của Pipe Traffic Dev Team.</p>
-  <div id="projBox"><div class="loading">Đang tải dự án…</div></div></div></section>` + tpl('tpl-cta');
+  // Tiêu đề (tpl-cta) lên đầu, sau đó là mục Các dự án kèm đoạn giới thiệu + 2 nút   // <--- SỬA Ở ĐÂY
+  app.innerHTML = tpl('tpl-cta') + `<section id="projects" class="pt-10 pb-20 bg-white"><div class="pt-app max-w-5xl mx-auto px-4">
+  <h2 class="sec">Các dự án</h2>
+  <p class="sub" style="margin-bottom:16px">Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) nghiên cứu và phát triển.</p>
+  <div class="home-cta">
+    <a href="#/problems" class="btn">Xem Đồ Án Chi Tiết</a>
+    <a href="#" data-contact class="btn ghost">Liên Hệ Nhóm Dự Án</a>
+  </div>
+  <div id="projBox"><div class="loading">Đang tải dự án…</div></div></div></section>`;
   const box = $('#projBox');
   try {
     const [ps, us] = await Promise.all([Store.list('projects'), Store.list('updates')]);
@@ -82,7 +88,6 @@ async function home() {
     }).join('') || '<p class="muted">Chưa có dự án nào.</p>'}</div>`;
   } catch (e) { if (document.body.contains(box)) box.innerHTML = '<p class="err">Chưa tải được dự án: ' + esc(e.message) + '</p>'; }
 }
-
 async function project(id) {
   const p = (await Store.list('projects')).find(x => x.id === id);
   if (!p) { wrap('<p>Không tìm thấy dự án. <a class="plink" href="#/">Quay lại</a></p>'); return; }
