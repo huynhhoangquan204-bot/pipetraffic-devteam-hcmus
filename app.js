@@ -63,7 +63,6 @@ function setActive(key) {
 
 /* --- Trang chủ: danh sách dự án + CTA (phần giới thiệu đã gom thành banner popup, xem showWelcome) --- */
 async function home() {
-  // Tiêu đề (tpl-cta) lên đầu, sau đó là mục Các dự án kèm đoạn giới thiệu + 2 nút   // <--- SỬA Ở ĐÂY
   app.innerHTML = tpl('tpl-cta') + `<section id="projects" class="pt-10 pb-20 bg-white"><div class="pt-app max-w-5xl mx-auto px-4">
   <h2 class="sec">Các dự án</h2>
   <p class="sub" style="margin-bottom:16px">Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) nghiên cứu và phát triển.</p>
@@ -79,9 +78,9 @@ async function home() {
     box.innerHTML = (Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : '') +
     `<div class="pgrid">${ps.map(p => {
       const last = us.filter(u => u.projectId === p.id).pop();
-      const bgOk = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.bgImg || '') && p.bgImg.length < 400000;
-      const bgSt = bgOk ? ` style="background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.93) 72%),url('${p.bgImg}');background-size:cover;background-position:center"` : '';
-      return `<a class="card"${bgSt} href="#/p/${p.id}"><div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
+      const imgOk = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(p.bgImg || '') && p.bgImg.length < 400000;
+      const cover = imgOk ? `<img class="pcover" src="${p.bgImg}" alt="${esc(p.name)}" loading="lazy">` : '';   // ảnh minh hoạ rõ nét trên đầu thẻ, không còn làm nền mờ
+      return `<a class="card" href="#/p/${p.id}">${cover}<div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>
       <p class="muted" style="margin:0">${esc(p.desc)}</p>
       <div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small>
       ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}</p>` : ''}</a>`;
@@ -363,21 +362,26 @@ async function profile() {
 
 /* --- Điều hướng (hash), mỗi mục trên menu là một TRANG RIÊNG nhưng vẫn là một file SPA ---
    #/  ·  #/p/<id>  ·  #/login  ·  #/profile  ·  #/specs  #/journey  #/problems  #/team  #/video  #/faq  #/comments */
-const PAGES = ['specs', 'journey', 'problems', 'team', 'video', 'faq', 'comments'];   // mỗi tên ứng với <template id="tpl-...">
+const PAGES = ['specs', 'journey', 'problems', 'team', 'video', 'faq'];   // bỏ 'comments' (đã gộp vào video)
 const routes = { '': home, p: project, login, profile, privacy, search: id => Search.page(id) };
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
   if (r === 'chat') { location.replace('#/'); setTimeout(() => openChat(), 100); return; }   // link cũ #/chat -> về trang chủ và mở popup chat
+  if (r === 'comments') { location.replace('#/video'); return; }            // link cũ #/comments -> trang Video
   if (me && me.agreed === false && r !== 'privacy') { location.replace('#/privacy'); return; }   // chưa đồng ý cam kết thì chỉ vào được trang này
   stopLive(); renderAuth(); ensureMsgs(); paintBadge(); toggleMobileMenu(true);
   setActive(PAGES.includes(r) ? r : (r === '' || r === 'p' ? 'projects' : ''));
   window.scrollTo(0, 0);
   try {
     if (PAGES.includes(r)) {
-      app.dataset.view = r; app.innerHTML = `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
+      app.dataset.view = r;
+      // trang video = video bên trái + bình luận bên phải (kiểu YouTube)
+      app.innerHTML = r === 'video'
+        ? `<div class="pt-20"><div class="yt-wrap"><div class="yt-main">${tpl('tpl-video')}</div><aside class="yt-side">${tpl('tpl-comments')}</aside></div></div>`
+        : `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
       const jobs = [fillContent(r)];
-      if (r === 'comments') { setRating(5); jobs.push(loadCommentsFromSheet()); }
+      if (r === 'video') { setRating(5); jobs.push(loadCommentsFromSheet()); }
       Promise.allSettled(jobs).then(() => Search.applyFind());   // tìm kiếm: tô từ khoá + cuộn tới đoạn được chọn
     } else {
       app.dataset.view = r || 'home';
