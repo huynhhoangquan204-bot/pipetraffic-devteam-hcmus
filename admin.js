@@ -279,7 +279,7 @@ const SITE = {
   video: { name: 'Video demo', view: 'index.html#/video', opt: ['tag', 'videoUrl', 'cover', 'playTitle', 'playSub', 'scenes'],
     fields: [['tag', 'Dòng nhỏ phía trên tiêu đề', 'text'], ['title', 'Tiêu đề', 'text'],
       ['videoUrl', 'Link video (YouTube, Vimeo, Google Drive hoặc .mp4). Để trống thì chỉ hiện ảnh bìa', 'text', 'https://www.youtube.com/watch?v=...'],
-      ['cover', 'Ảnh bìa (hiện trước khi phát, hoặc khi chưa có link video)', 'cover'],
+      ['cover', 'Ảnh bìa (hiện trước khi phát, hoặc khi chưa có link video; hỗ trợ GIF động ≤ 650KB)', 'cover'],
       ['playTitle', 'Dòng chữ lớn trên ảnh bìa', 'text'], ['playSub', 'Dòng chữ nhỏ trên ảnh bìa', 'text'],
       ['scenesTitle', 'Tiêu đề khung kịch bản', 'text'],
       ['scenes', 'Các phân cảnh: mỗi dòng một cảnh, dạng  Nhãn | Nội dung  (có thể **in đậm**, *in nghiêng*). Xoá hết để ẩn khung này', 'lines']] },
@@ -306,7 +306,7 @@ async function site() {
   document.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { ssec = b.dataset.s; render(); });
   const prev = () => { const p = $('#coverPrev'); if (p) p.innerHTML = coverData ? `<div class="pth"><img src="${esc(coverData)}" alt=""><button type="button" id="coverRm" aria-label="Bỏ ảnh">×</button></div>` : ''; const r = $('#coverRm'); if (r) r.onclick = () => { coverData = ''; prev(); }; };
   prev();
-  if ($('#coverFile')) $('#coverFile').onchange = async ev => { try { coverData = await Media.image(ev.target.files[0]); prev(); } catch (x) { toast(x.message); } ev.target.value = ''; };
+  if ($('#coverFile')) $('#coverFile').onchange = async ev => { try { coverData = await bgShrink(ev.target.files[0]); prev(); } catch (x) { toast(x.message); } ev.target.value = ''; };
   if ($('#reset')) $('#reset').onclick = async () => { if (confirm('Xoá nội dung đã nhập và dùng lại nội dung mẫu?')) { try { await Store.del('site', ssec); } catch (x) { return toast(x.message); } toast('Đã quay về nội dung mẫu'); render(); } };
   $('#f').onsubmit = async ev => {
     ev.preventDefault(); const f = Object.fromEntries(new FormData(ev.target)), o = {};
