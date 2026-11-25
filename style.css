@@ -704,13 +704,15 @@ html{
 }
 
 .pt-app .pcover{
-  width:calc(100% + 40px);
-  margin:-20px -20px 14px;
-  height:150px;
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:16/9;
+  margin:0 auto 14px;
   -o-object-fit:cover;
      object-fit:cover;
-  border-radius:16px 16px 0 0;
-  display:block
+  object-position:center;
+  border-radius:12px
 }
 
 .pt-app .pthumbs{
