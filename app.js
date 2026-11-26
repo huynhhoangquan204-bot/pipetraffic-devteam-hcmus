@@ -119,10 +119,7 @@ function step(g, p) {
        <p style="margin-top:12px"><a href="#" id="forgot" class="plink">Quên mật khẩu?</a></p>`
     : `<p class="muted">${setPw ? 'Hãy đặt mật khẩu cho tài khoản.' : 'Tài khoản mới. Bước 2: điền thông tin.'}</p><form id="f">
        ${setPw ? '' : `<label>Tên hiển thị</label><input name="name" required maxlength="40">
-       <label>Giới tính</label><select name="gender"><option>Nam</option><option>Nữ</option><option>Khác</option></select>
-       <label>Ngày tháng năm sinh</label><input type="date" name="dob" required min="1900-01-01" max="${new Date().toISOString().slice(0, 10)}">
-       <label>Số điện thoại</label><input type="tel" name="phone" required inputmode="tel" pattern="[0-9+ .\\-]{9,15}" maxlength="15" placeholder="VD: 0901234567">
-       <label>Nghề nghiệp</label><input name="job" required maxlength="60" placeholder="VD: Sinh viên, kỹ sư, giáo viên…">`}
+       <label>Giới tính</label><select name="gender"><option>Nam</option><option>Nữ</option><option>Khác</option></select>`}
        <label>Mật khẩu (từ 6 ký tự)</label><input type="password" name="pw" minlength="6" required><button class="btn">${setPw ? 'Lưu mật khẩu' : 'Tạo tài khoản'}</button></form>`);
   const fg = $('#forgot');
   if (fg) fg.onclick = async e => {
@@ -135,8 +132,7 @@ function step(g, p) {
     try {
       let u = p;
       if (p) { if (!await Store.checkPw(g, f.get('pw'), p)) { $('#err').textContent = 'Sai mật khẩu.'; return; } }
-      else u = await Store.register(g, f.get('name').trim(), f.get('gender'), f.get('pw'),
-        { dob: f.get('dob'), phone: f.get('phone').trim(), job: f.get('job').trim() });
+      else u = await Store.register(g, f.get('name').trim(), f.get('gender'), f.get('pw'));
       Store.setMe(u); me = Store.me(); toast('Xin chào ' + me.name);
       if (!p) { location.hash = '#/privacy'; return; }            // tài khoản mới: phải đồng ý cam kết quyền riêng tư
       location.hash = '#/'; setTimeout(() => openChat('admin'), 200);
@@ -148,7 +144,7 @@ function step(g, p) {
 async function privacy() {
   if (!me) { location.hash = '#/login'; return; }
   if (me.agreed !== false) { location.hash = '#/'; return; }
-  const pts = [['fa-user-shield', 'Thông tin thu thập', 'Tên, giới tính, ngày sinh, số điện thoại, nghề nghiệp và email Google.'],
+  const pts = [['fa-user-shield', 'Thông tin thu thập', 'Tên hiển thị, giới tính và email Google.'],
     ['fa-bullseye', 'Mục đích sử dụng', 'Chỉ để quản lý tài khoản và hỗ trợ bạn trong phạm vi dự án Pipe Traffic.'],
     ['fa-handshake-slash', 'Không chia sẻ', 'Không bán hay chuyển cho bên thứ ba khi chưa có sự đồng ý của bạn.'],
     ['fa-pen-to-square', 'Quyền của bạn', 'Xem, sửa ở trang Hồ sơ hoặc yêu cầu xoá bất cứ lúc nào qua tin nhắn cho admin.']];
@@ -233,14 +229,15 @@ const Notify = (() => {
   return { show, paint, toggle, watchUpdates, on };
 })();
 document.addEventListener('click', e => { if (e.target.closest('[data-notify]')) { e.preventDefault(); Notify.toggle(); } });
-/* Mỗi lần vào web, nếu người dùng chưa đồng ý (và chưa chặn / chưa tự tắt) thì hiện thanh hỏi. "Để sau" chỉ ẩn trong phiên này, lần vào sau hỏi lại. */
+/* --- Hỏi bật thông báo: KHÔNG hỏi ở lần vào đầu tiên, chỉ hỏi từ lần thứ 2, và đợi thanh cookie tắt rồi mới hiện --- */
 function askNotify() {
+  let visits = 0; try { visits = (+localStorage.getItem('pt_visits') || 0) + 1; localStorage.setItem('pt_visits', visits); } catch (x) { /* bỏ qua */ }
   const bar = $('#notify-bar'); if (!bar || !('Notification' in window)) return;
   let snooze = null, off = null; try { snooze = sessionStorage.getItem('pt_nt_snooze'); off = localStorage.getItem('pt_notify'); } catch (x) { /* vẫn hỏi */ }
   if (Notification.permission === 'granted') { if (off !== 'off' && !Notify.on()) { try { localStorage.setItem('pt_notify', 'on'); localStorage.setItem('pt_nt_upd', Date.now()); } catch (x) {} Notify.watchUpdates(); Notify.paint(); } return; }
-  if (Notification.permission === 'denied' || snooze) return;     // đã bị chặn thì trình duyệt không cho hỏi lại
-  const show = () => { const w = $('#welcome-modal'); if (w && !w.hidden) return setTimeout(show, 1000); if (!Notify.on()) bar.hidden = false; };   // đợi banner giới thiệu đóng rồi mới hỏi
-  setTimeout(show, 1800);
+  if (Notification.permission === 'denied' || snooze || visits < 2) return;
+  const show = () => { const c = $('#cookie-bar'); if (c && !c.hidden) return setTimeout(show, 1000); if (!Notify.on()) bar.hidden = false; };
+  setTimeout(show, 2500);
   bar.addEventListener('click', async e => {
     const b = e.target.closest('[data-nt]'); if (!b) return;
     bar.hidden = true;
@@ -340,7 +337,7 @@ async function openContact() {
 const closeContact = () => { const m = $('#contact-modal'); if (m) m.hidden = true; };
 
 /* --- Banner giới thiệu (popup): hiện 1 lần mỗi phiên khi vào trang chủ, tắt bằng ×, nút "Xem các dự án", bấm ra ngoài hoặc Esc.
-   Nội dung sửa trong index.html, <template id="tpl-hero">. Muốn hiện lại: xoá khoá pt_welcome trong sessionStorage (hoặc mở tab mới). --- */
+   Nội dung sửa trong index.html, <template id="tpl-hero">. Hiện không còn tự mở khi vào web (xem cuối file); muốn bật lại thì gọi showWelcome(). --- */
 function closeWelcome() { const m = $('#welcome-modal'); if (m) m.hidden = true; }
 function showWelcome() {
   const m = $('#welcome-modal'), body = $('#welcomeBody'), html = tpl('tpl-hero'); if (!m || !body || !html) return;
@@ -389,10 +386,7 @@ async function profile() {
       <h3>Thông tin cá nhân</h3>
       <div class="pf-grid">
         <div class="full"><label>Tên hiển thị</label><input name="name" required maxlength="40" value="${v('name')}"></div>
-        <div><label>Giới tính</label><select name="gender"><option${sel('Nam')}>Nam</option><option${sel('Nữ')}>Nữ</option><option${sel('Khác')}>Khác</option></select></div>
-        <div><label>Ngày sinh</label><input type="date" name="dob" required min="1900-01-01" max="${new Date().toISOString().slice(0, 10)}" value="${v('dob')}"></div>
-        <div class="full"><label>Số điện thoại</label><input type="tel" name="phone" required inputmode="tel" pattern="[0-9+ .\\-]{9,15}" maxlength="15" placeholder="VD: 0901234567" value="${v('phone')}"></div>
-        <div class="full"><label>Nghề nghiệp</label><input name="job" required maxlength="60" placeholder="VD: Sinh viên, kỹ sư, giáo viên…" value="${v('job')}"></div>
+        <div class="full"><label>Giới tính</label><select name="gender"><option${sel('Nam')}>Nam</option><option${sel('Nữ')}>Nữ</option><option${sel('Khác')}>Khác</option></select></div>
         <div class="full"><label>Email (đăng nhập Google, không đổi được)</label><input value="${v('email')}" disabled></div>
       </div>
       <button class="btn pf-save" id="pfSave">Lưu thông tin</button>
@@ -402,16 +396,16 @@ async function profile() {
   $('#pfFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) setAvatar(() => Media.avatar(f, 160, .82)); };
   if ($('#pfDel')) $('#pfDel').onclick = () => setAvatar(async () => '');
 
-  // Điền sẵn thông tin đầy đủ từ máy chủ (bản lưu trên máy này có thể thiếu ngày sinh / số điện thoại / nghề nghiệp)
+  // Điền sẵn thông tin đầy đủ từ máy chủ (bản lưu trên máy này có thể thiếu một số trường)
   const form = $('#pfForm'); let server = null;
   Store.profile(me.id).then(pr => {
     server = pr; if (!pr || !document.body.contains(form)) return;
-    ['name', 'gender', 'dob', 'phone', 'job'].forEach(k => { const el = form.elements[k]; if (el && pr[k] && !el.dataset.touched && !el.value) el.value = pr[k]; });
+    ['name', 'gender'].forEach(k => { const el = form.elements[k]; if (el && pr[k] && !el.dataset.touched && !el.value) el.value = pr[k]; });
   }).catch(() => {});
   form.addEventListener('input', e => { e.target.dataset.touched = 1; });
   form.onsubmit = async e => {
     e.preventDefault(); const err = $('#pfFormErr'), btn = $('#pfSave'); err.textContent = '';
-    const f = new FormData(form), d = { name: f.get('name').trim(), gender: f.get('gender'), dob: f.get('dob'), phone: f.get('phone').trim(), job: f.get('job').trim() };
+    const f = new FormData(form), d = { name: f.get('name').trim(), gender: f.get('gender') };
     if (!d.name) { err.textContent = 'Tên hiển thị không được để trống.'; return; }
     btn.disabled = true; btn.textContent = 'Đang lưu…';
     try {
@@ -467,6 +461,5 @@ const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off
     Notify.paint(); Notify.watchUpdates();
     await Promise.race([route(), new Promise(r => setTimeout(r, 4000))]);   // chờ tối đa 4 giây rồi mở trang
   } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
-  hideSplash(); askNotify();
-  if (!location.hash.replace(/^#\/?/, '')) showWelcome();   // chỉ hiện banner khi vào đúng trang chủ
+  hideSplash(); askNotify();   // (đã bỏ popup chào tự mở: màn hình đầu tiên chỉ còn thanh cookie)
 })();
