@@ -320,12 +320,9 @@
 .sr-nav kbd{font:inherit;font-size:.72rem;font-weight:700;color:#94a3b8;border:1px solid #cbd5e1;border-radius:6px;padding:1px 7px;background:#fff}
 .sr-nav:focus-within kbd{display:none}
 #mobile-menu{position:absolute;right:16px;top:80px;width:min(360px,calc(100vw - 32px));max-height:calc(100vh - 100px);overflow:auto;border:1px solid #e2e8f0;border-radius:16px}
-.nav-chat{position:relative;width:auto!important;padding:0 14px;gap:8px;font-weight:700;font-size:.9rem;animation:chatGlow 1.9s ease-in-out infinite}
+/* Nút Chat: đứng yên (đã bỏ hiệu ứng nhấp nháy cho giao diện gọn, chuyên nghiệp) */
+.nav-chat{position:relative;width:auto!important;padding:0 14px;gap:8px;font-weight:700;font-size:.9rem}
 .nav-chat .nav-chat-t{display:none}
-.nav-chat::before{content:"";position:absolute;inset:-2px;border-radius:inherit;border:2px solid rgba(56,189,248,.9);animation:chatRing 1.9s ease-out infinite;pointer-events:none}
-@keyframes chatGlow{0%,100%{box-shadow:0 0 6px 1px rgba(56,189,248,.45),0 0 0 0 rgba(14,165,233,.55);filter:brightness(1)}50%{box-shadow:0 0 22px 7px rgba(56,189,248,.85),0 0 0 6px rgba(14,165,233,0);filter:brightness(1.15)}}
-@keyframes chatRing{0%{transform:scale(1);opacity:.9}100%{transform:scale(1.35,1.6);opacity:0}}
-@media(prefers-reduced-motion:reduce){.nav-chat,.nav-chat::before{animation:none}}
 @media(min-width:640px){.sr-btn{display:none}.nav-chat .nav-chat-t{display:inline}}
 @media(max-width:639px){.sr-nav{display:none}.sr-right{margin-left:auto}}
 @media(max-width:420px){.sr-logo>div{display:none}.sr-logo{margin-right:0}}
