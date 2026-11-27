@@ -70,7 +70,7 @@ async function home() {
     <a href="#/problems" class="btn">Xem Đồ Án Chi Tiết</a>
     <a href="#" data-contact class="btn ghost">Liên Hệ Nhóm Dự Án</a>
   </div>
-  <div id="projBox"><div class="loading">Đang tải dự án…</div></div></div></section>`;
+  <div id="projBox" data-autotr><div class="loading">Đang tải dự án…</div></div></div></section>`;
   const box = $('#projBox');
   try {
     const [ps, us] = await Promise.all([Store.list('projects'), Store.list('updates')]);
@@ -97,7 +97,10 @@ async function project(id) {
   <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${esc(p.owner)}</p>
   <div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
   <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2></div>
-  <div class="tl">${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${esc(u.content)}</p>${Media.html(Media.list(u))}</div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>`);
+  <div class="tl" data-autotr>${us.map(u => `<div class="it"><div class="wk">${esc(u.week)}</div><b>${esc(u.title)}</b><p>${esc(u.content)}</p>${Media.html(Media.list(u))}</div>`).join('') || '<p class="muted">Chưa có cập nhật.</p>'}</div>
+  <div id="cmtProj" style="margin-top:44px;padding-top:8px;border-top:1px solid var(--line,#e2e8f0)"></div>`);
+  const first = app.firstElementChild; if (first) first.setAttribute('data-autotr', '');   // tên / mô tả dự án cũng được tự dịch sang tiếng Anh
+  Cmt.mount($('#cmtProj'), 'p:' + id);                                                   // bình luận gọn ở cuối MỌI dự án
 }
 
 /* --- Đăng nhập: Google (bắt buộc) -> mật khẩu (Firebase Auth) -> tên / giới tính khi tạo mới --- */
@@ -339,14 +342,32 @@ const closeContact = () => { const m = $('#contact-modal'); if (m) m.hidden = tr
 /* --- Banner giới thiệu (popup): hiện 1 lần mỗi phiên khi vào trang chủ, tắt bằng ×, nút "Xem các dự án", bấm ra ngoài hoặc Esc.
    Nội dung sửa trong index.html, <template id="tpl-hero">. Hiện không còn tự mở khi vào web (xem cuối file); muốn bật lại thì gọi showWelcome(). --- */
 function closeWelcome() { const m = $('#welcome-modal'); if (m) m.hidden = true; }
+/* Banner nhiều bước: giới thiệu -> tính năng kỹ thuật -> bảng so sánh hạ tầng. Bấm "Tiếp theo" để xem tiếp; bước nào cũng đóng được. */
+const WB_STEPS = ['tpl-hero', 'tpl-hero-features', 'tpl-hero-compare'];
+let wbI = 0;
+function wbDraw() {
+  const m = $('#welcome-modal'), body = $('#welcomeBody'); if (!m || !body) return;
+  const last = wbI === WB_STEPS.length - 1, vi = (a, b) => (window.I18N ? I18N.t(a, b) : a);
+  body.innerHTML = `<div class="wb-step">${tpl(WB_STEPS[wbI])}</div><div class="wb-nav">
+    ${wbI ? '<button type="button" class="wb-btn" data-wb-prev>← Quay lại</button>' : '<button type="button" class="wb-btn" data-welcome-close>Bỏ qua</button>'}
+    <span class="wb-dots" aria-hidden="true">${WB_STEPS.map((_, i) => `<i${i === wbI ? ' class="on"' : ''}></i>`).join('')}</span>
+    ${last ? '<button type="button" class="wb-btn wb-p" data-welcome-close>Xem các dự án</button>' : '<button type="button" class="wb-btn wb-p" data-wb-next>Tiếp theo →</button>'}</div>`;
+  const card = m.querySelector('.wb-card'); if (card) card.classList.toggle('wb-wide', wbI > 0);
+  const st = body.querySelector('.wb-step'); if (st) st.scrollTop = 0;
+}
+function openWelcome(i) {   // mở lại banner ở bước i (dùng cho link #/intro/<bước> và kết quả tìm kiếm)
+  const m = $('#welcome-modal'); if (!m) return; wbI = Math.max(0, Math.min(WB_STEPS.length - 1, +i || 0)); wbDraw(); m.hidden = false;
+}
 function showWelcome() {
-  const m = $('#welcome-modal'), body = $('#welcomeBody'), html = tpl('tpl-hero'); if (!m || !body || !html) return;
+  const m = $('#welcome-modal'), body = $('#welcomeBody'); if (!m || !body || !tpl('tpl-hero')) return;
   try { if (sessionStorage.getItem('pt_welcome')) return; sessionStorage.setItem('pt_welcome', '1'); } catch (x) { /* không lưu được thì vẫn hiện */ }
-  body.innerHTML = html; m.hidden = false;
+  wbI = 0; wbDraw(); m.hidden = false;
 }
 
 document.addEventListener('click', e => {
   if (e.target.closest('[data-welcome-close]') || e.target.id === 'welcome-modal') { closeWelcome(); return; }
+  if (e.target.closest('[data-wb-next]')) { wbI = Math.min(WB_STEPS.length - 1, wbI + 1); wbDraw(); return; }
+  if (e.target.closest('[data-wb-prev]')) { wbI = Math.max(0, wbI - 1); wbDraw(); return; }
   if (e.target.closest('#welcome-modal a, #welcome-modal [data-chat-open]')) closeWelcome();   // bấm link / nút chat trong banner: đóng banner rồi đi tiếp
   const qb = e.target.closest('[data-q]'); if (qb) { const f = $('#chatForm'); if (f && !f.t.disabled) { f.t.value = qb.dataset.q; f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event('submit', { cancelable: true })); } return; }
   const ct = e.target.closest('[data-ct]'); if (ct) { if (chatAt && chatTab !== ct.dataset.ct) chatAt.clear(); chatTab = ct.dataset.ct; if (chatTab === 'admin') markSeen(); drawChat(); return; }
@@ -355,7 +376,10 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-contact]')) { e.preventDefault(); openContact(); return; }
   if (e.target.closest('[data-contact-close]') || e.target.id === 'contact-modal') closeContact();
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeWelcome(); closeContact(); closeChat(); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeWelcome(); closeContact(); closeChat(); }
+  const wm = $('#welcome-modal'); if (wm && !wm.hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || '')) { if (e.key === 'ArrowRight' && wbI < WB_STEPS.length - 1) { wbI++; wbDraw(); } else if (e.key === 'ArrowLeft' && wbI > 0) { wbI--; wbDraw(); } }
+});
 
 /* --- Hồ sơ: đổi avatar. Ảnh cắt vuông, thu nhỏ 160px, lưu vào hồ sơ người dùng (users) và hiện cạnh tin nhắn trong chat --- */
 async function setAvatar(get) {
@@ -428,6 +452,7 @@ const routes = { '': home, p: project, login, profile, privacy, search: id => Se
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
+  if (r === 'intro') { location.replace('#/'); setTimeout(() => openWelcome(id), 150); return; }   // link #/intro/1 -> về trang chủ và mở banner ở bước đó
   if (r === 'chat') { location.replace('#/'); setTimeout(() => openChat(), 100); return; }   // link cũ #/chat -> về trang chủ và mở popup chat
   if (r === 'comments') { location.replace('#/video'); return; }            // link cũ #/comments -> trang Video
   if (me && me.agreed === false && r !== 'privacy') { location.replace('#/privacy'); return; }   // chưa đồng ý cam kết thì chỉ vào được trang này
@@ -439,10 +464,10 @@ async function route() {
       app.dataset.view = r;
       // trang video = video bên trái + bình luận bên phải (kiểu YouTube)
       app.innerHTML = r === 'video'
-        ? `<div class="pt-20"><div class="yt-wrap"><div class="yt-main">${tpl('tpl-video')}</div><aside class="yt-side">${tpl('tpl-comments')}</aside></div></div>`
-        : `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
+        ? `<div class="pt-20"><section id="video" class="bg-white w-full" data-autotr style="padding:40px 0 28px">${Content.video(null)}</section><div id="cmtVideo" class="px-4" style="padding-bottom:72px"></div></div>`
+        : `<div class="pt-20"${['journey', 'team', 'faq'].includes(r) ? ' data-autotr' : ''}>${tpl('tpl-' + r)}</div>`;
       const jobs = [fillContent(r)];
-      if (r === 'video') { setRating(5); jobs.push(loadCommentsFromSheet()); }
+      if (r === 'video') jobs.push(Cmt.mount($('#cmtVideo'), 'video'));
       Promise.allSettled(jobs).then(() => Search.applyFind());   // tìm kiếm: tô từ khoá + cuộn tới đoạn được chọn
     } else {
       app.dataset.view = r || 'home';
@@ -461,5 +486,6 @@ const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off
     Notify.paint(); Notify.watchUpdates();
     await Promise.race([route(), new Promise(r => setTimeout(r, 4000))]);   // chờ tối đa 4 giây rồi mở trang
   } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
-  hideSplash(); askNotify();   // (đã bỏ popup chào tự mở: màn hình đầu tiên chỉ còn thanh cookie)
+  hideSplash(); askNotify();
+  if (!/^#\/(login|privacy)/.test(location.hash) && !(me && me.agreed === false)) setTimeout(showWelcome, 350);   // banner chào nhiều bước: hiện 1 lần mỗi phiên khi vào web
 })();
