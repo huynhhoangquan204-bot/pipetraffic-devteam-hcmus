@@ -14,7 +14,10 @@
       const b = 'https://www.gstatic.com/firebasejs/10.12.2/';
       await load(b + 'firebase-app-compat.js');
       await Promise.all([load(b + 'firebase-auth-compat.js'), load(b + 'firebase-firestore-compat.js')]);
-      firebase.initializeApp(cfg.firebase); fdb = firebase.firestore(); fauth = firebase.auth(); useFb = true;
+      firebase.initializeApp(cfg.firebase); fdb = firebase.firestore();
+      // Mạng nhà / trường / proxy hay chặn kết nối WebChannel của Firestore -> ghi treo tới hết giờ dù mạng vẫn tốt. Cho SDK tự chuyển sang long-polling khi cần.
+      try { fdb.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (x) { console.warn('Không đặt được long-polling', x); }
+      fauth = firebase.auth(); useFb = true;
     } catch (e) { fbFail = (e && e.message) || 'không tải được thư viện Firebase (mạng, trình chặn quảng cáo, hoặc firebase.com bị chặn)'; console.warn('Không tải được Firebase, dùng chế độ thử.', e); }
   })();
   const authUser = () => new Promise(res => { const un = fauth.onAuthStateChanged(u => { un(); res(u); }); });
@@ -118,7 +121,7 @@
     async get(col, id) {
       await ready;
       try {
-        if (useFb) { const s = await tmo(fdb.collection(col).doc(id).get()); return s.exists ? { ...s.data(), id: s.id } : null; }
+        if (useFb) { const s = await tmo(fdb.collection(col).doc(id).get(), col === 'chunks' ? 45000 : undefined); return s.exists ? { ...s.data(), id: s.id } : null; }
       } catch (e) { throw fbErr(e); }
       return (db()[col] || []).find(x => x.id === id) || null;
     },
@@ -127,7 +130,17 @@
       o = { ...o }; if (!o.ts) o.ts = Date.now();
       const id = o.id || uid(); o.id = id;
       try {
-        if (useFb) { const data = { ...o }; if (col === 'comments') delete data.id; await tmo(fdb.collection(col).doc(id).set(data)); }
+        if (useFb) {
+          const data = { ...o }; if (col === 'comments') delete data.id;
+          if (col === 'chunks') {   // mảnh tệp lớn: cho 45 giây mỗi lần, thử lại tối đa 3 lần (lỗi quyền thì không thử lại)
+            let last;
+            for (let k = 0; k < 3; k++) {
+              try { await tmo(fdb.collection(col).doc(id).set(data), 45000); last = null; break; }
+              catch (x) { last = x; if (x && /permission/i.test(String(x.code))) break; }
+            }
+            if (last) throw last;
+          } else await tmo(fdb.collection(col).doc(id).set(data));
+        }
         else { const d = db(); d[col] = d[col] || []; const i = d[col].findIndex(x => x.id === id); i < 0 ? d[col].push(o) : d[col][i] = o; save(d);  window.dispatchEvent(new Event('pt-db')); }
       } catch (e) { throw fbErr(e); }
       return o;
