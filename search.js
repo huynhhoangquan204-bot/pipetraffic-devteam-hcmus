@@ -39,7 +39,8 @@
   const PAGES = [
     { key: 'home',     label: 'Trang chủ',            href: '#/',         icon: 'fa-house',           tpls: ['tpl-hero', 'tpl-cta'] },
     { key: 'projects', label: 'Dự án',                href: '#/',         icon: 'fa-folder-open' },
-    { key: 'specs',    label: 'Kỹ thuật & hạ tầng',   href: '#/specs',    icon: 'fa-gears',           tpls: ['tpl-specs'] },
+    { key: 'specs',    label: 'Hướng dẫn sử dụng',    href: '#/specs',    icon: 'fa-book-open',       tpls: ['tpl-specs'] },
+    { key: 'intro',    label: 'Tính năng & so sánh hạ tầng', href: '#/intro/1', icon: 'fa-gears',   tpls: ['tpl-hero-features', 'tpl-hero-compare'] },   // nằm trong banner chào: mở lại banner ở bước 2
     { key: 'journey',  label: 'Hành trình',           href: '#/journey',  icon: 'fa-timeline',        tpls: ['tpl-journey'] },
     { key: 'team',     label: 'Thành viên & quy tắc', href: '#/team',     icon: 'fa-users',           tpls: ['tpl-team'] },
     { key: 'problems', label: 'Bài toán & giải pháp', href: '#/problems', icon: 'fa-microchip',       tpls: ['tpl-problems'] },
@@ -93,7 +94,7 @@
     }));
     if (key === 'video' && typeof siteDoc === 'function') {
       const box = root.querySelector('#video');
-      try { const d = await timeout(siteDoc('video')); if (d && box) box.innerHTML = Content.video(d); } catch (e) { /* giữ nội dung mẫu */ }
+      try { const d = await timeout(siteDoc('video')); if (box) box.innerHTML = Content.video(d); } catch (e) { /* giữ nội dung mẫu */ }
     }
   }
   async function buildIndex() {
@@ -101,7 +102,7 @@
     const v = [], add = (page, href, title, text) => { text = clean(text); if (text) v.push({ page, href, title: clean(title), text, f: fold(text), ft: fold(title) }); };
 
     await Promise.all(PAGES.filter(p => p.tpls).map(async p => {
-      const html = p.tpls.map(id => { const t = $id(id); return t ? t.innerHTML : ''; }).join('');
+      const html = p.tpls.map(id => { const t = $id(id); return t ? t.innerHTML : (p.key === 'video' ? '<section id="video"></section>' : ''); }).join('');   // trang Video dựng bằng Content.video nên không có template
       const root = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html').body.firstChild;
       await applyAdminContent(p.key, root);
       extract(root).forEach(b => add(p.key, p.href, b.title, b.text));
