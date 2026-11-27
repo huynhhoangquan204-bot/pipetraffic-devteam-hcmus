@@ -35,11 +35,12 @@ const live = [];                       // theo dõi của tab đang mở, huỷ 
 const stopLive = () => live.splice(0).forEach(f => f());
 let pendCmt = 0, waitMsg = 0, pendBot = 0; const badgeOff = [];
 function startBadges() {
+  AdminChat.start();
   badgeOff.push(Store.listen('comments', null, cs => { pendCmt = cs.filter(c => !c.approved).length; if ($('#out')) nav(); }));
   badgeOff.push(Store.listen('messages', null, ms => { const last = {}; ms.forEach(m => last[m.uid] = m); waitMsg = Object.values(last).filter(m => m.from === 'user').length; if ($('#out')) nav(); }));
   badgeOff.push(Store.listen('botlogs', null, ls => { pendBot = ls.length; if ($('#out')) nav(); }));
 }
-const stopBadges = () => { badgeOff.splice(0).forEach(f => f()); pendCmt = waitMsg = pendBot = 0; };
+const stopBadges = () => { AdminChat.stop(); badgeOff.splice(0).forEach(f => f()); pendCmt = waitMsg = pendBot = 0; };
 
 /* --- Menu ☰ bên trái (giống trang chính): dừng ở mép trên footer --- */
 const admMenu = $('#admMenu'), admBtn = $('#admBtn');
@@ -67,16 +68,16 @@ document.addEventListener('click', e => { if (admMenu.classList.contains('open')
 
 function nav() {
   const old = Date.now() - (+localStorage.getItem('pt_last_backup') || 0) > 7 * 864e5;
-  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬'], ['messages', 'Tin nhắn', '✉️', waitMsg], ['bot', 'Dạy Bot', '🤖', pendBot], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
+  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬'], ['comments', 'Bình luận', '💬', pendCmt], ['bot', 'Dạy Bot', '🤖', pendBot], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
   admBtn.hidden = false;   // các tab chuyển vào menu ☰, trên thanh chỉ còn nút Thoát
   admMenu.innerHTML = t.map(([k, v, ic, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}"><span>${ic}</span><span>${v}</span>${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('');
-  // Thanh trên: Bình luận (có số chờ duyệt) · Ngôn ngữ · Giao diện tối · Thoát
-  $('#nav').innerHTML = `<button type="button" id="cmtBtn" class="nav-ico cmt${tab === 'comments' ? ' on' : ''}" title="Bình luận" aria-label="Bình luận">💬${pendCmt ? `<span class="nbadge">${pendCmt}</span>` : ''}<span class="lbl">Bình luận</span></button>`
+  // Thanh trên: Chat với người dùng (popup, số hội thoại chờ trả lời) · Ngôn ngữ · Giao diện tối · Thoát
+  $('#nav').innerHTML = `<button type="button" id="cmtBtn" class="nav-ico cmt${window.AdminChat && AdminChat.isOpen() ? ' on' : ''}" title="Chat với người dùng" aria-label="Chat với người dùng">💬${waitMsg ? `<span class="nbadge">${waitMsg}</span>` : ''}<span class="lbl">Chat</span></button>`
     + '<button type="button" id="langBtn" class="nav-ico lang"><span aria-hidden="true">🌐</span><b></b></button>'
     + '<button type="button" id="themeBtn" class="nav-ico theme">🌙</button>'
     + '<button id="out">Thoát</button>';
   if (window.I18N && I18N.bind) I18N.bind();
-  $('#cmtBtn').onclick = () => { tab = 'comments'; editing = null; thread = null; admToggle(true); render(); };
+  $('#cmtBtn').onclick = () => { admToggle(true); AdminChat.toggle(); nav(); };
   admMenu.querySelectorAll('[data-t]').forEach(x => x.onclick = e => { e.preventDefault(); tab = x.dataset.t; editing = null; thread = null; admToggle(true); render(); });
   $('#out').onclick = async () => { admToggle(true); stopLive(); stopBadges(); await Store.adminLogout(); login(); };
 }
@@ -340,6 +341,7 @@ let cfilter = 'pending';
 async function comments() {
   app.innerHTML = '<h1>Bình luận</h1><p class="sub" id="csub"></p><div class="row" style="justify-content:flex-start;gap:8px;margin-bottom:14px" id="cf"></div><div class="card" id="clist"><div class="loading">Đang tải…</div></div>';
   let all = [];
+  try { window.__projNames = {}; (await Store.list('projects')).forEach(p => { window.__projNames[p.id] = p.name; }); } catch (e) { /* không có thì hiện mã dự án */ }
   const draw = () => {
     if (!$('#clist')) return;
     const wait = all.filter(c => !c.approved).length, ok = all.length - wait;
@@ -347,7 +349,7 @@ async function comments() {
     $('#cf').innerHTML = [['pending', `Chờ duyệt (${wait})`], ['approved', `Đã duyệt (${ok})`], ['all', `Tất cả (${all.length})`]].map(([k, v]) => `<button class="btn ${cfilter === k ? '' : 'ghost'} sm" data-f="${k}">${v}</button>`).join('') + (wait ? `<button class="btn sm" id="apall">Duyệt tất cả (${wait})</button>` : '');
     const list = [...all].reverse().filter(c => cfilter === 'all' || (cfilter === 'approved') === !!c.approved);
     $('#clist').innerHTML = list.map(c => `<div class="item" style="align-items:flex-start"><div style="min-width:0"><b>${esc(c.name)}</b> ${c.role ? `<span class="tag">${esc(c.role)}</span>` : ''}
-      <span class="tag ${c.approved ? 'done' : 'run'}">${c.approved ? 'Đã duyệt' : 'Chờ duyệt'}</span> <small class="muted">⭐${+c.rating || 0} · ${fmt(c.ts)}</small><br>
+      <span class="tag ${c.approved ? 'done' : 'run'}">${c.approved ? 'Đã duyệt' : 'Chờ duyệt'}</span> <span class="tag">${c.scope && c.scope.startsWith('p:') ? 'Dự án ' + esc((window.__projNames || {})[c.scope.slice(2)] || c.scope.slice(2)) : 'Video'}</span> <small class="muted">${+c.rating ? '⭐' + (+c.rating) + ' · ' : ''}${fmt(c.ts)}</small><br>
       <span style="white-space:pre-wrap;word-break:break-word">${esc(c.text)}</span></div>
       <div style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" data-a="${c.id}">${c.approved ? 'Bỏ duyệt' : 'Duyệt'}</button><button class="btn danger" data-d="${c.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Không có bình luận nào ở mục này.</p>';
     document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { cfilter = b.dataset.f; draw(); });
