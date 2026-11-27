@@ -15,10 +15,247 @@
   const norm = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
 
   /* ---------- Từ điển 1: chữ có sẵn trong index.html (tạo tự động) ---------- */
-  const STATIC = /*@@STATIC@@*/{};
+  const STATIC = {
+ "Pipe Traffic - ĐH Khoa học Tự nhiên (HCMUS)": "Pipe Traffic - University of Science (HCMUS)",
+ "Dự Án Nghiên Cứu HCMUS": "HCMUS Research Project",
+ "Chat": "Chat",
+ "Dự Án": "Projects",
+ "Đặc Điểm Kỹ Thuật & Hạ Tầng": "Technical Specifications & Infrastructure",
+ "Hành Trình (Journey)": "Journey",
+ "Thành Viên & Quy Tắc": "Team & Rules",
+ "Bài Toán & Giải Pháp": "Problems & Solutions",
+ "Video & Bình Luận": "Video & Comments",
+ "Đánh Giá & FAQ": "Reviews & FAQ",
+ "Liên Hệ": "Contact",
+ "Trường Đại học Khoa học Tự nhiên TP.HCM": "University of Science, Ho Chi Minh City",
+ "© 2026 Pipe Traffic Team. Tất cả quyền được bảo lưu. ·": "© 2026 Pipe Traffic Team. All rights reserved. ·",
+ "Liên hệ": "Contact",
+ "Quản trị": "Admin panel",
+ "Thành Viên": "Member",
+ "Vai trò": "Role",
+ "Đóng": "Close",
+ "Trợ lý": "Assistant",
+ "Gửi": "Send",
+ "Website dùng bộ nhớ trình duyệt (cookie) để ghi nhớ đăng nhập và cải thiện trải nghiệm.": "This website uses browser storage (cookies) to remember your login and improve your experience.",
+ "Từ chối": "Decline",
+ "Chấp nhận": "Accept",
+ "Pipe Traffic – Giao thông": "Pipe Traffic – Magnetic Pipe",
+ "đường ống từ trường": "Transportation",
+ "\"Kết nối không giới hạn – Giải pháp giao thông xanh và thông minh cho tương lai.\"": "\"Limitless connection – a green and smart transport solution for the future.\"",
+ "Dự án nghiên cứu của sinh viên HCMUS về hệ thống di chuyển và vận chuyển bằng đường ống từ tính, giúp giảm ùn tắc và chi phí hạ tầng đô thị.": "A research project by HCMUS students on a movement and transport system using magnetic pipes, helping reduce congestion and urban infrastructure costs.",
+ "Xem các dự án": "View projects",
+ "Khám phá giải pháp": "Explore the solution",
+ "Đặc Điểm Kỹ Thuật": "Technical Specifications",
+ "Tính Năng & Tiện Ích Nổi Bật": "Key Features & Benefits",
+ "Sự đổi mới toàn diện trong phương thức di chuyển đô thị thế hệ mới.": "A complete transformation in how next-generation cities move.",
+ "Đệm Từ Trường Maglev": "Maglev Magnetic Cushion",
+ "Lực đẩy từ tính không ma sát": "Frictionless magnetic propulsion",
+ "Di chuyển cực nhanh và êm ái": "Extremely fast and smooth travel",
+ "Tối ưu tuổi thọ thiết bị": "Extends equipment lifespan",
+ "Kết Nối Tận Hộ Gia Đình": "Connected to Every Household",
+ "Lắp đặt linh hoạt tận cửa nhà": "Flexible installation right to your door",
+ "Kết nối trực tiếp tòa nhà cao tầng": "Direct connection to high-rise buildings",
+ "Loại bỏ thời gian chờ đợi trạm bến": "No more waiting at stations",
+ "AI Điều Hướng Khẩn Cấp": "Emergency AI Routing",
+ "Tự đo khoảng cách an toàn thời gian thực": "Real-time safe-distance measurement",
+ "Giải phóng làn cho xe cấp cứu, cứu hỏa": "Clears lanes for ambulances and fire engines",
+ "Điều phối luồng cabin liên tục không tắc": "Keeps cabin flow continuous with no jams",
+ "Môi Trường & Đô Thị Xanh": "Environment & Green Cities",
+ "Không phát thải khí Carbon": "Zero carbon emissions",
+ "Giảm thiểu tối đa tiếng ồn đô thị": "Greatly reduces urban noise",
+ "Tiết kiệm diện tích giải phóng mặt bằng": "Saves land-clearance area",
+ "Đánh Giá Hạ Tầng": "Infrastructure Assessment",
+ "Bảng So Sánh Pipe Traffic & Dự Án Metro Truyền Thống": "Comparison: Pipe Traffic vs. Traditional Metro Projects",
+ "Phân tích chi tiết ưu thế vượt trội của hệ thống đường ống từ trường trong đô thị nén.": "A detailed analysis of the magnetic pipe system's clear advantages in dense cities.",
+ "Tiêu Chí Đánh Giá": "Evaluation Criteria",
+ "Pipe Traffic (Đề Xuất Dự Án)": "Pipe Traffic (Proposed Project)",
+ "Dự Án Metro Đô Thị Truyền Thống": "Traditional Urban Metro Project",
+ "Khả năng kết nối tận nhà": "Door-to-door connectivity",
+ "Trực tiếp tại cổng hộ gia đình / tòa nhà": "Direct to the gate of a household / building",
+ "Chỉ đi qua các ga lớn trung tâm cố định": "Only passes through fixed central stations",
+ "Diện tích & Không gian chiếm dụng": "Area & space occupied",
+ "Nhỏ gọn, lắp đường ống treo/ngầm đa tầng": "Compact, hanging/underground multi-level pipes",
+ "Cực lớn, đòi hỏi hành lang an toàn đường sắt riêng": "Very large, requires a dedicated rail safety corridor",
+ "Chi phí đền bù mặt bằng": "Land-clearance compensation cost",
+ "Tiết kiệm tối đa nhờ thiết kế mô-đun hóa": "Maximum savings thanks to modular design",
+ "Chi phí giải tỏa đền bù vô cùng đắt đỏ": "Extremely expensive clearance and compensation costs",
+ "Tính linh hoạt & AI Khẩn cấp": "Flexibility & Emergency AI",
+ "AI tự động chuyển làn & ưu tiên cứu hộ": "AI automatically switches lanes and prioritises rescue",
+ "Tuyến cố định, khó giải phóng làn tức thì": "Fixed routes, hard to clear lanes instantly",
+ "Tốc độ điều phối & Vận hành": "Dispatch speed & operation",
+ "Vận hành liên tục, không ma sát, cực êm": "Continuous, frictionless, very smooth operation",
+ "Chạy theo giờ cố định, tần suất hạn chế": "Runs on a fixed schedule with limited frequency",
+ "Quy Trình Hoạt Động": "How It Works",
+ "Hướng Dẫn Sử Dụng Pipe Traffic Trong 3 Bước": "Using Pipe Traffic in 3 Steps",
+ "Đặt Chuyến & Chọn Điểm Đến": "Book a Trip & Choose a Destination",
+ "Người dùng chọn hành trình trên Ứng dụng Pipe Traffic. Cabin trượt từ trường tự động di chuyển đến trạm đường ống tại nhà bạn.": "Users pick a route in the Pipe Traffic app. A magnetic cabin automatically travels to the pipe station at your home.",
+ "Vào Cabin & Khởi Hành": "Board the Cabin & Depart",
+ "Bước vào cabin trượt tại cổng kết nối. Động cơ từ tính tăng tốc êm ái vào mạng lưới ống trượt đa tầng kết nối các khu vực.": "Step into the cabin at the connection gate. The magnetic motor accelerates smoothly into the multi-level pipe network linking the districts.",
+ "Tự Động Đến Nơi An Toàn": "Arrive Safely, Automatically",
+ "AI liên tục tính toán khoảng cách an toàn, đưa cabin cập bến chính xác tại điểm đến target mà không lo kẹt xe.": "The AI continuously calculates safe distances and brings the cabin to dock precisely at the target destination, with no traffic jams.",
+ "Nhật Ký Thực Hiện": "Progress Log",
+ "Nhật Ký Hành Trình (Journey Timeline)": "Journey Timeline",
+ "Tiến trình triển khai dự án theo từng tuần của nhóm nghiên cứu Pipe Traffic HCMUS": "The weekly implementation progress of the Pipe Traffic HCMUS research team",
+ "Tuần 1": "Week 1",
+ "Khởi Tạo & Định Hình Dự Án": "Project Kick-off & Definition",
+ "Họp nhóm phân công vai trò, thành lập": "Team meeting to assign roles and set up the",
+ "Hợp đồng nhóm": "team charter",
+ "Thống nhất quy tắc làm việc và kênh giao tiếp chung.": "Agree on working rules and a shared communication channel.",
+ "đảm nhận thiết kế Logo nhóm.": "is in charge of designing the team logo.",
+ "Brainstorming ý tưởng giải pháp giao thông đường ống từ trường.": "Brainstorm ideas for a magnetic pipe transport solution.",
+ "T1": "W1",
+ "T2": "W2",
+ "Tuần 2": "Week 2",
+ "Nghiên Cứu & Thiết Kế Giải Pháp": "Research & Solution Design",
+ "Phân tích bài toán giao thông urban/không gian hẹp đô thị.": "Analyse the urban/narrow-space traffic problem.",
+ "Hoàn thiện cấu trúc nội dung 4 phần:": "Finalise the 4-part content structure:",
+ "Phác thảo sơ đồ đường ống nhiều tầng và tích hợp AI điều hướng.": "Sketch the multi-level pipe diagram and integrate the AI routing.",
+ "Thu thập tư liệu và lên kịch bản kịch tính dựng Video giới thiệu.": "Collect materials and script the introduction video.",
+ "Tuần 3": "Week 3",
+ "Xây Dựng Website & Dựng Video": "Website Building & Video Production",
+ "Tạo và hoàn thiện cấu trúc Website nhóm mã nguồn chuẩn trên nền tảng Web.": "Build and finalise the team website's structure with standard source code on the Web platform.",
+ "Dựng và edit hoàn chỉnh Video demo / giới thiệu dự án.": "Produce and fully edit the project demo / introduction video.",
+ "Kiểm thử tính năng, rà soát toàn bộ nội dung và chuẩn bị báo cáo hoàn thành.": "Test features, review all content and prepare the completion report.",
+ "T3": "W3",
+ "Nội Dung Chuyên Môn": "Specialist Content",
+ "Bài Toán & Giải Pháp (Problems)": "Problems & Solutions",
+ "4.1 Tóm Tắt Đề Tài (Abstract)": "4.1 Project Summary (Abstract)",
+ "Hiện nay, các đô thị lớn phải đối mặt với tình trạng tắc nghẽn giao thông nghiêm trọng và quỹ đất hạ tầng vô cùng hạn hẹp.": "Today, large cities face severe traffic congestion and extremely limited land for infrastructure.",
+ "là đề xuất về một hệ thống phương tiện giao thông chạy bằng": "is a proposal for a transport system powered by",
+ "từ trường (magnetic levitation/propulsion)": "magnetic fields (magnetic levitation/propulsion)",
+ "được lắp đặt trực tiếp tại các hộ gia đình và tòa nhà.": "installed directly in households and buildings.",
+ "Hệ thống giúp di chuyển nhanh chóng, an toàn, không phát thải và tối ưu hóa diện tích không gian đô thị nén.": "The system enables fast, safe, zero-emission travel and optimises space in compact cities.",
+ "4.2 Giải Pháp Đột Phá (Solution)": "4.2 Breakthrough Solution",
+ "Cấu trúc ống trượt đa tầng:": "Multi-level sliding pipe structure:",
+ "Đường ống trượt chạy bằng lực từ tính được chia thành nhiều tầng riêng biệt, kết nối linh hoạt từ nhà này sang nhà khác hoặc từ hộ gia đình đến các trục chính đô thị.": "Magnetically driven sliding pipes are divided into separate levels, flexibly linking one house to another or households to the main urban arteries.",
+ "Tối ưu không gian hẹp & Chi phí:": "Optimising tight space & cost:",
+ "Không tốn diện tích giải phóng mặt bằng hay chi phí xây dựng đường ray/đường nhựa truyền thống đắt đỏ.": "No land-clearance area or costly construction of traditional rails/roads is needed.",
+ "Tích hợp Trí tuệ nhân tạo (AI):": "Artificial Intelligence (AI) integration:",
+ "Tự động tính toán khoảng cách an toàn, điều phối luồng xe chạy liên tục. Đồng thời tự động ưu tiên làn đường và giải phóng lộ trình trong trường hợp khẩn cấp (cấp cứu, cứu hỏa, lực lượng chức năng).": "Automatically calculates safe distances and keeps traffic flowing continuously. It also prioritises lanes and clears the route in emergencies (ambulances, fire engines, authorities).",
+ "4.3 Phương Pháp Triển Khai (Methods)": "4.3 Implementation Methods",
+ "Quy hoạch & Xây dựng:": "Planning & construction:",
+ "Tiến hành đào và thi công hệ thống đường ống ngầm/trên cao dưới sự giám sát và cấp phép của": "Excavation and construction of the underground/elevated pipe system are carried out under the supervision and licensing of",
+ "Bộ Xây dựng": "the Ministry of Construction",
+ "và các cơ quan quản lý giao thông.": "and traffic management authorities.",
+ "Tiết kiệm chi phí:": "Cost savings:",
+ "Sử dụng vật liệu mô-đun hóa hiện đại, sản xuất hàng loạt giúp giảm giá thành lắp đặt.": "Using modern modular materials and mass production to reduce installation costs.",
+ "An toàn & Luật định:": "Safety & regulations:",
+ "Tuân thủ chặt chẽ các nguyên tắc và quy chuẩn an toàn giao thông hiện hành, tích hợp hệ thống hãm từ tính khẩn cấp và cảm biến đa điểm.": "Strictly complies with current traffic safety principles and standards, integrating an emergency magnetic braking system and multi-point sensors.",
+ "4.4 Kết Luận (Conclusions)": "4.4 Conclusions",
+ "đem đến một góc nhìn đột phá cho tương lai hạ tầng giao thông đô thị.": "offers a breakthrough perspective on the future of urban transport infrastructure.",
+ "Việc ứng dụng công nghệ từ trường kết hợp cùng AI quản lý luồng chạy không chỉ giải quyết triệt để bài toán kẹt xe và diện tích đô thị hẹp, mà còn tạo ra phương thức di chuyển xanh, bền vững và tiết kiệm tối đa chi phí xây dựng cho xã hội.": "Applying magnetic technology together with AI flow management not only thoroughly solves traffic jams and limited urban space, but also creates a green, sustainable way to travel with maximum savings in construction costs for society.",
+ "Đội Ngũ Phát Triển": "Development Team",
+ "Thành Viên Nhóm & Hợp Đồng Quy Tắc": "Team Members & Charter of Rules",
+ "Đại học Khoa học Tự nhiên - ĐHQG TP.HCM (HCMUS)": "University of Science – VNU-HCM (HCMUS)",
+ "Thiết kế Logo nhóm, làm mind map, thuyết trình mind map.": "Designed the team logo, made the mind map, presented the mind map.",
+ "Chi tiết": "Details",
+ "Cấu hình & dựng cấu trúc Website, làm mind map.": "Configured and built the website structure, made the mind map.",
+ "Chủ ý tưởng Pipe Traffic, làm mind map, phát triển dự án.": "Originator of the Pipe Traffic idea, made the mind map, developed the project.",
+ "Media & Video Producer": "Media & Video Producer",
+ "Biên bản họp, dựng video demo và hậu kỳ truyền thông, mind map.": "Meeting minutes, demo video editing and media post-production, mind map.",
+ "Điều phối tiến độ, Hợp đồng nhóm, Quy tắc & tổng hợp tài liệu.": "Coordinates progress, team charter, rules & document compilation.",
+ "3.2 Hợp Đồng Thành Lập, Quy Tắc & Kế Hoạch Giao Tiếp Nhóm": "3.2 Founding Charter, Rules & Team Communication Plan",
+ "Cam kết làm việc chuyên nghiệp của sinh viên Trường Đại học Khoa học Tự nhiên.": "A professional working commitment by students of the University of Science.",
+ "A. Hợp Đồng Thành Lập Nhóm": "A. Team Founding Charter",
+ "Tên dự án:": "Project name:",
+ "Mục tiêu chung:": "Common goal:",
+ "Hoàn thành xuất sắc bài tập nhóm, xây dựng nguyên mẫu ý tưởng dự án thực tế, đúng thời hạn 100%.": "Complete the group assignment excellently and build a prototype of a real project idea, 100% on time.",
+ "Cam kết thành viên:": "Member commitments:",
+ "Tham gia đầy đủ các buổi họp online & offline.": "Attend all online & offline meetings.",
+ "Tôn trọng ý kiến đóng góp, thảo luận tinh thần xây dựng.": "Respect contributions and discuss in a constructive spirit.",
+ "Đảm bảo chất lượng công việc đúng cam kết deadline.": "Ensure work quality meets the committed deadlines.",
+ "B. Quy Tắc Làm Việc Nhóm": "B. Team Working Rules",
+ "Đúng hạn (Punctuality):": "Punctuality:",
+ "Nộp sản phẩm trước deadline ít nhất 6 tiếng để kiểm tra chéo.": "Submit work at least 6 hours before the deadline for cross-checking.",
+ "Minh bạch (Transparency):": "Transparency:",
+ "Khó khăn phát sinh phải thông báo ngay lên kênh chung trong vòng 12 tiếng.": "Any difficulty must be reported to the shared channel within 12 hours.",
+ "Đóng góp tích cực:": "Active contribution:",
+ "Mỗi thành viên bắt buộc đưa ra ít nhất 1 ý kiến đóng góp trong mỗi buổi họp.": "Each member must give at least 1 suggestion in every meeting.",
+ "Thẩm quyền quyết định:": "Decision authority:",
+ "Đa số bỏ phiếu; trường hợp hòa, Project Manager ra quyết định cuối cùng.": "Majority vote; in a tie, the Project Manager makes the final decision.",
+ "C. Kế Hoạch Giao Tiếp": "C. Communication Plan",
+ "Kênh trao đổi chính:": "Main channel:",
+ "Zalo / Discord Group (Nhắn tin hàng ngày, thông báo gấp).": "Zalo / Discord Group (daily messaging, urgent announcements).",
+ "Quản lý tài liệu & Task:": "Document & task management:",
+ "Google Drive (Lưu trữ), Trello / Notion (Theo dõi tiến độ).": "Google Drive (storage), Trello / Notion (progress tracking).",
+ "Lịch họp định kỳ:": "Regular meeting schedule:",
+ "Check-in Online:": "Online check-in:",
+ "21:00 Thứ Tư hàng tuần (30 phút).": "21:00 every Wednesday (30 minutes).",
+ "Họp Tổng kết:": "Wrap-up meeting:",
+ "14:00 Chủ Nhật hàng tuần.": "14:00 every Sunday.",
+ "Bình luận": "Comments",
+ "Tên thật": "Real name",
+ "Ẩn danh": "Anonymous",
+ "5/5 Sao": "5/5 Stars",
+ "Đánh Giá & Giải Đáp": "Reviews & Answers",
+ "Review Chuyên Gia & Câu Hỏi Thường Gặp": "Expert Reviews & Frequently Asked Questions",
+ "\"Ý tưởng lắp đặt đường ống trượt từ trường tận hộ gia đình mang tính tiên phong rất cao cho không gian hẹp đô thị.\"": "\"The idea of installing magnetic sliding pipes right to households is highly pioneering for narrow urban spaces.\"",
+ "TS. Nguyễn Gia Khánh": "Dr. Nguyễn Gia Khánh",
+ "Chuyên gia Quy hoạch Hạ tầng": "Infrastructure Planning Expert",
+ "\"Việc kết hợp AI điều hướng khẩn cấp giúp loại bỏ hoàn toàn hiện tượng ùn tắc và đảm bảo an toàn tuyệt đối.\"": "\"Combining emergency AI routing eliminates congestion entirely and ensures absolute safety.\"",
+ "Kỹ sư Giao thông Đô thị": "Urban Traffic Engineer",
+ "\"Tiết kiệm chi phí đền bù giải phóng mặt bằng so với dự án Metro truyền thống là điểm cộng lớn nhất.\"": "\"Saving on land-clearance compensation compared with traditional Metro projects is the biggest plus.\"",
+ "Đại diện Quỹ Đầu Tư Công Nghệ": "Representative of a Technology Investment Fund",
+ "1. Hệ thống đường ống trượt từ trường hoạt động như thế nào tại nhà?": "1. How does the magnetic sliding pipe system work at home?",
+ "Đường ống trượt từ tính được lắp đặt mô-đun hóa nối trực tiếp tới cổng hộ gia đình hoặc tầng kỹ thuật tòa nhà. Cabin di chuyển nhờ lực đẩy đệm từ không ma sát.": "Modular magnetic sliding pipes connect directly to the household gate or a building's technical floor. Cabins move by frictionless magnetic-cushion propulsion.",
+ "2. Thuật toán AI xử lý tình huống khẩn cấp ra sao?": "2. How does the AI algorithm handle emergencies?",
+ "AI liên tục đo khoảng cách an toàn thời gian thực giữa các cabin. Khi có tín hiệu ưu tiên (cấp cứu, cứu hỏa), AI tự động di chuyển các cabin thường sang tầng ống phụ để mở lộ trình trống ngay lập tức.": "The AI continuously measures real-time safe distances between cabins. When a priority signal arrives (ambulance, fire engine), the AI automatically moves ordinary cabins to the auxiliary pipe level to open a clear route instantly.",
+ "3. Dự án tuân thủ theo cơ quan quản lý nào?": "3. Which regulatory authority does the project comply with?",
+ "Toàn bộ phương pháp triển khai thi công đường ống ngầm/trên cao đều được thiết kế tuân thủ nghiêm ngặt theo các quy chuẩn an toàn do": "All underground/elevated pipe construction methods are designed to strictly follow the safety standards licensed by",
+ "cấp phép.": "licensing.",
+ "Tương Tác Cùng Nhóm Nghiên Cứu": "Interact With the Research Team",
+ "Góp Ý & Bình Luận Cho Dự Án Pipe Traffic": "Feedback & Comments for the Pipe Traffic Project",
+ "Mọi nhận xét của bạn sẽ đóng góp quan trọng cho sự phát triển của giải pháp giao thông đường ống.": "Every comment you make is an important contribution to developing the pipe transport solution.",
+ "Bảng Đóng Góp Ý Kiến": "Feedback Board",
+ "Công khai / Ẩn danh": "Public / Anonymous",
+ "Chế độ danh tính": "Identity mode",
+ "Tên Thật": "Real Name",
+ "Ẩn Danh": "Anonymous",
+ "Họ & Tên": "Full name",
+ "Email / Vai trò (Tùy chọn)": "Email / Role (optional)",
+ "Đánh giá mức độ khả thi": "Feasibility rating",
+ "Nội dung bình luận": "Comment content",
+ "🚀 Đột phá": "🚀 Breakthrough",
+ "💡 Ý tưởng hay": "💡 Great idea",
+ "👏 Ủng hộ": "👏 Support",
+ "❓ Thắc mắc": "❓ Question",
+ "Gửi Bình Luận Ngay": "Send Comment Now",
+ "Ý Kiến Đóng Góp Từ Cộng Đồng": "Community Feedback",
+ "Làm mới dữ liệu": "Refresh data",
+ "Dự án nghiên cứu · HCMUS": "Research project · HCMUS",
+ "Cùng Tiên Phong": "Pioneering Together",
+ "Tương Lai Giao Thông Thông Minh": "The Future of Smart Transport",
+ "Đang tải": "Loading",
+ "Mở menu": "Open menu",
+ "Tìm trong website…": "Search the website…",
+ "Tìm kiếm": "Search",
+ "Mở khung chat": "Open chat",
+ "Khung chat": "Chat window",
+ "Đóng khung chat": "Close chat window",
+ "Nhập tin nhắn…": "Type a message…",
+ "Giới thiệu Pipe Traffic": "About Pipe Traffic",
+ "Thông báo cookie": "Cookie notice",
+ "Logo Pipe Traffic": "Pipe Traffic logo",
+ "Ùn tắc giao thông đô thị": "Urban traffic congestion",
+ "Giải pháp giao thông": "Transport solution",
+ "Phương pháp triển khai": "Implementation method",
+ "Đô thị về đêm": "City at night",
+ "Làm mới bình luận": "Refresh comments",
+ "Làm mới": "Refresh",
+ "Họ & tên *": "Full name *",
+ "Vai trò (tuỳ chọn)": "Role (optional)",
+ "Viết bình luận hoặc góp ý cho Pipe Traffic...": "Write a comment or feedback for Pipe Traffic...",
+ "Nhập tên của bạn...": "Enter your name...",
+ "Ví dụ: Sinh viên HCMUS, Kỹ sư, Khách...": "Example: HCMUS student, Engineer, Guest...",
+ "Nhập nhận xét, câu hỏi hoặc ý kiến đóng góp cho Pipe Traffic...": "Enter a comment, question or feedback for Pipe Traffic..."
+};
 
   /* ---------- Từ điển 2: chữ do JavaScript tạo ra (trang dự án, đăng nhập, chat, tìm kiếm, video, liên hệ...) ---------- */
   const DYN = {
+    // --- Nút giao diện tối / ngôn ngữ ---
+    'Chế độ tối': 'Dark mode', 'Chế độ sáng': 'Light mode',
+    'Chuyển sang giao diện tối': 'Switch to dark theme', 'Chuyển sang giao diện sáng': 'Switch to light theme',
+    'Quản trị': 'Admin panel', 'Khu vực quản trị': 'Admin area',
     // --- Điều hướng, tài khoản ---
     'Đăng nhập': 'Log in', 'Thoát': 'Log out', 'Đổi avatar': 'Change avatar', 'Hồ sơ và avatar': 'Profile and avatar',
     'Mô Phỏng Hệ Thống': 'System Simulation', 'Hồ sơ': 'Profile',
@@ -178,14 +415,20 @@
   const SKIP_TAG = /^(SCRIPT|STYLE|TEXTAREA|NOSCRIPT|CODE|PRE)$/;
   // Không dịch nội dung người dùng gõ trong bong bóng chat (trừ dòng "đã thu hồi")
   const skip = n => { const p = n.parentElement; return !p || SKIP_TAG.test(p.tagName) || !!p.closest('[data-no-i18n]') || (!!p.closest('.ms-b') && !p.closest('.rc')); };
+  const CTX = [   // (nút chữ, chữ đã chuẩn hoá) -> bản dịch riêng theo vị trí, hoặc undefined
+    (n, k) => (k === 'Dự án' && n.nextSibling && n.nextSibling.nodeType === 1) ? 'The project' : undefined   // "Dự án <b>Pipe Traffic</b> ..."
+  ];
   const orig = new WeakMap(), aorig = new WeakMap();   // nhớ bản tiếng Việt gốc để trả lại khi đổi ngôn ngữ
 
   function doText(n) {
     if (skip(n)) return;
+    const po = n.parentElement;
+    if (po && po.tagName === 'OPTION' && !po.hasAttribute('value') && !orig.has(n)) po.setAttribute('value', n.data.trim());   // giữ nguyên giá trị gửi đi (tiếng Việt)
     const cur = n.data, rec = orig.get(n);
     if (lang === 'en') {
       if (rec && cur === rec.en) return;                 // đây chính là bản dịch của mình, bỏ qua
-      const en = tr(cur);
+      let en = tr(cur);
+      for (const f of CTX) { const r = f(n, norm(cur)); if (r !== undefined) { en = cur.replace(norm(cur), r); break; } }   // dịch theo ngữ cảnh
       if (en !== cur) { orig.set(n, { vi: cur, en }); n.data = en; } else if (rec) orig.delete(n);
     } else if (rec) { if (cur === rec.en) n.data = rec.vi; orig.delete(n); }
   }
@@ -229,7 +472,7 @@
   /* ---------- Nút đổi ngôn ngữ trên menu ---------- */
   function paintBtn() {
     const b = document.getElementById('langBtn'); if (!b) return;
-    b.querySelector('b').textContent = lang.toUpperCase();
+    const lb = b.querySelector('b'); if (lb) lb.textContent = lang.toUpperCase();
     const t = lang === 'en' ? 'Language: English (click for Tiếng Việt)' : 'Ngôn ngữ: Tiếng Việt (bấm để chuyển sang English)';
     b.title = t; b.setAttribute('aria-label', t);
   }
@@ -260,6 +503,69 @@
   }).observe(document.documentElement, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ATTRS });
 
   window.I18N = { tr, lang: () => lang, set, t: (vi, en) => (lang === 'en' ? en : vi), setTitle, translateTree };
+
+  /* ---------- Giao diện tối / sáng ---------- */
+  const TLS = 'pt_theme';
+  let theme = 'light';
+  try { const s = localStorage.getItem(TLS); theme = s || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch (x) { /* mặc định sáng */ }
+  function paintTheme() {
+    document.documentElement.setAttribute('data-theme', theme);
+    const m = document.querySelector('meta[name="theme-color"]'); if (m) m.setAttribute('content', theme === 'dark' ? '#0f172a' : '#0284c7');
+    const b = document.getElementById('themeBtn'); if (!b) return;
+    const ic = b.querySelector('i'); if (ic) ic.className = 'fa-solid ' + (theme === 'dark' ? 'fa-sun' : 'fa-moon'); else b.textContent = theme === 'dark' ? '☀️' : '🌙';
+    const t = I18N.t(theme === 'dark' ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+    b.title = t; b.setAttribute('aria-label', t);
+  }
+  function setTheme(t) {
+    theme = t === 'dark' ? 'dark' : 'light';
+    try { localStorage.setItem(TLS, theme); } catch (x) { /* bỏ qua */ }
+    paintTheme();
+  }
+  function mkThemeBtn() {
+    const host = document.querySelector('.sr-right');
+    if (!host || document.getElementById('themeBtn')) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.id = 'themeBtn'; b.className = 'nav-ico theme'; b.innerHTML = '<i class="fa-solid fa-moon"></i>';
+    b.onclick = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+    const lb = document.getElementById('langBtn');
+    host.insertBefore(b, lb ? lb.nextSibling : host.firstChild); paintTheme();
+  }
+  window.addEventListener('pt-lang', paintTheme);
+  paintTheme();   // đặt giao diện ngay khi tải để không bị nháy trắng
+
+  /* ---------- Menu ☰ tự mở khi rê chuột (máy tính); điện thoại vẫn chạm để mở ---------- */
+  function hoverMenu() {
+    const btn = document.getElementById('mobile-menu-btn'), menu = document.getElementById('mobile-menu');
+    if (!btn || !menu || btn.dataset.hover || !window.matchMedia || !matchMedia('(hover:hover) and (pointer:fine)').matches) return;
+    btn.dataset.hover = '1';
+    let timer = 0, openedAt = 0;
+    const isOpen = () => menu.classList.contains('open');
+    const open = () => { clearTimeout(timer); if (!isOpen() && typeof toggleMobileMenu === 'function') { toggleMobileMenu(); openedAt = Date.now(); } };
+    const closeSoon = () => { clearTimeout(timer); timer = setTimeout(() => { if (isOpen() && typeof toggleMobileMenu === 'function') toggleMobileMenu(true); }, 280); };
+    btn.removeAttribute('onclick');                       // tránh bấm ngay sau khi rê làm menu đóng lại
+    btn.addEventListener('click', () => { if (Date.now() - openedAt < 700) return; isOpen() ? toggleMobileMenu(true) : open(); });
+    [btn, menu].forEach(el => { el.addEventListener('mouseenter', open); el.addEventListener('mouseleave', closeSoon); });
+    btn.addEventListener('focus', open);
+  }
+
+  mkThemeBtn(); hoverMenu();
+  window.addEventListener('DOMContentLoaded', () => { mkBtn(); mkThemeBtn(); hoverMenu(); });
+  window.addEventListener('load', () => { mkBtn(); mkThemeBtn(); hoverMenu(); });
+  // bind(): gắn sự kiện cho nút #langBtn / #themeBtn có sẵn trong HTML (trang admin vẽ lại thanh nav nhiều lần)
+  function bind() {
+    const lb = document.getElementById('langBtn'), tb = document.getElementById('themeBtn');
+    if (lb) { lb.onclick = () => set(lang === 'en' ? 'vi' : 'en'); paintBtn(); }
+    if (tb) { tb.onclick = () => setTheme(theme === 'dark' ? 'light' : 'dark'); paintTheme(); }
+  }
+  // add(dict, rules, ctx): thêm bản dịch cho trang khác (vd. admin)
+  function add(dict, rules, ctx) {
+    if (dict) Object.assign(DICT, dict);
+    if (rules) rules.forEach(r => RULES.push(r));
+    if (ctx) ctx.forEach(f => CTX.push(f));
+    if (lang === 'en') { walk(document.body); retitle(); }
+  }
+  Object.assign(window.I18N, { theme: () => theme, setTheme, bind, add });
+
   mkBtn();
   if (lang === 'en') { document.documentElement.lang = 'en'; walk(document.body); retitle(); }
 })();
