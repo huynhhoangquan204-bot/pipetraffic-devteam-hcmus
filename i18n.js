@@ -252,6 +252,19 @@
 
   /* ---------- Từ điển 2: chữ do JavaScript tạo ra (trang dự án, đăng nhập, chat, tìm kiếm, video, liên hệ...) ---------- */
   const DYN = {
+    // --- Banner nhiều bước, bình luận gọn, hướng dẫn sử dụng ---
+    "Hướng Dẫn Sử Dụng": "User Guide",
+    "Hướng dẫn sử dụng": "User guide",
+    "Tính năng & so sánh hạ tầng": "Features & infrastructure comparison",
+    "Bỏ qua": "Skip",
+    "← Quay lại": "← Back",
+    "Tiếp theo →": "Next →",
+    "Viết bình luận…": "Write a comment…",
+    "Tên của bạn (để trống = Ẩn danh)": "Your name (leave empty = Anonymous)",
+    "Chưa có bình luận nào. Hãy là người đầu tiên!": "No comments yet. Be the first!",
+    "Đang tải bình luận…": "Loading comments…",
+    "Chưa tải được bình luận.": "Could not load comments.",
+    "Admin Pipe Traffic": "Pipe Traffic Admin",
     // --- Nút giao diện tối / ngôn ngữ ---
     'Chế độ tối': 'Dark mode', 'Chế độ sáng': 'Light mode',
     'Chuyển sang giao diện tối': 'Switch to dark theme', 'Chuyển sang giao diện sáng': 'Switch to light theme',
@@ -420,6 +433,49 @@
   ];
   const orig = new WeakMap(), aorig = new WeakMap();   // nhớ bản tiếng Việt gốc để trả lại khi đổi ngôn ngữ
 
+
+  /* ---------- Dịch TỰ ĐỘNG nội dung admin / người dùng tự viết (không cần thêm vào từ điển) ----------
+     Áp dụng cho chữ nằm trong phần tử có thuộc tính data-autotr: cập nhật tuần của dự án, Journey (kể cả tuần 5 trở đi), Team, FAQ, video, bình luận.
+     Chỉ dịch đoạn có dấu tiếng Việt và chưa có trong từ điển. Kết quả nhớ trong localStorage (khoá pt_trc) nên lần sau không cần gọi lại.
+     Lưu ý: đoạn chữ cần dịch được gửi tới dịch vụ dịch của Google (hoặc MyMemory nếu Google lỗi). */
+  const VI_CH = /[ăâđêôơưàáạảãầấậẩẫằắặẳẵèéẹẻẽềếệểễìíịỉĩòóọỏõồốộổỗờớợởỡùúụủũừứựửữỳýỵỷỹ]/i;
+  const tcache = (() => { try { return JSON.parse(localStorage.getItem('pt_trc') || '{}') || {}; } catch (x) { return {}; } })();
+  let tsave = 0, badUntil = 0, active = 0; const pend = new Map(), queue = [];
+  function remember(k, v) {
+    tcache[k] = v;
+    const ks = Object.keys(tcache); if (ks.length > 600) ks.slice(0, 200).forEach(x => delete tcache[x]);   // giữ gọn
+    clearTimeout(tsave); tsave = setTimeout(() => { try { localStorage.setItem('pt_trc', JSON.stringify(tcache)); } catch (x) { /* đầy bộ nhớ thì bỏ qua */ } }, 800);
+  }
+  async function remote(text) {
+    if (Date.now() < badUntil) return '';
+    try {
+      const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=vi&tl=en&dt=t&q=' + encodeURIComponent(text.slice(0, 1500)));
+      if (r.ok) { const j = await r.json(), out = (j[0] || []).map(x => x && x[0]).join(''); if (out) return out; }
+    } catch (x) { /* thử dịch vụ dự phòng */ }
+    try {
+      const r = await fetch('https://api.mymemory.translated.net/get?langpair=vi%7Cen&q=' + encodeURIComponent(text.slice(0, 450)));
+      if (r.ok) { const j = await r.json(), out = j && j.responseData && j.responseData.translatedText; if (out && !/MYMEMORY WARNING|INVALID|QUERY LENGTH/i.test(out)) return out; }
+    } catch (x) { /* mất mạng */ }
+    badUntil = Date.now() + 30000;   // lỗi cả hai: nghỉ 30 giây rồi mới thử lại
+    return '';
+  }
+  function pump() { while (active < 3 && queue.length) { active++; queue.shift()().finally(() => { active--; pump(); }); } }
+  function autoTr(n) {
+    const p = n.parentElement; if (!p || !p.closest('[data-autotr]')) return;
+    const vi = n.data, k = norm(vi); if (k.length < 2 || !VI_CH.test(k)) return;
+    const apply = en => {
+      if (lang !== 'en' || n.data !== vi || !n.isConnected) return;   // đã đổi ngôn ngữ / nội dung / bị xoá trong lúc chờ
+      const t = /^\s*/.exec(vi)[0] + en + /\s*$/.exec(vi)[0]; orig.set(n, { vi, en: t }); n.data = t;
+    };
+    if (tcache[k]) { apply(tcache[k]); return; }
+    queue.push(async () => {
+      let pr = pend.get(k); if (!pr) { pr = remote(k); pend.set(k, pr); }
+      const en = await pr; pend.delete(k);
+      if (en && norm(en) !== k) { remember(k, en); apply(en); }
+    });
+    pump();
+  }
+
   function doText(n) {
     if (skip(n)) return;
     const po = n.parentElement;
@@ -429,7 +485,7 @@
       if (rec && cur === rec.en) return;                 // đây chính là bản dịch của mình, bỏ qua
       let en = tr(cur);
       for (const f of CTX) { const r = f(n, norm(cur)); if (r !== undefined) { en = cur.replace(norm(cur), r); break; } }   // dịch theo ngữ cảnh
-      if (en !== cur) { orig.set(n, { vi: cur, en }); n.data = en; } else if (rec) orig.delete(n);
+      if (en !== cur) { orig.set(n, { vi: cur, en }); n.data = en; } else if (rec) orig.delete(n); else autoTr(n);   // chưa có trong từ điển -> dịch tự động (nếu nằm trong vùng data-autotr)
     } else if (rec) { if (cur === rec.en) n.data = rec.vi; orig.delete(n); }
   }
   function doAttr(el, a) {
