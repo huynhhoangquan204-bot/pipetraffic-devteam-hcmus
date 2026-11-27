@@ -3282,3 +3282,54 @@ body.adm .foot{
 .pt-app .pf-grid input:disabled{background:#f1f5f9;color:#94a3b8}
 .pt-app .pf-save{width:100%;margin-top:18px}
 @media(max-width:480px){.pt-app .pf-grid{grid-template-columns:1fr}}
+
+
+/* =====================================================================
+   THÊM MỚI (admin): nút thanh trên, sửa lỗi ô "Thử hỏi bot", giao diện tối
+   ===================================================================== */
+
+/* --- Nút Bình luận / Ngôn ngữ / Giao diện tối trên thanh admin --- */
+.top nav .nav-ico{display:inline-flex;align-items:center;justify-content:center;gap:4px;position:relative;height:38px;min-width:38px;padding:0 10px;border-radius:99px;background:#f1f5f9;color:#334155;font-size:.85rem;font-weight:700;line-height:1}
+.top nav .nav-ico:hover{background:#e0f2fe;color:var(--steel)}
+.top nav .nav-ico.on{background:#e0f2fe;color:var(--steel)}
+.top nav .nav-ico.lang b{font-size:.72rem}
+.top nav .nav-ico .lbl{font-size:.85rem;font-weight:600}
+.top nav .nav-ico .nbadge{position:absolute;top:-4px;right:-4px;margin:0;min-width:18px;padding:0 5px;line-height:18px;font-size:.66rem}
+@media(max-width:900px){.top nav .nav-ico .lbl{display:none}}
+@media(max-width:560px){.adm .top .brand>span{display:none}.top nav{gap:4px}.top nav .nav-ico{height:36px;min-width:36px;padding:0 8px}}
+
+/* --- SỬA LỖI: ô "Thử hỏi bot" (Dạy Bot) bị lệch giữa ô nhập và nút Hỏi ---
+   Nguyên nhân: .pt-app .btn có margin-top:14px, và trên điện thoại .adm form>.btn ép nút rộng 100% + cách trên 14px,
+   làm nút Hỏi bị đẩy xuống / chèn ép ô nhập trong hàng ngang. */
+.adm #tf{display:flex;align-items:stretch;gap:8px}
+.adm #tf>input{flex:1 1 auto;min-width:0;width:auto}
+.adm #tf>.btn{flex:none;width:auto;margin:0;padding:0 22px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+
+/* --- Giao diện tối cho admin --- */
+html[data-theme=dark]{color-scheme:dark}
+html[data-theme=dark] body.adm{--bg:#0b1220;--card:#111c31;--ink:#e2e8f0;--mute:#94a3b8;--line:#26364f;--steel:#38bdf8;--steel2:#7dd3fc;background:#0b1220;color:#e2e8f0}
+html[data-theme=dark] body.adm .top{background:rgba(15,23,42,.92)}
+html[data-theme=dark] body.adm .foot,html[data-theme=dark] body.adm .adm-menu{background:#0f172a;border-color:#26364f}
+html[data-theme=dark] body.adm .adm-menu a{color:#cbd5e1;border-color:#1e293b}
+html[data-theme=dark] body.adm .adm-menu a:hover,html[data-theme=dark] body.adm .adm-menu a.on{color:#38bdf8}
+html[data-theme=dark] body.adm .adm-btn,html[data-theme=dark] body.adm .top nav .nav-ico{background:#1e293b;color:#e2e8f0}
+html[data-theme=dark] body.adm .top nav .nav-ico:hover,html[data-theme=dark] body.adm .top nav .nav-ico.on{background:#0c4a6e;color:#bae6fd}
+html[data-theme=dark] body.adm .top .brand b{color:#f1f5f9}
+html[data-theme=dark] body.adm .card,html[data-theme=dark] body.adm .item{background:var(--card);border-color:var(--line)}
+html[data-theme=dark] body.adm h1,html[data-theme=dark] body.adm h2,html[data-theme=dark] body.adm h3,html[data-theme=dark] body.adm b{color:#f1f5f9}
+html[data-theme=dark] body.adm label{color:#cbd5e1}
+html[data-theme=dark] body.adm input,html[data-theme=dark] body.adm select,html[data-theme=dark] body.adm textarea,html[data-theme=dark] body.adm input[type=file]{background:#0b1220;color:#e2e8f0;border-color:#334155}
+html[data-theme=dark] body.adm input::placeholder,html[data-theme=dark] body.adm textarea::placeholder{color:#64748b}
+html[data-theme=dark] body.adm .btn.ghost,html[data-theme=dark] body.adm .btn.g,html[data-theme=dark] body.adm .btn.danger,html[data-theme=dark] body.adm #out{background:#1e293b;color:#e2e8f0;border-color:#334155}
+html[data-theme=dark] body.adm .btn.danger{color:#fca5a5}
+html[data-theme=dark] body.adm .tag{background:#1e293b;color:#cbd5e1}
+html[data-theme=dark] body.adm .tag.done{background:#052e22;color:#6ee7b7}
+html[data-theme=dark] body.adm .tag.run{background:#3a2a05;color:#fcd34d}
+html[data-theme=dark] body.adm .banner{background:#3a2a05;border-color:#78350f;color:#fde68a}
+html[data-theme=dark] body.adm .msg,html[data-theme=dark] body.adm .pchip,html[data-theme=dark] body.adm .pipe{background:#16233b;color:#e2e8f0;border-color:#26364f}
+html[data-theme=dark] body.adm .msg.ai{background:#0c3a4a}
+html[data-theme=dark] body.adm .tabs{background:rgba(15,23,42,.96);border-color:#26364f}
+html[data-theme=dark] body.adm .tabs a.on{background:#0c4a6e}
+html[data-theme=dark] body.adm .ppdf iframe{background:#16233b}
+html[data-theme=dark] body.adm .muted,html[data-theme=dark] body.adm .sub{color:#94a3b8}
+html[data-theme=dark] body.adm .toast{background:#e2e8f0;color:#0f172a}
