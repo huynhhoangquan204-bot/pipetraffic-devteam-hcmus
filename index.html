@@ -21,7 +21,7 @@
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=17">
+    <link rel="stylesheet" href="style.css?v=18">
     <script>try{var t=localStorage.getItem('pt_theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
     <script>
     // Nếu trang không chạy được (thiếu file, lỗi script) thì báo rõ thay vì để trống
@@ -90,6 +90,39 @@
     .wb .wb-btn:hover{background:rgba(255,255,255,.2)}
     .wb .wb-btn.wb-p{background:#fff;border-color:#fff;color:#0369a1}
     @media(max-width:480px){.wb .wb-btn{flex:1 1 100%}}
+    /* Banner nhiều bước (giới thiệu -> tính năng -> bảng so sánh), có nút Tiếp theo / Quay lại */
+    .pp-card.wb-card{transition:max-width .25s ease}
+    .pp-card.wb-card.wb-wide{max-width:800px}
+    .wb-step{max-height:calc(100vh - 150px);max-height:calc(100dvh - 150px);overflow-y:auto;overflow-x:hidden}
+    .wb-step .wb{padding-bottom:6px}
+    .wb-sec{padding:28px 24px 6px;text-align:center}
+    .wb-sec small{display:block;font-size:.7rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#7dd3fc}
+    .wb-sec h3{margin:6px 0;font-size:1.25rem;line-height:1.3;font-weight:800;color:#fff}
+    .wb-sec p{margin:0;font-size:.85rem;line-height:1.5;color:#cbd5e1}
+    .wb-fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px 20px 6px}
+    .wb-fc{padding:14px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14)}
+    .wb-fi{width:36px;height:36px;margin-bottom:8px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);color:#7dd3fc}
+    .wb-indigo .wb-fi{color:#a5b4fc}.wb-cyan .wb-fi{color:#67e8f9}.wb-emerald .wb-fi{color:#6ee7b7}
+    .wb-fc h4{margin:0 0 6px;font-size:.92rem;font-weight:800;color:#fff}
+    .wb-fc ul{margin:0;padding:0;list-style:none;display:grid;gap:4px;font-size:.78rem;line-height:1.45;color:#cbd5e1}
+    .wb-fc li::before{content:"\2713";margin-right:6px;font-weight:800;color:#4ade80}
+    .wb-tw{margin:14px 16px 6px;border:1px solid rgba(255,255,255,.18);border-radius:16px;overflow:hidden;isolation:isolate;-webkit-mask-image:-webkit-radial-gradient(white,black)}
+    .wb-ts{overflow-x:auto;border-radius:inherit}
+    .wb-tbl{width:100%;min-width:560px;border-collapse:separate;border-spacing:0;text-align:left;font-size:.78rem;line-height:1.45;color:#e2e8f0}
+    .wb-tbl th,.wb-tbl td{padding:10px 12px;vertical-align:top;border-top:1px solid rgba(255,255,255,.12)}
+    .wb-tbl thead th{border-top:0;background:#0f172a;color:#fff;font-size:.7rem;letter-spacing:.04em;text-transform:uppercase}
+    .wb-tbl thead th.wb-pt{background:#0284c7}
+    .wb-tbl tbody th{width:26%;font-weight:700;color:#fff}
+    .wb-tbl td.wb-pt{background:rgba(14,165,233,.16);color:#e0f2fe;font-weight:600}
+    .wb-ok{color:#4ade80;margin-right:4px}.wb-no{color:#f87171;margin-right:4px}.wb-mid{color:#fbbf24;margin-right:4px}
+    .wb-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 20px 18px}
+    .wb-nav .wb-btn{display:inline-flex;align-items:center;justify-content:center;min-width:110px;padding:10px 16px;border:1px solid rgba(255,255,255,.25);border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font:inherit;font-size:.88rem;font-weight:700;cursor:pointer;text-decoration:none}
+    .wb-nav .wb-btn:hover{background:rgba(255,255,255,.2)}
+    .wb-nav .wb-btn.wb-p{background:#fff;border-color:#fff;color:#0369a1}
+    .wb-dots{display:flex;align-items:center;gap:6px}
+    .wb-dots i{width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.35);transition:.2s}
+    .wb-dots i.on{width:20px;background:#fff}
+    @media(max-width:560px){.wb-fgrid{grid-template-columns:1fr}.wb-nav .wb-btn{min-width:0;padding:10px 12px}}
         /* ===== BẮT ĐẦU: Nền trắng mặc định ===== */
     body{background-color:#fff}
     #app section[class*="bg-slate-50"],#app section[class*="bg-slate-100"]{background-color:#fff} /* <--- SỬA Ở ĐÂY: các khối xám nhạt thành trắng */
@@ -232,7 +265,7 @@
     <!-- BẮT ĐẦU: Menu trượt bên trái (đặt NGOÀI <nav> để bám đúng vị trí) -->  <!-- <--- THÊM MỚI -->
     <aside id="mobile-menu" class="side-drawer space-y-3" aria-hidden="true">
         <a href="#/" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-folder-open text-sky-500 mr-2"></i> Dự Án</a>
-        <a href="#/specs" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-gears text-sky-500 mr-2"></i> Đặc Điểm Kỹ Thuật & Hạ Tầng</a>
+        <a href="#/specs" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-book-open text-sky-500 mr-2"></i> Hướng Dẫn Sử Dụng</a>
         <a href="#/journey" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-timeline text-sky-500 mr-2"></i> Hành Trình (Journey)</a>
         <a href="#/team" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-users text-sky-500 mr-2"></i> Thành Viên & Quy Tắc</a>
         <a href="#/problems" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
@@ -293,7 +326,7 @@
 
     <!-- KHUNG CHAT CHUNG (popup): mở bằng nút Chat cạnh menu -->
     <div id="chatPop" class="pp-chat" hidden role="dialog" aria-label="Khung chat">
-        <button type="button" class="ms-hx" data-chat-close aria-label="Đóng khung chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg></button> <!-- <--- SỬA Ở ĐÂY: dùng hình vẽ thay chữ × -->>
+        <div class="ms-head"><div class="ms-hav" id="chatHav"></div><div class="ms-htx"><b id="chatName">Admin Pipe Traffic</b><small id="chatSub"></small></div><button type="button" class="ms-hx" data-chat-close aria-label="Đóng khung chat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/></svg></button></div>
         <div class="pp-tabs"><button type="button" data-ct="admin">Admin</button><button type="button" data-ct="ai">Trợ lý</button></div>
         <div class="pp-log ms-log" id="chatLog"></div>
         <form class="pp-form" id="chatForm"><input name="t" maxlength="1000" autocomplete="off" placeholder="Nhập tin nhắn…"><button type="submit">Gửi</button></form>
@@ -333,123 +366,32 @@
         <h2 class="wb-title">Pipe Traffic – Giao thông <span>đường ống từ trường</span></h2>
         <p class="wb-quote">"Kết nối không giới hạn – Giải pháp giao thông xanh và thông minh cho tương lai."</p>
         <p class="wb-desc">Dự án nghiên cứu của sinh viên HCMUS về hệ thống di chuyển và vận chuyển bằng đường ống từ tính, giúp giảm ùn tắc và chi phí hạ tầng đô thị.</p>
-        <div class="wb-actions">
-            <button type="button" class="wb-btn wb-p" data-welcome-close>Xem các dự án</button>
-            <a href="#/problems" class="wb-btn">Khám phá giải pháp</a>
-        </div>
+</div>
+    </template>
+
+        <template id="tpl-hero-features">
+    <div class="wb-sec"><small>Đặc Điểm Kỹ Thuật</small><h3>Tính Năng & Tiện Ích Nổi Bật</h3><p>Sự đổi mới toàn diện trong phương thức di chuyển đô thị thế hệ mới.</p></div>
+    <div class="wb-fgrid">
+<div class="wb-fc wb-sky"><span class="wb-fi"><i class="fa-solid fa-magnet"></i></span><h4>Đệm Từ Trường Maglev</h4><ul><li>Lực đẩy từ tính không ma sát</li><li>Di chuyển cực nhanh và êm ái</li><li>Tối ưu tuổi thọ thiết bị</li></ul></div>
+<div class="wb-fc wb-indigo"><span class="wb-fi"><i class="fa-solid fa-house-laptop"></i></span><h4>Kết Nối Tận Hộ Gia Đình</h4><ul><li>Lắp đặt linh hoạt tận cửa nhà</li><li>Kết nối trực tiếp tòa nhà cao tầng</li><li>Loại bỏ thời gian chờ đợi trạm bến</li></ul></div>
+<div class="wb-fc wb-cyan"><span class="wb-fi"><i class="fa-solid fa-microchip"></i></span><h4>AI Điều Hướng Khẩn Cấp</h4><ul><li>Tự đo khoảng cách an toàn thời gian thực</li><li>Giải phóng làn cho xe cấp cứu, cứu hỏa</li><li>Điều phối luồng cabin liên tục không tắc</li></ul></div>
+<div class="wb-fc wb-emerald"><span class="wb-fi"><i class="fa-solid fa-leaf"></i></span><h4>Môi Trường & Đô Thị Xanh</h4><ul><li>Không phát thải khí Carbon</li><li>Giảm thiểu tối đa tiếng ồn đô thị</li><li>Tiết kiệm diện tích giải phóng mặt bằng</li></ul></div>
     </div>
     </template>
 
-        <template id="tpl-specs">
-<section class="py-20 bg-white w-full">
-        <div class="w-full px-4 sm:px-8 lg:px-16">
-            <div class="text-center max-w-4xl mx-auto mb-16">
-                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đặc Điểm Kỹ Thuật</h2>
-                <p class="text-3xl sm:text-4xl font-extrabold text-slate-900">Tính Năng & Tiện Ích Nổi Bật</p>
-                <p class="text-slate-600 mt-3">Sự đổi mới toàn diện trong phương thức di chuyển đô thị thế hệ mới.</p>
-            </div>
+    <template id="tpl-hero-compare">
+    <div class="wb-sec"><small>Đánh Giá Hạ Tầng</small><h3>Bảng So Sánh Pipe Traffic & Dự Án Metro Truyền Thống</h3><p>Phân tích chi tiết ưu thế vượt trội của hệ thống đường ống từ trường trong đô thị nén.</p></div>
+    <div class="wb-tw"><div class="wb-ts"><table class="wb-tbl"><thead><tr><th>Tiêu Chí Đánh Giá</th><th class="wb-pt">Pipe Traffic (Đề Xuất Dự Án)</th><th>Dự Án Metro Đô Thị Truyền Thống</th></tr></thead>
+<tbody>
+<tr><th scope="row">Khả năng kết nối tận nhà</th><td class="wb-pt"><i class="fa-solid fa-check wb-ok"></i> Trực tiếp tại cổng hộ gia đình / tòa nhà</td><td><i class="fa-solid fa-xmark wb-no"></i> Chỉ đi qua các ga lớn trung tâm cố định</td></tr>
+<tr><th scope="row">Diện tích & Không gian chiếm dụng</th><td class="wb-pt"><i class="fa-solid fa-check wb-ok"></i> Nhỏ gọn, lắp đường ống treo/ngầm đa tầng</td><td><i class="fa-solid fa-xmark wb-no"></i> Cực lớn, đòi hỏi hành lang an toàn đường sắt riêng</td></tr>
+<tr><th scope="row">Chi phí đền bù mặt bằng</th><td class="wb-pt"><i class="fa-solid fa-check wb-ok"></i> Tiết kiệm tối đa nhờ thiết kế mô-đun hóa</td><td><i class="fa-solid fa-xmark wb-no"></i> Chi phí giải tỏa đền bù vô cùng đắt đỏ</td></tr>
+<tr><th scope="row">Tính linh hoạt & AI Khẩn cấp</th><td class="wb-pt"><i class="fa-solid fa-check wb-ok"></i> AI tự động chuyển làn & ưu tiên cứu hộ</td><td><i class="fa-solid fa-minus wb-mid"></i> Tuyến cố định, khó giải phóng làn tức thì</td></tr>
+<tr><th scope="row">Tốc độ điều phối & Vận hành</th><td class="wb-pt"><i class="fa-solid fa-check wb-ok"></i> Vận hành liên tục, không ma sát, cực êm</td><td><i class="fa-solid fa-check wb-ok"></i> Chạy theo giờ cố định, tần suất hạn chế</td></tr>
+</tbody></table></div></div>
+    </template>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 w-full">
-                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <div class="w-14 h-14 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-2xl mb-6">
-                        <i class="fa-solid fa-magnet"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-3">Đệm Từ Trường Maglev</h3>
-                    <ul class="text-xs sm:text-sm text-slate-600 space-y-2.5">
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-sky-500"></i> Lực đẩy từ tính không ma sát</li>
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-sky-500"></i> Di chuyển cực nhanh và êm ái</li>
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-sky-500"></i> Tối ưu tuổi thọ thiết bị</li>
-                    </ul>
-                </div>
-
-                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mb-6">
-                        <i class="fa-solid fa-house-laptop"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-3">Kết Nối Tận Hộ Gia Đình</h3>
-                    <ul class="text-xs sm:text-sm text-slate-600 space-y-2.5">
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-indigo-500"></i> Lắp đặt linh hoạt tận cửa nhà</li>
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-indigo-500"></i> Kết nối trực tiếp tòa nhà cao tầng</li>
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-indigo-500"></i> Loại bỏ thời gian chờ đợi trạm bến</li>
-                    </ul>
-                </div>
-
-                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <div class="w-14 h-14 rounded-2xl bg-cyan-100 text-cyan-600 flex items-center justify-center text-2xl mb-6">
-                        <i class="fa-solid fa-microchip"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-3">AI Điều Hướng Khẩn Cấp</h3>
-                    <ul class="text-xs sm:text-sm text-slate-600 space-y-2.5">
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-cyan-500"></i> Tự đo khoảng cách an toàn thời gian thực</li>
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-cyan-500"></i> Giải phóng làn cho xe cấp cứu, cứu hỏa</li>
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-cyan-500"></i> Điều phối luồng cabin liên tục không tắc</li>
-                    </ul>
-                </div>
-
-                <div class="p-8 rounded-2xl bg-slate-50 border border-slate-100 hover:border-sky-300 hover:shadow-xl hover:-translate-y-1 transition-all">
-                    <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl mb-6">
-                        <i class="fa-solid fa-leaf"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-slate-900 mb-3">Môi Trường & Đô Thị Xanh</h3>
-                    <ul class="text-xs sm:text-sm text-slate-600 space-y-2.5">
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500"></i> Không phát thải khí Carbon</li>
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500"></i> Giảm thiểu tối đa tiếng ồn đô thị</li>
-                        <li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-emerald-500"></i> Tiết kiệm diện tích giải phóng mặt bằng</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
-<section class="py-20 bg-slate-100/80 w-full">
-        <div class="w-full px-4 sm:px-8 lg:px-16">
-            <div class="text-center max-w-4xl mx-auto mb-14">
-                <h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">Đánh Giá Hạ Tầng</h2>
-                <p class="text-3xl font-extrabold text-slate-900">Bảng So Sánh Pipe Traffic & Dự Án Metro Truyền Thống</p>
-                <p class="text-slate-600 mt-2">Phân tích chi tiết ưu thế vượt trội của hệ thống đường ống từ trường trong đô thị nén.</p>
-            </div>
-
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden w-full">
-                <div class="overflow-x-auto w-full">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="bg-slate-900 text-white text-base">
-                                <th class="py-5 px-8 font-bold uppercase tracking-wider w-1/3">Tiêu Chí Đánh Giá</th>
-                                <th class="py-5 px-8 font-bold uppercase tracking-wider bg-sky-600 text-white w-1/3">Pipe Traffic (Đề Xuất Dự Án)</th>
-                                <th class="py-5 px-8 font-bold uppercase tracking-wider w-1/3">Dự Án Metro Đô Thị Truyền Thống</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-200 text-sm sm:text-base">
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="py-5 px-8 font-semibold text-slate-800">Khả năng kết nối tận nhà</td>
-                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Trực tiếp tại cổng hộ gia đình / tòa nhà</td>
-                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Chỉ đi qua các ga lớn trung tâm cố định</td>
-                            </tr>
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="py-5 px-8 font-semibold text-slate-800">Diện tích & Không gian chiếm dụng</td>
-                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Nhỏ gọn, lắp đường ống treo/ngầm đa tầng</td>
-                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Cực lớn, đòi hỏi hành lang an toàn đường sắt riêng</td>
-                            </tr>
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="py-5 px-8 font-semibold text-slate-800">Chi phí đền bù mặt bằng</td>
-                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Tiết kiệm tối đa nhờ thiết kế mô-đun hóa</td>
-                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Chi phí giải tỏa đền bù vô cùng đắt đỏ</td>
-                            </tr>
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="py-5 px-8 font-semibold text-slate-800">Tính linh hoạt & AI Khẩn cấp</td>
-                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> AI tự động chuyển làn & ưu tiên cứu hộ</td>
-                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-minus text-amber-500 mr-2"></i> Tuyến cố định, khó giải phóng làn tức thì</td>
-                            </tr>
-                            <tr class="hover:bg-slate-50 transition-colors">
-                                <td class="py-5 px-8 font-semibold text-slate-800">Tốc độ điều phối & Vận hành</td>
-                                <td class="py-5 px-8 font-bold text-sky-700 bg-sky-50/50"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Vận hành liên tục, không ma sát, cực êm</td>
-                                <td class="py-5 px-8 text-slate-600"><i class="fa-solid fa-check text-emerald-500 mr-2"></i> Chạy theo giờ cố định, tần suất hạn chế</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </section>
+    <template id="tpl-specs">
 <section class="py-20 bg-white w-full">
         <div class="w-full px-4 sm:px-8 lg:px-16">
             <div class="text-center max-w-4xl mx-auto mb-16">
@@ -981,15 +923,16 @@
     <!-- KẾT THÚC: Tiêu đề đầu trang chủ -->
 
     <script src="config.js"></script>
-    <script src="i18n.js?v=17"></script>
-    <script src="store.js?v=17"></script>
-    <script src="script.js?v=17"></script>
-    <script src="content.js?v=17"></script>
-    <script src="botintents.js?v=17"></script>
-    <script src="bot.js?v=17"></script>
-    <script src="attach.js?v=17"></script>
-    <script src="messenger.js?v=17"></script>
-    <script src="search.js?v=17"></script>
-    <script src="app.js?v=17"></script>
+    <script src="i18n.js?v=18"></script>
+    <script src="store.js?v=18"></script>
+    <script src="script.js?v=18"></script>
+    <script src="content.js?v=18"></script>
+    <script src="botintents.js?v=18"></script>
+    <script src="bot.js?v=18"></script>
+    <script src="attach.js?v=18"></script>
+    <script src="comments.js?v=18"></script>
+    <script src="messenger.js?v=18"></script>
+    <script src="search.js?v=18"></script>
+    <script src="app.js?v=18"></script>
 </body>
 </html>
