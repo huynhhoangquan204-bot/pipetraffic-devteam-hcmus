@@ -1,11 +1,11 @@
 const $ = s => document.querySelector(s), app = $('#app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmt = t => new Date(t).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+const fmt = t => new Date(t).toLocaleString(window.I18N && I18N.lang() === 'en' ? 'en-GB' : 'vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2000); };
 let tab = 'projects', editing = null, thread = null;
 
 function login() {
-  $('#nav').innerHTML = ''; admToggle(true); $('#admMenu').innerHTML = ''; $('#admBtn').hidden = true;
+  $('#nav').innerHTML = '<button type="button" id="langBtn" class="nav-ico lang"><span aria-hidden="true">🌐</span><b></b></button><button type="button" id="themeBtn" class="nav-ico theme">🌙</button>'; if (window.I18N && I18N.bind) I18N.bind(); admToggle(true); $('#admMenu').innerHTML = ''; $('#admBtn').hidden = true;
   const fb = Store.mode === 'firebase', noMail = fb && !(window.APP_CONFIG || {}).adminEmail, inf = Store.info();
   const status = fb
     ? `<p class="muted" style="font-size:.8rem;margin:8px 0 0">Kết nối: Firebase ✓ · Dự án: ${esc(inf.project)} · Email admin: ${esc(inf.email || '(chưa điền)')}</p>`
@@ -35,9 +35,9 @@ const live = [];                       // theo dõi của tab đang mở, huỷ 
 const stopLive = () => live.splice(0).forEach(f => f());
 let pendCmt = 0, waitMsg = 0, pendBot = 0; const badgeOff = [];
 function startBadges() {
-  badgeOff.push(Store.listen('comments', null, cs => { pendCmt = cs.filter(c => !c.approved).length; if ($('#nav').children.length) nav(); }));
-  badgeOff.push(Store.listen('messages', null, ms => { const last = {}; ms.forEach(m => last[m.uid] = m); waitMsg = Object.values(last).filter(m => m.from === 'user').length; if ($('#nav').children.length) nav(); }));
-  badgeOff.push(Store.listen('botlogs', null, ls => { pendBot = ls.length; if ($('#nav').children.length) nav(); }));
+  badgeOff.push(Store.listen('comments', null, cs => { pendCmt = cs.filter(c => !c.approved).length; if ($('#out')) nav(); }));
+  badgeOff.push(Store.listen('messages', null, ms => { const last = {}; ms.forEach(m => last[m.uid] = m); waitMsg = Object.values(last).filter(m => m.from === 'user').length; if ($('#out')) nav(); }));
+  badgeOff.push(Store.listen('botlogs', null, ls => { pendBot = ls.length; if ($('#out')) nav(); }));
 }
 const stopBadges = () => { badgeOff.splice(0).forEach(f => f()); pendCmt = waitMsg = pendBot = 0; };
 
@@ -54,17 +54,29 @@ function admToggle(force) {   // true = đóng, false = mở, bỏ trống = đ�
   admBtn.setAttribute('aria-expanded', String(open));
   if (open) admFit();
 }
-admBtn.onclick = () => admToggle();
+/* Rê chuột vào ☰ là menu tự trượt xuống (máy tính); điện thoại vẫn chạm để mở */
+let admOpenedAt = 0, admTimer = 0;
+const admHover = matchMedia('(hover:hover) and (pointer:fine)').matches;
+const admOpenNow = () => { clearTimeout(admTimer); if (!admMenu.classList.contains('open')) { admToggle(false); admOpenedAt = Date.now(); } };
+const admCloseSoon = () => { clearTimeout(admTimer); admTimer = setTimeout(() => admToggle(true), 280); };
+admBtn.onclick = () => { if (admHover && Date.now() - admOpenedAt < 700) return; admToggle(); };   // bấm ngay sau khi rê chuột thì không đóng lại
+if (admHover) [admBtn, admMenu].forEach(el => { el.addEventListener('mouseenter', admOpenNow); el.addEventListener('mouseleave', admCloseSoon); });
 addEventListener('scroll', admFit, { passive: true }); addEventListener('resize', admFit);
 addEventListener('keydown', e => { if (e.key === 'Escape') admToggle(true); });
 document.addEventListener('click', e => { if (admMenu.classList.contains('open') && !e.target.closest('#admMenu, #admBtn')) admToggle(true); });
 
 function nav() {
   const old = Date.now() - (+localStorage.getItem('pt_last_backup') || 0) > 7 * 864e5;
-  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬'], ['comments', 'Bình luận', '💬', pendCmt], ['messages', 'Tin nhắn', '✉️', waitMsg], ['bot', 'Dạy Bot', '🤖', pendBot], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
+  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬'], ['messages', 'Tin nhắn', '✉️', waitMsg], ['bot', 'Dạy Bot', '🤖', pendBot], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
   admBtn.hidden = false;   // các tab chuyển vào menu ☰, trên thanh chỉ còn nút Thoát
   admMenu.innerHTML = t.map(([k, v, ic, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}"><span>${ic}</span><span>${v}</span>${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('');
-  $('#nav').innerHTML = '<button id="out">Thoát</button>';
+  // Thanh trên: Bình luận (có số chờ duyệt) · Ngôn ngữ · Giao diện tối · Thoát
+  $('#nav').innerHTML = `<button type="button" id="cmtBtn" class="nav-ico cmt${tab === 'comments' ? ' on' : ''}" title="Bình luận" aria-label="Bình luận">💬${pendCmt ? `<span class="nbadge">${pendCmt}</span>` : ''}<span class="lbl">Bình luận</span></button>`
+    + '<button type="button" id="langBtn" class="nav-ico lang"><span aria-hidden="true">🌐</span><b></b></button>'
+    + '<button type="button" id="themeBtn" class="nav-ico theme">🌙</button>'
+    + '<button id="out">Thoát</button>';
+  if (window.I18N && I18N.bind) I18N.bind();
+  $('#cmtBtn').onclick = () => { tab = 'comments'; editing = null; thread = null; admToggle(true); render(); };
   admMenu.querySelectorAll('[data-t]').forEach(x => x.onclick = e => { e.preventDefault(); tab = x.dataset.t; editing = null; thread = null; admToggle(true); render(); });
   $('#out').onclick = async () => { admToggle(true); stopLive(); stopBadges(); await Store.adminLogout(); login(); };
 }
