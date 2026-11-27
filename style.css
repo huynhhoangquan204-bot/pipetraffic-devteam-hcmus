@@ -3333,3 +3333,12 @@ html[data-theme=dark] body.adm .tabs a.on{background:#0c4a6e}
 html[data-theme=dark] body.adm .ppdf iframe{background:#16233b}
 html[data-theme=dark] body.adm .muted,html[data-theme=dark] body.adm .sub{color:#94a3b8}
 html[data-theme=dark] body.adm .toast{background:#e2e8f0;color:#0f172a}
+
+/* ---------- v18: nút Chat luôn hiện trên điện thoại (nhóm logo không còn đẩy nút ra ngoài) ---------- */
+@media(max-width:639px){
+  nav.glass-card .sr-logo>div{display:none}
+  nav.glass-card .sr-logo{margin-right:0}
+  nav.glass-card .sr-right{flex:none;gap:6px!important;margin-left:auto}
+  nav.glass-card .sr-right>*{flex:none}
+  nav.glass-card .sr-right .nav-ico,nav.glass-card .sr-right .sr-btn,nav.glass-card .sr-right .nav-chat{width:38px!important;min-width:38px!important;height:38px!important;padding:0!important}
+}
