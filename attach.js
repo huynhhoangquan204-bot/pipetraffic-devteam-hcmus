@@ -2,7 +2,7 @@
    Dùng chung cho khung chat người dùng và trang admin.
    Lưu trữ (không cần Firebase Storage):
    - Hình ảnh: nén còn ~260KB, lưu thẳng trong tin nhắn (trường "media").
-   - Video (25MB), tệp (4MB), tin nhắn thoại (3MB / 2 phút): cắt thành mảnh ~700KB lưu ở bộ sưu tập "chunks",
+   - Video (25MB), tệp (4MB), tin nhắn thoại (3MB / 2 phút): cắt thành mảnh ~500KB lưu ở bộ sưu tập "chunks",
      chỉ tải về khi người nhận bấm xem / nghe / tải.
    - Cảm xúc: bộ sưu tập "reacts" (mỗi người 1 cảm xúc / tin nhắn). Thu hồi: tin nhắn bị xoá nội dung, đánh dấu recalled.
    - Chat với AI: mọi thứ chỉ hiện tại máy này; AI CHƯA xem / nghe được tệp. */
@@ -12,8 +12,8 @@
   const ATT_TXT = '📎 Tệp đính kèm';
   const PH_TXT = { img: '🖼️ Hình ảnh', video: '🎬 Video', audio: '🎤 Tin nhắn thoại', file: '📄 Tệp đính kèm' };
   const PH = new Set([ATT_TXT, ...Object.values(PH_TXT)]);
-  const MAX_FILES = 4, CHUNK = 700000, MAX_INLINE = 880000, MAX_REC = 120;
-  const MAX_CHUNKS = 50;                               // 50 mảnh x 700KB (base64) ≈ 25MB dữ liệu gốc; muốn tăng video thì tăng cả maxVideo() lẫn số này
+  const MAX_FILES = 4, CHUNK = 500000, MAX_INLINE = 880000, MAX_REC = 120;
+  const MAX_CHUNKS = 80;                               // 80 mảnh x 500KB (base64) ≈ 29MB dữ liệu gốc (đủ cho video 25MB); muốn tăng video thì tăng cả maxVideo() lẫn số này
   const demo = () => !!(window.Store && Store.mode === 'demo');
   const maxVideo = () => demo() ? 1200000 : 25 * 1024 * 1024;   // chế độ thật: 25MB (trước là 6MB)
   const maxFile = () => demo() ? 1200000 : 4 * 1024 * 1024;
@@ -57,14 +57,14 @@
     if (n > MAX_CHUNKS) throw new Error('Tệp quá lớn để gửi trong chat. Hãy đưa lên YouTube/Drive rồi dán link.');
     const mid = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), done = [];
     let next = 0, fin = 0, fail = null;
-    const worker = async () => {                      // 3 mảnh được ghi song song cho nhanh; lỗi ở mảnh nào thì dừng cả tệp
+    const worker = async () => {                      // 2 mảnh ghi song song (mạng yếu không bị nghẽn); mỗi mảnh đã được Store.put thử lại 3 lần
       while (!fail && next < n) {
         const i = next++, id = mid + '_' + i;
         try { await Store.put('chunks', { id, mid, i, uid, by, data: b64.slice(i * CHUNK, (i + 1) * CHUNK), ts: Date.now() + i }); done.push(id); if (prog) prog(++fin, n); }
         catch (x) { fail = fail || x; }
       }
     };
-    await Promise.all(Array.from({ length: Math.min(3, n) }, worker));
+    await Promise.all(Array.from({ length: Math.min(2, n) }, worker));
     if (fail) { for (const id of done) { try { await Store.del('chunks', id); } catch (_) { /* không xoá được thì bỏ qua */ } } throw fail; }
     if (it.t === 'video') return { t: 'video', mid, n, mime: it.mime, size: it.size, name: safeName(it.name) };
     if (it.t === 'audio') return { t: 'audio', mid, n, mime: it.mime, size: it.size, dur: it.dur };
