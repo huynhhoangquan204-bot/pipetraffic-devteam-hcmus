@@ -37,16 +37,8 @@
 
   /* ---------- Danh sách trang ---------- */
   const PAGES = [
-    { key: 'home',     label: 'Trang chủ',            href: '#/',         icon: 'fa-house',           tpls: ['tpl-hero', 'tpl-cta'] },
-    { key: 'projects', label: 'Dự án',                href: '#/',         icon: 'fa-folder-open' },
-    { key: 'specs',    label: 'Hướng dẫn sử dụng',    href: '#/specs',    icon: 'fa-book-open',       tpls: ['tpl-specs'] },
-    { key: 'intro',    label: 'Tính năng & so sánh hạ tầng', href: '#/intro/1', icon: 'fa-gears',   tpls: ['tpl-hero-features', 'tpl-hero-compare'] },   // nằm trong banner chào: mở lại banner ở bước 2
-    { key: 'journey',  label: 'Hành trình',           href: '#/journey',  icon: 'fa-timeline',        tpls: ['tpl-journey'] },
-    { key: 'team',     label: 'Thành viên & quy tắc', href: '#/team',     icon: 'fa-users',           tpls: ['tpl-team'] },
-    { key: 'problems', label: 'Bài toán & giải pháp', href: '#/problems', icon: 'fa-microchip',       tpls: ['tpl-problems'] },
-    { key: 'video',    label: 'Video demo',           href: '#/video',    icon: 'fa-circle-play',     tpls: ['tpl-video'] },
-    { key: 'faq',      label: 'Đánh giá & FAQ',       href: '#/faq',      icon: 'fa-circle-question', tpls: ['tpl-faq'] },
-    { key: 'comments', label: 'Bình luận',            href: '#/video', icon: 'fa-message',         tpls: ['tpl-comments'] }
+    { key: 'users',    label: 'Người dùng', href: '#/', icon: 'fa-user-group' },
+    { key: 'projects', label: 'Dự án',      href: '#/', icon: 'fa-folder-open' }
   ];
   const BY_KEY = Object.fromEntries(PAGES.map(p => [p.key, p]));
 
@@ -94,31 +86,17 @@
     }));
     if (key === 'video' && typeof siteDoc === 'function') {
       const box = root.querySelector('#video');
-      try { const d = await timeout(siteDoc('video')); if (box) box.innerHTML = Content.video(d); } catch (e) { /* giữ nội dung mẫu */ }
+      try { const d = await timeout(siteDoc('video')); if (d && box) box.innerHTML = Content.video(d); } catch (e) { /* giữ nội dung mẫu */ }
     }
   }
   async function buildIndex() {
-    if (cache && Date.now() - cache.t < 60000) return cache.v;
-    const v = [], add = (page, href, title, text) => { text = clean(text); if (text) v.push({ page, href, title: clean(title), text, f: fold(text), ft: fold(title) }); };
-
-    await Promise.all(PAGES.filter(p => p.tpls).map(async p => {
-      const html = p.tpls.map(id => { const t = $id(id); return t ? t.innerHTML : (p.key === 'video' ? '<section id="video"></section>' : ''); }).join('');   // trang Video dựng bằng Content.video nên không có template
-      const root = new DOMParser().parseFromString('<div>' + html + '</div>', 'text/html').body.firstChild;
-      await applyAdminContent(p.key, root);
-      extract(root).forEach(b => add(p.key, p.href, b.title, b.text));
-    }));
-
-    try {   // dự án + cập nhật theo tuần
-      const [ps, us] = await timeout(Promise.all([Store.list('projects'), Store.list('updates')]), 4000) || [[], []];
-      ps.forEach(p => add('projects', '#/p/' + p.id, p.name, [p.name, p.desc, p.owner ? 'Chủ dự án: ' + p.owner : '', p.status].filter(Boolean).join(' · ')));
-      us.forEach(u => { const p = ps.find(x => x.id === u.projectId); add('projects', '#/p/' + u.projectId, (p ? p.name + ' · ' : '') + [u.week, u.title].filter(Boolean).join(': '), [u.title, u.content].filter(Boolean).join(' — ')); });
-    } catch (e) { /* bỏ qua nếu chưa tải được dự án */ }
-
-    try {   // bình luận đã duyệt (email luôn bị ẩn)
-      const cs = await timeout(Store.list('comments', { where: ['approved', '==', true] }), 4000) || [];
-      cs.forEach(c => add('comments', '#/comments', maskEmail(c.name || 'Ẩn danh'), maskEmail(c.text)));
-    } catch (e) { /* bỏ qua */ }
-
+    if (cache && Date.now() - cache.t < 30000) return cache.v;
+    const v = [], add = (page, href, title, text, av) => { title = clean(title); text = clean(text) || title; if (title) v.push({ page, href, title, text, f: fold(text), ft: fold(title), av: av || '' }); };
+    try {   // người dùng (hồ sơ công khai: không có email) + dự án
+      const [ps, pf] = await timeout(Promise.all([Store.list('projects'), Store.list('profiles').catch(() => [])]), 4000) || [[], []];
+      pf.forEach(u => add('users', '#/u/' + u.id, maskEmail(u.name), maskEmail([u.name, u.pageName, u.bio].filter(Boolean).join(' · ')), Avatar.html(u, 'sm')));
+      ps.forEach(p => { const by = p.ownerName || p.owner; add('projects', '#/p/' + p.id, p.name, [p.name, p.desc, by ? 'Chủ dự án: ' + maskEmail(by) : '', p.kind === 'sub' ? 'Dự án phụ' : 'Dự án chính', p.status].filter(Boolean).join(' · ')); });
+    } catch (e) { /* bỏ qua nếu chưa tải được */ }
     cache = { t: Date.now(), v }; return v;
   }
 
@@ -145,8 +123,8 @@
 
   /* ---------- Trang kết quả: #/search/<q> ---------- */
   let state = { q: '', hits: [], terms: [], filter: '', open: {} };
-  const form = (q, id) => `<form class="sr-pform" data-srform role="search"><i class="fa-solid fa-magnifying-glass"></i><input id="${id}" type="search" name="q" value="${esc(q)}" placeholder="Nhập từ cần tìm rồi nhấn Enter…" autocomplete="off" enterkeyhint="search"><button type="submit">Tìm</button></form>`;
-  const quickLinks = () => `<div class="sr-quick">${PAGES.filter(p => p.key !== 'projects').map(p => `<a href="${p.href}"><i class="fa-solid ${p.icon}"></i> ${esc(p.label)}</a>`).join('')}<a href="#/"><i class="fa-solid fa-folder-open"></i> Dự án</a></div>`;
+  const form = (q, id) => `<form class="sr-pform" data-srform role="search"><i class="fa-solid fa-magnifying-glass"></i><input id="${id}" type="search" name="q" value="${esc(q)}" placeholder="Tên người dùng hoặc tên dự án…" autocomplete="off" enterkeyhint="search"><button type="submit">Tìm</button></form>`;
+  const quickLinks = () => `<div class="sr-quick"><a href="#/"><i class="fa-solid fa-folder-open"></i> Tất cả dự án</a></div>`;
   const shell = (q, body) => { const app = $id('app'); app.innerHTML = `<div class="sr-page">${form(q, 'srPageInput')}${body}</div>`; };
 
   function draw() {
@@ -155,11 +133,11 @@
       .sort((a, b) => b.list[0].score - a.list[0].score);
     const shown = state.filter ? groups.filter(g => g.p.key === state.filter) : groups;
     const chips = `<div class="sr-chips"><button type="button" data-f="" class="${state.filter ? '' : 'on'}">Tất cả <b>${hits.length}</b></button>${groups.map(g => `<button type="button" data-f="${g.p.key}" class="${state.filter === g.p.key ? 'on' : ''}">${esc(g.p.label)} <b>${g.list.length}</b></button>`).join('')}</div>`;
-    box.innerHTML = `<p class="sr-sum">Tìm thấy <b>${hits.length}</b> kết quả trong <b>${groups.length}</b> trang cho “${esc(q)}”.</p>${chips}` + shown.map(g => {
+    box.innerHTML = `<p class="sr-sum">Tìm thấy <b>${hits.length}</b> kết quả (người dùng, dự án) cho “${esc(q)}”.</p>${chips}` + shown.map(g => {
       const lim = state.open[g.p.key] ? 200 : 8, more = g.list.length - lim;
       return `<section class="sr-group"><div class="sr-gh"><a href="${g.p.href}" data-t="${esc(terms.join(' '))}"><i class="fa-solid ${g.p.icon}"></i> ${esc(g.p.label)}</a><span>${g.list.length} kết quả</span></div>
       ${g.list.slice(0, lim).map(h => `<a class="sr-item" href="${esc(h.e.href)}" data-t="${esc(terms.join(' '))}" data-a="${esc(h.e.f.slice(0, 40))}">
-        <b>${markHtml(h.e.title || g.p.label, terms)}</b>${h.e.f === h.e.ft ? '' : `<span>${snippet(h.e.text, terms)}</span>`}<i class="fa-solid fa-arrow-right sr-go"></i></a>`).join('')}
+        ${h.e.av ? `<div class="sr-av">${h.e.av}</div>` : ''}<b>${markHtml(h.e.title || g.p.label, terms)}</b>${h.e.f === h.e.ft ? '' : `<span>${snippet(h.e.text, terms)}</span>`}<i class="fa-solid fa-arrow-right sr-go"></i></a>`).join('')}
       ${more > 0 ? `<button type="button" class="sr-more" data-more="${g.p.key}">Xem thêm ${more} kết quả</button>` : ''}</section>`;
     }).join('');
   }
@@ -167,14 +145,14 @@
     let q; try { q = decodeURIComponent(raw || ''); } catch (e) { q = String(raw || ''); }
     q = q.trim().slice(0, 100);
     const nv = $id('srNavInput'); if (nv && document.activeElement !== nv) nv.value = q;
-    if (!q) { shell('', `<p class="sr-sum">Nhập từ khoá để tìm trong toàn bộ website.</p>${quickLinks()}`); const i = $id('srPageInput'); if (i) i.focus(); return; }
+    if (!q) { shell('', `<p class="sr-sum">Nhập tên người dùng hoặc tên dự án để tìm.</p>${quickLinks()}`); const i = $id('srPageInput'); if (i) i.focus(); return; }
     shell(q, '<div id="srResults"><div class="loading">Đang tìm…</div></div>');
     const index = await buildIndex();
     if (!$id('srResults')) return;
     const { terms, hits } = run(index, q);
     state = { q, hits, terms, filter: '', open: {} };
     if (!hits.length) {
-      $id('srResults').innerHTML = `<div class="sr-none"><i class="fa-regular fa-face-frown"></i><p>Không có kết quả nào cho “<b>${esc(q)}</b>”.</p><small>Thử từ ngắn hơn hoặc đổi cách viết. Bạn cũng có thể vào thẳng một trang:</small></div>${quickLinks()}`;
+      $id('srResults').innerHTML = `<div class="sr-none"><i class="fa-regular fa-face-frown"></i><p>Không có kết quả nào cho “<b>${esc(q)}</b>”.</p><small>Thử từ ngắn hơn hoặc đổi cách viết. Gõ không dấu vẫn tìm được. Hoặc xem toàn bộ dự án:</small></div>${quickLinks()}`;
       return;
     }
     draw();
@@ -238,7 +216,7 @@
     b.innerHTML = (items.length ? items.map(h => { const p = BY_KEY[h.e.page];
         return `<a class="sr-sg" role="option" href="${esc(h.e.href)}" data-t="${esc(terms.join(' '))}" data-a="${esc(h.e.f.slice(0, 40))}"><i class="fa-solid ${p.icon}"></i><span><b>${markHtml(h.e.title || p.label, terms)}</b><small>${esc(p.label)}${h.e.f === h.e.ft ? '' : ' · ' + snippet(h.e.text, terms)}</small></span></a>`; }).join('')
       + `<a class="sr-sg sr-sg-all" href="#/search/${encodeURIComponent(q.slice(0, 100))}"><i class="fa-solid fa-magnifying-glass"></i><span><b>Xem tất cả ${hits.length} kết quả cho “${esc(q)}”</b></span></a>`
-      : `<div class="sr-sg-none">Không có gợi ý cho “${esc(q)}”. Nhấn Enter để tìm trên toàn trang.</div>`);
+      : `<div class="sr-sg-none">Không có gợi ý cho “${esc(q)}”. Nhấn Enter để xem trang kết quả.</div>`);
     b.hidden = false;
   }
   function moveSug(d) {
@@ -310,23 +288,22 @@
 .sr-flash{outline:3px solid #38bdf8;outline-offset:6px;border-radius:12px;animation:srf 2.6s ease-out}
 @keyframes srf{0%,60%{outline-color:#38bdf8}100%{outline-color:transparent}}
 @media(max-width:640px){.sr-page{padding-top:100px}.sr-pform button{padding:9px 14px}}
-/* --- Thanh trên: logo bên trái, ô tìm kiếm kéo dài chiếm hết chỗ trống, nút kính lúp bên phải (trong ô) --- */
-.sr-logo{margin-right:12px}.sr-right{margin-left:12px}
-.sr-nav{flex:1 1 auto;min-width:0;max-width:none;margin:0 8px;height:44px;display:flex;align-items:center;gap:8px;padding:0 5px 0 18px;background:#f1f5f9;border:1px solid transparent;border-radius:99px;transition:.15s}
+/* --- Menu luôn dạng hamburger: ô tìm kiếm kiểu Google ở giữa, Chat + hamburger bên phải --- */
+.sr-logo{margin-right:20px}.sr-right{margin-left:20px}
+.sr-nav{flex:1 1 auto;min-width:0;max-width:640px;margin-left:auto;margin-right:auto;height:46px;display:flex;align-items:center;gap:10px;padding:0 18px;background:#f1f5f9;border:1px solid transparent;border-radius:99px;transition:.15s}
 .sr-nav:hover{background:#fff;border-color:#e2e8f0;box-shadow:0 2px 10px rgba(15,23,42,.10)}
 .sr-nav:focus-within{background:#fff;border-color:#bae6fd;box-shadow:0 4px 18px rgba(2,132,199,.22)}
-.sr-nav input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:16px;color:#0f172a;height:100%;-webkit-appearance:none;appearance:none;box-shadow:none}
+.sr-nav>i{color:#64748b;font-size:.95rem}.sr-nav:focus-within>i{color:#0284c7}
+.sr-nav input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:16px;color:#0f172a;height:100%;-webkit-appearance:none;appearance:none}
 .sr-nav input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
-.sr-nav kbd{flex:none;font:inherit;font-size:.72rem;font-weight:700;color:#94a3b8;border:1px solid #cbd5e1;border-radius:6px;padding:1px 7px;background:#fff}
+.sr-nav kbd{font:inherit;font-size:.72rem;font-weight:700;color:#94a3b8;border:1px solid #cbd5e1;border-radius:6px;padding:1px 7px;background:#fff}
 .sr-nav:focus-within kbd{display:none}
-.sr-go-btn{flex:none;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:#0284c7;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.88rem;cursor:pointer;transition:.15s}
-.sr-go-btn:hover{background:#0369a1}
 #mobile-menu{position:absolute;right:16px;top:80px;width:min(360px,calc(100vw - 32px));max-height:calc(100vh - 100px);overflow:auto;border:1px solid #e2e8f0;border-radius:16px}
 /* Nút Chat: đứng yên (đã bỏ hiệu ứng nhấp nháy cho giao diện gọn, chuyên nghiệp) */
 .nav-chat{position:relative;width:auto!important;padding:0 14px;gap:8px;font-weight:700;font-size:.9rem}
 .nav-chat .nav-chat-t{display:none}
-@media(min-width:640px){.nav-chat .nav-chat-t{display:inline}}
-@media(max-width:639px){.sr-nav{height:40px;margin:0 6px;padding-left:14px}.sr-nav kbd{display:none}.sr-go-btn{width:30px;height:30px}}
+@media(min-width:640px){.sr-btn{display:none}.nav-chat .nav-chat-t{display:inline}}
+@media(max-width:639px){.sr-nav{display:none}.sr-right{margin-left:auto}}
 @media(max-width:420px){.sr-logo>div{display:none}.sr-logo{margin-right:0}}
 .sr-sug{position:fixed;z-index:60;background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 18px 40px rgba(15,23,42,.18);padding:6px;max-height:min(70vh,520px);overflow-y:auto}
 .sr-sug[hidden]{display:none}
@@ -338,43 +315,12 @@
 .sr-sg small{display:block;font-size:.78rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sr-sug mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 1px}
 .sr-sg-all{margin-top:4px;border-top:1px solid #e2e8f0;border-radius:0 0 12px 12px}.sr-sg-all b{color:#0284c7}
-.sr-sg-none{padding:14px;color:#64748b;font-size:.88rem}
-/* --- Giao diện tối: ô tìm kiếm / kết quả (trước đây ô nhập bị nền đen + chữ trắng nằm trong khung trắng) --- */
-html[data-theme=dark] .sr-nav,html[data-theme=dark] .sr-pform,html[data-theme=dark] .sr-bar{background:#111c31;border-color:#26364f;box-shadow:none}
-html[data-theme=dark] .sr-bar{background:rgba(15,23,42,.97)}
-html[data-theme=dark] .sr-nav:hover,html[data-theme=dark] .sr-nav:focus-within,html[data-theme=dark] .sr-pform:focus-within{background:#16233b;border-color:#38bdf8}
-html[data-theme=dark] .sr-nav input,html[data-theme=dark] .sr-pform input,html[data-theme=dark] .sr-bar input{background:transparent!important;color:#e2e8f0!important;border:0!important;box-shadow:none!important;outline:0!important}
-html[data-theme=dark] .sr-nav input::placeholder,html[data-theme=dark] .sr-pform input::placeholder{color:#64748b}
-html[data-theme=dark] .sr-nav>i,html[data-theme=dark] .sr-pform>i{color:#94a3b8}
-html[data-theme=dark] .sr-nav kbd{background:#1e293b;color:#94a3b8;border-color:#334155}
-html[data-theme=dark] .sr-go-btn,html[data-theme=dark] .sr-pform button{background:#0284c7;color:#fff}
-html[data-theme=dark] .sr-x{background:#1e293b;color:#e2e8f0}
-html[data-theme=dark] .sr-page{color:#e2e8f0}
-html[data-theme=dark] .sr-sum,html[data-theme=dark] .sr-gh span,html[data-theme=dark] .sr-hint{color:#94a3b8}
-html[data-theme=dark] .sr-chips button{background:#111c31;border-color:#26364f;color:#cbd5e1}
-html[data-theme=dark] .sr-chips button.on{background:#0284c7;border-color:#0284c7;color:#fff}
-html[data-theme=dark] .sr-gh{border-color:#0c4a6e}
-html[data-theme=dark] .sr-gh a{color:#7dd3fc}
-html[data-theme=dark] .sr-item{background:#111c31;border-color:#26364f}
-html[data-theme=dark] .sr-item:hover{border-color:#38bdf8;box-shadow:0 6px 18px rgba(0,0,0,.35)}
-html[data-theme=dark] .sr-item b{color:#f1f5f9}
-html[data-theme=dark] .sr-item span{color:#a7b4c7}
-html[data-theme=dark] .sr-more{border-color:#334155;color:#7dd3fc}
-html[data-theme=dark] .sr-none,html[data-theme=dark] .sr-none p{color:#cbd5e1}
-html[data-theme=dark] .sr-quick a{background:#0c2a43;border-color:#0c4a6e;color:#bae6fd}
-html[data-theme=dark] .sr-quick a:hover{background:#0c4a6e}
-html[data-theme=dark] .sr-sug{background:#0f172a;border-color:#26364f;box-shadow:0 18px 40px rgba(0,0,0,.5)}
-html[data-theme=dark] .sr-sg:hover,html[data-theme=dark] .sr-sg.on{background:#16233b}
-html[data-theme=dark] .sr-sg b{color:#f1f5f9}
-html[data-theme=dark] .sr-sg small,html[data-theme=dark] .sr-sg-none{color:#94a3b8}
-html[data-theme=dark] .sr-sg>i{background:#0c4a6e;color:#7dd3fc}
-html[data-theme=dark] .sr-sg-all{border-color:#26364f}
-html[data-theme=dark] .sr-page mark,html[data-theme=dark] .sr-mark,html[data-theme=dark] .sr-sug mark{color:#0f172a}`;
+.sr-sg-none{padding:14px;color:#64748b;font-size:.88rem}`;
     document.head.appendChild(css);
 
     const bar = document.createElement('div');
     bar.id = 'srBar'; bar.className = 'sr-bar'; bar.hidden = true;
-    bar.innerHTML = `<form data-srform role="search"><div class="sr-pform"><i class="fa-solid fa-magnifying-glass"></i><input id="srInput" type="search" placeholder="Tìm trong website… (nhấn Enter)" autocomplete="off" enterkeyhint="search" maxlength="100" aria-label="Tìm kiếm"><button type="submit">Tìm</button></div><button type="button" class="sr-x" data-search-close aria-label="Đóng">&times;</button></form><div class="sr-hint">Gõ không dấu cũng được · Esc để đóng · phím tắt: / hoặc Ctrl+K</div>`;
+    bar.innerHTML = `<form data-srform role="search"><div class="sr-pform"><i class="fa-solid fa-magnifying-glass"></i><input id="srInput" type="search" placeholder="Tìm người dùng hoặc dự án… (nhấn Enter)" autocomplete="off" enterkeyhint="search" maxlength="100" aria-label="Tìm kiếm"><button type="submit">Tìm</button></div><button type="button" class="sr-x" data-search-close aria-label="Đóng">&times;</button></form><div class="sr-hint">Tìm tên người dùng hoặc dự án · gõ không dấu cũng được · Esc để đóng · phím tắt: / hoặc Ctrl+K</div>`;
     document.body.appendChild(bar); sugBox();
 
     document.addEventListener('submit', e => {
@@ -409,6 +355,6 @@ html[data-theme=dark] .sr-page mark,html[data-theme=dark] .sr-mark,html[data-the
     });
   }
 
-  window.Search = { page, applyFind, close() { closeBar(); closeSug(); } };
+  window.Search = { page, applyFind, close() { closeBar(); closeSug(); }, fold, termsOf, markHtml, reset() { cache = null; } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
