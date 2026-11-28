@@ -24,7 +24,7 @@
     <link rel="icon" type="image/jpeg" href="logo.jpg">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=19">
+    <link rel="stylesheet" href="style.css?v=21">
     <script>try{var t=localStorage.getItem('pt_theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
     <script>
     // Nếu trang không chạy được (thiếu file, lỗi script) thì báo rõ thay vì để trống
@@ -268,16 +268,7 @@
     <!-- BẮT ĐẦU: Menu trượt bên trái (đặt NGOÀI <nav> để bám đúng vị trí) -->  <!-- <--- THÊM MỚI -->
     <aside id="mobile-menu" class="side-drawer space-y-3" aria-hidden="true">
         <a href="#/" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-folder-open text-sky-500 mr-2"></i> Dự Án</a>
-        <a href="#/specs" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-book-open text-sky-500 mr-2"></i> Hướng Dẫn Sử Dụng</a>
-        <a href="#/journey" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-timeline text-sky-500 mr-2"></i> Hành Trình (Journey)</a>
-        <a href="#/team" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-users text-sky-500 mr-2"></i> Thành Viên & Quy Tắc</a>
-        <a href="#/problems" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-microchip text-sky-500 mr-2"></i> Bài Toán & Giải Pháp</a>
-        <a href="#/video" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-play text-sky-500 mr-2"></i> Video & Bình Luận</a> <!-- <--- SỬA Ở ĐÂY: gộp 2 mục -->
-        <a href="#/faq" onclick="toggleMobileMenu(true)" class="block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-circle-question text-sky-500 mr-2"></i> Đánh Giá & FAQ</a>
-        <!-- (đã xoá: mục Bình Luận riêng và nút Mở khung chat) -->  <!-- <--- SỬA Ở ĐÂY -->
         <button type="button" data-contact onclick="toggleMobileMenu(true)" class="block w-full text-left py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-address-book text-sky-500 mr-2"></i> Liên Hệ</button>
-        <button type="button" id="notifyBtn" data-notify class="nt-row block w-full text-left py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-regular fa-bell-slash text-slate-400 mr-2"></i><span id="notifyTxt" class="nt-t">Bật thông báo</span></button>
-        <a href="admin.html" class="only-mob block py-2 text-slate-700 hover:text-sky-600 font-medium border-b border-slate-100"><i class="fa-solid fa-user-shield text-sky-500 mr-2"></i> Quản trị</a>
         <div id="authSlotM"></div>
     </aside>
     <!-- KẾT THÚC: Menu trượt bên trái -->
@@ -762,7 +753,7 @@
             <button type="button" class="em" onclick="addEmoji('👏')">👏</button>
             <button type="button" class="em" onclick="addEmoji('❓')">❓</button>
             <span id="charCount" class="cc">0/500</span>
-            <button type="submit" id="submitBtn" class="yt-send"><i class="fa-solid fa-paper-plane"></i> Gửi</button>
+            
         </div>
     </form>
 
@@ -898,9 +889,7 @@
                             <button type="button" onclick="addEmoji('❓')" class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700 text-xs hover:border-sky-500">❓ Thắc mắc</button>
                         </div>
 
-                        <button type="submit" id="submitBtn" class="w-full py-4 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 hover:from-sky-400 hover:to-cyan-400 text-white font-extrabold text-sm shadow-lg shadow-sky-500/25 transition-all flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-paper-plane"></i> Gửi Bình Luận Ngay
-                        </button>
+                        
                     </form>
                 </div>
 
@@ -939,7 +928,7 @@
     <script src="config.js"></script>
     <script src="i18n.js?v=19"></script>
     <script src="store.js?v=20"></script>
-    <script src="script.js?v=19"></script>
+    <script src="script.js?v=21"></script>
     <script src="content.js?v=19"></script>
     <script src="botintents.js?v=19"></script>
     <script src="bot.js?v=19"></script>
@@ -951,6 +940,6 @@
     <script src="social.js?v=20"></script>
     <script src="dm.js?v=20"></script>
     <script src="extras.js?v=20"></script>
-    <script src="app.js?v=20"></script>
+    <script src="app.js?v=21"></script>
 </body>
 </html>
