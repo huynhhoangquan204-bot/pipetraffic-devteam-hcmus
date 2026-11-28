@@ -27,11 +27,9 @@
 
   // Menu luôn dừng ở mép trên Footer: khi cuộn tới cuối trang, đáy menu được đẩy lên theo   // <--- THÊM MỚI
   function fitSideMenu() {
-    const m = $('#mobile-menu'), f = document.querySelector('footer'), mb = $('#mobbar');
-    if (!m) return;
-    const bar = mb && getComputedStyle(mb).display !== 'none' ? mb.offsetHeight : 0;                 // thanh công cụ dưới (điện thoại)
-    const foot = f && f.offsetHeight ? Math.max(0, window.innerHeight - f.getBoundingClientRect().top) : 0;   // footer (máy tính)
-    m.style.bottom = Math.max(bar, foot) + 'px';
+    const m = $('#mobile-menu'), f = document.querySelector('footer');
+    if (!m || !f) return;
+    m.style.bottom = Math.max(0, window.innerHeight - f.getBoundingClientRect().top) + 'px';
   }
   window.addEventListener('scroll', fitSideMenu, { passive: true });
   window.addEventListener('resize', fitSideMenu);
@@ -148,6 +146,37 @@
       const b = e.target.closest('[data-cookie]'); if (!b) return;
       try { localStorage.setItem('pt_cookie', b.dataset.cookie); } catch (x) { /* bỏ qua */ }
       bar.hidden = true;
+    });
+  })();
+
+
+  /* --- Khung "Kịch bản phân cảnh" của video: giới hạn chiều cao, người dùng bật/tắt và mở rộng/thu hẹp (nhớ lựa chọn ở khoá pt_vs) --- */
+  (function initScriptBox() {
+    const css = document.createElement('style');
+    css.textContent = `
+.vs-box .vs-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.vs-box .vs-head h4{margin:0!important}
+.vs-ctl{display:flex;gap:8px}
+.vs-ctl button{border:1px solid #cbd5e1;background:#fff;color:#0369a1;border-radius:99px;font:inherit;font-size:.8rem;font-weight:700;padding:6px 14px;cursor:pointer}
+.vs-ctl button:hover{background:#f0f9ff;border-color:#7dd3fc}
+.vs-box .vs-body{max-height:240px;overflow-y:auto;margin-top:16px;padding-right:6px;scrollbar-width:thin;transition:max-height .25s ease}
+.vs-box[data-big="1"] .vs-body{max-height:72vh}
+.vs-box[data-hidden="1"] .vs-body{display:none}
+.vs-box[data-hidden="1"]{padding-top:14px!important;padding-bottom:14px!important}
+.vs-box[data-hidden="1"] [data-vs-act="size"]{display:none}
+@media(prefers-reduced-motion:reduce){.vs-box .vs-body{transition:none}}`;
+    document.head.appendChild(css);
+    const save = box => { try { localStorage.setItem('pt_vs', JSON.stringify({ hidden: box.dataset.hidden === '1', big: box.dataset.big === '1' })); } catch (x) { /* bỏ qua */ } };
+    document.addEventListener('click', e => {
+      const b = e.target.closest('[data-vs-act]'); if (!b) return;
+      const box = b.closest('[data-vs]'); if (!box) return;
+      if (b.dataset.vsAct === 'size') box.dataset.big = box.dataset.big === '1' ? '0' : '1';
+      else box.dataset.hidden = box.dataset.hidden === '1' ? '0' : '1';
+      const big = box.dataset.big === '1', hid = box.dataset.hidden === '1';
+      const sz = box.querySelector('[data-vs-act="size"]'), hd = box.querySelector('[data-vs-act="hide"]');
+      if (sz) { sz.textContent = big ? 'Thu hẹp' : 'Mở rộng'; sz.setAttribute('aria-expanded', String(big)); }
+      if (hd) { hd.textContent = hid ? 'Hiện kịch bản' : 'Tắt kịch bản'; hd.setAttribute('aria-expanded', String(!hid)); }
+      save(box);
     });
   })();
 
