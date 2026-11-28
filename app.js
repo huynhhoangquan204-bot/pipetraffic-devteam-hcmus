@@ -30,18 +30,20 @@ async function siteDoc(id) {   // tài liệu đơn trong bộ sưu tập "site"
   const c = scache[id]; if (c && Date.now() - c.t < 30000) return c.v;
   const v = await Store.get('site', id); scache[id] = { t: Date.now(), v }; return v;
 }
-async function fillContent(r) {
+const scoped = (list, pid) => { if (!pid || !list) return list; const own = list.filter(x => x.projectId === pid); return own.length ? own : list.filter(x => !x.projectId); };
+async function fillContent(r, pid) {
   const jobs = { journey: [['journey', '#journeyList', 'journey']], team: [['team', '#teamGrid', 'team']], faq: [['reviews', '#reviewList', 'reviews'], ['faq', '#faqList', 'faq']] }[r] || [];
   await Promise.all(jobs.map(async ([col, sel, fn]) => {
     const box = $(sel); if (!box) return;
     box.style.opacity = 0; box.style.transition = 'opacity .25s';
     let list = null;
     try { list = await Promise.race([contentList(col), new Promise(ok => setTimeout(() => ok(null), 2500))]); } catch (e) {}
+    list = scoped(list, pid);
     if ($(sel) === box) { if (list && list.length) box.innerHTML = Content[fn](list); box.style.opacity = 1; }
   }));
   if (r === 'video') {   // Video demo: dữ liệu admin nhập (site/video); chưa có thì giữ nội dung mẫu trong index.html
     const box = $('#video'); if (!box) return;
-    let d = null; try { d = await Promise.race([siteDoc('video'), new Promise(ok => setTimeout(() => ok(null), 2500))]); } catch (e) {}
+    let d = null; try { d = (pid && await Promise.race([siteDoc('video_' + pid), new Promise(ok => setTimeout(() => ok(null), 2500))])) || await Promise.race([siteDoc('video'), new Promise(ok => setTimeout(() => ok(null), 2500))]); } catch (e) {}
     if ($('#video') === box) box.innerHTML = Content.video(d);   // d rỗng thì Content.video dùng nội dung mặc định
   }
 }
@@ -95,8 +97,7 @@ async function home() {
   app.innerHTML = tpl('tpl-cta') + `<section id="projects" class="pt-10 pb-20 bg-white"><div class="pt-app max-w-6xl mx-auto px-4">
   <h2 class="sec">Các dự án</h2>
   <p class="sub" style="margin-bottom:16px">Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) và cộng đồng người dùng cùng phát triển.</p>
-  <div class="yh-bar"><div class="home-cta" role="group" aria-label="Loại dự án"><button type="button" class="btn ghost" data-pk="main" aria-pressed="false">Dự án chính</button><button type="button" class="btn ghost" data-pk="sub" aria-pressed="false">Dự án phụ</button></div>
-    <div class="psearch yh-q" role="search"><i class="fa-solid fa-magnifying-glass"></i><input id="yhq" type="search" placeholder="Tìm dự án hoặc tác giả…" autocomplete="off" maxlength="100" aria-label="Tìm dự án"></div></div>
+  <div class="yh-bar"><div class="home-cta" role="group" aria-label="Loại dự án"><button type="button" class="btn ghost" data-pk="main" aria-pressed="false">Dự án chính</button><button type="button" class="btn ghost" data-pk="sub" aria-pressed="false">Dự án phụ</button></div></div>
   <div class="yh-chips" role="group" aria-label="Sắp xếp"><button type="button" class="yh-chip on" data-sort="new">Gần nhất</button><button type="button" class="yh-chip" data-sort="likes">Nhiều lượt thích</button><button type="button" class="yh-chip" data-sort="cmt">Nhiều bình luận</button></div>
   <div id="projBox" data-autotr><div class="loading">Đang tải dự án…</div></div></div></section>`;
   const box = $('#projBox');
@@ -119,10 +120,10 @@ async function home() {
     if (bm) bm.textContent = `Dự án chính (${nMain})`; if (bs) bs.textContent = `Dự án phụ (${nSub})`;
     document.querySelectorAll('[data-pk]').forEach(b => { b.onclick = () => { kind = kind === b.dataset.pk ? '' : b.dataset.pk; document.querySelectorAll('[data-pk]').forEach(x => { const on = x.dataset.pk === kind; x.classList.toggle('ghost', !on); x.setAttribute('aria-pressed', String(on)); }); draw(); }; });
     document.querySelectorAll('[data-sort]').forEach(b => { b.onclick = () => { sort = b.dataset.sort; document.querySelectorAll('[data-sort]').forEach(x => x.classList.toggle('on', x === b)); draw(); }; });
-    $('#yhq').oninput = e => { q = e.target.value; draw(); };
     draw();
   } catch (e) { if (document.body.contains(box)) box.innerHTML = '<p class="err">Chưa tải được dự án: ' + esc(e.message) + '</p>'; }
 }
+const TABS = [['overview', 'Tổng quan'], ['specs', 'Hướng dẫn sử dụng'], ['journey', 'Hành trình'], ['team', 'Thành viên & Quy tắc'], ['problems', 'Bài toán & Giải pháp'], ['video', 'Video & Bình luận'], ['faq', 'Đánh giá & FAQ'], ['contact', 'Liên hệ']];
 async function project(id) {
   const [ps, ups, st] = await Promise.all([Store.list('projects'), Store.list('updates'), projStats(true).catch(() => null)]);
   const p = ps.find(x => x.id === id);
@@ -143,10 +144,8 @@ async function project(id) {
   <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${ownerHtml}${mineP ? ' · <a class="plink" href="#" id="pjEdit">Chỉnh sửa dự án</a>' : ''}</p>
   <div class="row" style="justify-content:flex-start;gap:10px;margin:0 0 12px"><button type="button" class="lk-btn${liked ? ' on' : ''}" id="pjLike" aria-pressed="${liked}" aria-label="Thích dự án">${likeHtml()}</button><small class="muted">💬 ${S.cmt[id] || 0} bình luận</small></div>
   <div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
-  <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2></div>
-  <div class="psearch" role="search"><i class="fa-solid fa-magnifying-glass"></i><input id="pjq" type="search" placeholder="Tìm trong dự án này (tuần, tiêu đề, nội dung)…" autocomplete="off" maxlength="100" aria-label="Tìm trong dự án"></div>
-  <small class="muted" id="pjn" style="display:block;margin:0 0 8px 6px">${all.length} cập nhật</small>
-  <div class="tl" id="pjtl" data-autotr>${tl(all)}</div>
+  <div class="pt-tabs" id="ptTabs" role="tablist">${TABS.map(t => `<button type="button" role="tab" data-ptab="${t[0]}">${t[1]}</button>`).join('')}</div>
+  <div id="ptPanel"></div>
   <div id="cmtProj" style="margin-top:44px;padding-top:8px;border-top:1px solid var(--line,#e2e8f0)"></div>`);
   const first = app.firstElementChild; if (first) first.setAttribute('data-autotr', '');   // tên / mô tả dự án cũng được tự dịch sang tiếng Anh
   Cmt.mount($('#cmtProj'), 'p:' + id);                                                   // bình luận gọn ở cuối MỌI dự án
@@ -161,12 +160,40 @@ async function project(id) {
     } catch (x) { toast('Chưa thích được: ' + (x.message || x.code)); }
     b.disabled = false;
   };
-  const q = $('#pjq');
-  q.oninput = () => {
-    const ts = Search.termsOf(q.value), txt = u => Search.fold([u.week, u.title, u.content, ...Media.list(u).map(m => m.name || '')].join(' '));
-    const list = ts.length ? all.filter(u => { const f = txt(u); return ts.every(t => f.includes(t)); }) : all;
-    $('#pjtl').innerHTML = tl(list, ts); $('#pjn').textContent = ts.length ? `${list.length}/${all.length} cập nhật khớp` : `${all.length} cập nhật`;
+  const bindSearch = () => {
+    const q = $('#pjq'); if (!q) return;
+    q.oninput = () => {
+      const ts = Search.termsOf(q.value), txt = u => Search.fold([u.week, u.title, u.content, ...Media.list(u).map(m => m.name || '')].join(' '));
+      const list = ts.length ? all.filter(u => { const f = txt(u); return ts.every(t => f.includes(t)); }) : all;
+      $('#pjtl').innerHTML = tl(list, ts); $('#pjn').textContent = ts.length ? `${list.length}/${all.length} cập nhật khớp` : `${all.length} cập nhật`;
+    };
   };
+  const overview = () => `<div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
+    <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2></div>
+    <div class="psearch" role="search"><i class="fa-solid fa-magnifying-glass"></i><input id="pjq" type="search" placeholder="Tìm trong dự án này (tuần, tiêu đề, nội dung)…" autocomplete="off" maxlength="100" aria-label="Tìm trong dự án"></div>
+    <small class="muted" id="pjn" style="display:block;margin:0 0 8px 6px">${all.length} cập nhật</small>
+    <div class="tl" id="pjtl" data-autotr>${tl(all)}</div>`;
+  let curTab = '';
+  const showTab = async k => {
+    curTab = k; const panel = $('#ptPanel'); if (!panel) return;
+    document.querySelectorAll('[data-ptab]').forEach(b => { const on = b.dataset.ptab === k; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
+    const cm = $('#cmtProj'); if (cm) cm.hidden = k === 'video';          // tab Video đã có khung bình luận riêng
+    if (k === 'overview') { panel.removeAttribute('data-autotr'); panel.innerHTML = overview(); bindSearch(); return; }
+    if (k === 'video') {
+      panel.setAttribute('data-autotr', '');
+      panel.innerHTML = '<section id="video" class="bg-white w-full" style="padding:16px 0 28px"></section><div id="cmtVideoP" style="padding-bottom:24px"></div>';
+      await fillContent('video', id); if (curTab !== k) return; Cmt.mount($('#cmtVideoP'), 'p:' + id); return;
+    }
+    if (k === 'contact') {
+      panel.setAttribute('data-autotr', ''); panel.innerHTML = '<div class="card"><p>Đang tải…</p></div>';
+      let d = null; try { d = (await Promise.race([siteDoc('contact_' + id), new Promise(ok => setTimeout(() => ok(null), 2500))])) || await Promise.race([siteDoc('contact'), new Promise(ok => setTimeout(() => ok(null), 2500))]); } catch (e) {}
+      if (curTab === k) panel.innerHTML = '<div class="card">' + Content.contact(d) + '</div>'; return;
+    }
+    panel.innerHTML = tpl('tpl-' + k); panel.toggleAttribute('data-autotr', ['journey', 'team', 'faq'].includes(k));
+    await fillContent(k, id);
+  };
+  $('#ptTabs').onclick = e => { const b = e.target.closest('[data-ptab]'); if (b) showTab(b.dataset.ptab); };
+  showTab('overview');
 }
 
 /* --- Đăng nhập: Google (bắt buộc) -> mật khẩu (Firebase Auth) -> tên / giới tính khi tạo mới --- */
