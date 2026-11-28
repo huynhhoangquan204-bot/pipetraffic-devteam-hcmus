@@ -3431,3 +3431,36 @@ html[data-theme=dark] .pt-app .ppdf iframe{background:#16233b}
 html[data-theme=dark] .pt-app .err{color:#fca5a5}
 /* Mọi ô nhập nằm trong khung bo tròn riêng: để ô trong suốt, khung quyết định màu (hết cảnh ô đen nằm giữa khung trắng) */
 html[data-theme=dark] .sr-pform input,html[data-theme=dark] .sr-nav input,html[data-theme=dark] .ms-field input,html[data-theme=dark] .ms-field textarea{background:transparent}
+
+/* ===== v21: ô tìm kiếm trong dự án (thêm khoảng đệm, icon không dính chữ) ===== */
+.pt-app .psearch{position:relative;display:flex;align-items:center;gap:12px;width:100%;margin:0 0 10px;padding:0 18px;background:#fff;border:1px solid #cbd5e1;border-radius:14px;transition:.15s}
+.pt-app .psearch:focus-within{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.22)}
+.pt-app .psearch>i{flex:none;color:#64748b;font-size:.95rem}
+.pt-app .psearch input{flex:1;min-width:0;height:48px;padding:0!important;border:0!important;outline:0!important;background:none!important;box-shadow:none!important;font:inherit;font-size:16px;color:#0f172a}
+.pt-app .psearch input::-webkit-search-cancel-button{display:none}
+html[data-theme=dark] .pt-app .psearch{background:#111c31;border-color:#26364f}
+html[data-theme=dark] .pt-app .psearch input{color:#e2e8f0}
+
+/* ===== v21: tab các mục trong từng dự án ===== */
+.pt-tabs{display:flex;gap:8px;margin:26px 0 18px;padding-bottom:4px;overflow-x:auto;scrollbar-width:thin;-webkit-overflow-scrolling:touch}
+.pt-tabs button{flex:none;border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:99px;padding:8px 16px;font:inherit;font-size:.88rem;font-weight:600;white-space:nowrap;cursor:pointer;transition:.15s}
+.pt-tabs button:hover{border-color:#7dd3fc;color:#0369a1}
+.pt-tabs button.on{background:#0284c7;border-color:#0284c7;color:#fff}
+html[data-theme=dark] .pt-tabs button{background:#111c31;border-color:#26364f;color:#cbd5e1}
+html[data-theme=dark] .pt-tabs button.on{background:#0284c7;border-color:#0284c7;color:#fff}
+
+/* ===== v21: nút Choose file đẹp hơn (dùng cho mọi ô chọn tệp, kể cả trang admin) ===== */
+input[type=file]{width:100%;max-width:100%;padding:8px!important;font:inherit;font-size:.9rem;color:#475569;background:#f8fafc;border:1.5px dashed #cbd5e1!important;border-radius:12px;cursor:pointer;transition:.15s}
+input[type=file]:hover{border-color:#38bdf8!important;background:#f0f9ff}
+input[type=file]::file-selector-button{margin:0 12px 0 0;padding:9px 18px;border:0;border-radius:99px;background:#0284c7;color:#fff;font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:.15s}
+input[type=file]::file-selector-button:hover{background:#0369a1}
+html[data-theme=dark] input[type=file]{background:#0b1220;color:#cbd5e1;border-color:#334155!important}
+html[data-theme=dark] input[type=file]:hover{background:#111c31;border-color:#38bdf8!important}
+
+/* ===== v21: menu ☰ khi cửa sổ PC thu hẹp ===== */
+nav.glass-card .flex.justify-between{gap:8px;min-width:0}
+nav.glass-card .sr-nav{min-width:0;flex:1 1 120px}
+@media(max-width:900px){nav.glass-card .sr-logo>div{display:none}.sr-nav kbd{display:none}}
+@media(max-width:760px){.nav-chat .nav-chat-t{display:none}}
+#mobile-menu-btn{flex:none;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;padding:0!important}
+#mobile-menu.side-drawer{z-index:55!important;width:min(300px,85vw)!important;height:auto;overscroll-behavior:contain}
