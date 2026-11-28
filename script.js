@@ -27,9 +27,11 @@
 
   // Menu luôn dừng ở mép trên Footer: khi cuộn tới cuối trang, đáy menu được đẩy lên theo   // <--- THÊM MỚI
   function fitSideMenu() {
-    const m = $('#mobile-menu'), f = document.querySelector('footer');
-    if (!m || !f) return;
-    m.style.bottom = Math.max(0, window.innerHeight - f.getBoundingClientRect().top) + 'px';
+    const m = $('#mobile-menu'), f = document.querySelector('footer'), mb = $('#mobbar');
+    if (!m) return;
+    const bar = mb && getComputedStyle(mb).display !== 'none' ? mb.offsetHeight : 0;                 // thanh công cụ dưới (điện thoại)
+    const foot = f && f.offsetHeight ? Math.max(0, window.innerHeight - f.getBoundingClientRect().top) : 0;   // footer (máy tính)
+    m.style.bottom = Math.max(bar, foot) + 'px';
   }
   window.addEventListener('scroll', fitSideMenu, { passive: true });
   window.addEventListener('resize', fitSideMenu);
