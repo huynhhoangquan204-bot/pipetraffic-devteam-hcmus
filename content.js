@@ -225,9 +225,12 @@
         s = String(s); const i = s.indexOf('|'), a = i < 0 ? '' : s.slice(0, i).trim(), b = i < 0 ? s.trim() : s.slice(i + 1).trim();
         return `<div class="pt-3 flex flex-col sm:flex-row gap-4 justify-between">${a ? `<span class="font-bold text-slate-900 shrink-0 w-40">${e(a)}</span>` : ''}<p class="grow">${rich(b).replace(/\*(.+?)\*/g, '<em>$1</em>')}</p></div>`;
       }).join('');
-      const scenes = rows ? `<div class="yt-vs w-full bg-white rounded-3xl border border-slate-200 p-8 shadow-sm">
-        <h4 class="font-bold text-slate-900 text-lg mb-6 flex items-center gap-2"><i class="fa-solid fa-clapperboard text-sky-600"></i> ${e(v.scenesTitle)}</h4>
-        <div class="space-y-4 text-sm text-slate-700 divide-y divide-slate-100">${rows}</div></div>` : '';
+      let vst = {}; try { vst = JSON.parse(localStorage.getItem('pt_vs')) || {}; } catch (x) { /* mặc định */ }
+      const vHid = !!vst.hidden, vBig = !!vst.big;
+      const scenes = rows ? `<div class="yt-vs vs-box w-full bg-white rounded-3xl border border-slate-200 p-6 shadow-sm" data-vs data-hidden="${vHid ? 1 : 0}" data-big="${vBig ? 1 : 0}">
+        <div class="vs-head"><h4 class="font-bold text-slate-900 text-lg flex items-center gap-2"><i class="fa-solid fa-clapperboard text-sky-600"></i> ${e(v.scenesTitle)}</h4>
+        <div class="vs-ctl"><button type="button" data-vs-act="size" aria-expanded="${vBig}">${vBig ? 'Thu hẹp' : 'Mở rộng'}</button><button type="button" data-vs-act="hide" aria-expanded="${!vHid}">${vHid ? 'Hiện kịch bản' : 'Tắt kịch bản'}</button></div></div>
+        <div class="vs-body"><div class="space-y-4 text-sm text-slate-700 divide-y divide-slate-100">${rows}</div></div></div>` : '';
       return `<div class="w-full px-4 sm:px-8 lg:px-16"><div class="yt-vh text-center max-w-4xl mx-auto mb-12">
         ${v.tag ? `<h2 class="text-xs font-bold uppercase tracking-widest text-sky-600 mb-2">${e(v.tag)}</h2>` : ''}<p class="text-3xl font-extrabold text-slate-900">${e(v.title)}</p></div>${player}${scenes}</div>`;
     },
