@@ -310,22 +310,23 @@
 .sr-flash{outline:3px solid #38bdf8;outline-offset:6px;border-radius:12px;animation:srf 2.6s ease-out}
 @keyframes srf{0%,60%{outline-color:#38bdf8}100%{outline-color:transparent}}
 @media(max-width:640px){.sr-page{padding-top:100px}.sr-pform button{padding:9px 14px}}
-/* --- Menu luôn dạng hamburger: ô tìm kiếm kiểu Google ở giữa, Chat + hamburger bên phải --- */
-.sr-logo{margin-right:20px}.sr-right{margin-left:20px}
-.sr-nav{flex:1 1 auto;min-width:0;max-width:640px;margin-left:auto;margin-right:auto;height:46px;display:flex;align-items:center;gap:10px;padding:0 18px;background:#f1f5f9;border:1px solid transparent;border-radius:99px;transition:.15s}
+/* --- Thanh trên: logo bên trái, ô tìm kiếm kéo dài chiếm hết chỗ trống, nút kính lúp bên phải (trong ô) --- */
+.sr-logo{margin-right:12px}.sr-right{margin-left:12px}
+.sr-nav{flex:1 1 auto;min-width:0;max-width:none;margin:0 8px;height:44px;display:flex;align-items:center;gap:8px;padding:0 5px 0 18px;background:#f1f5f9;border:1px solid transparent;border-radius:99px;transition:.15s}
 .sr-nav:hover{background:#fff;border-color:#e2e8f0;box-shadow:0 2px 10px rgba(15,23,42,.10)}
 .sr-nav:focus-within{background:#fff;border-color:#bae6fd;box-shadow:0 4px 18px rgba(2,132,199,.22)}
-.sr-nav>i{color:#64748b;font-size:.95rem}.sr-nav:focus-within>i{color:#0284c7}
-.sr-nav input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:16px;color:#0f172a;height:100%;-webkit-appearance:none;appearance:none}
+.sr-nav input{flex:1;min-width:0;border:0;outline:0;background:none;font:inherit;font-size:16px;color:#0f172a;height:100%;-webkit-appearance:none;appearance:none;box-shadow:none}
 .sr-nav input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
-.sr-nav kbd{font:inherit;font-size:.72rem;font-weight:700;color:#94a3b8;border:1px solid #cbd5e1;border-radius:6px;padding:1px 7px;background:#fff}
+.sr-nav kbd{flex:none;font:inherit;font-size:.72rem;font-weight:700;color:#94a3b8;border:1px solid #cbd5e1;border-radius:6px;padding:1px 7px;background:#fff}
 .sr-nav:focus-within kbd{display:none}
+.sr-go-btn{flex:none;width:34px;height:34px;padding:0;border:0;border-radius:50%;background:#0284c7;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:.88rem;cursor:pointer;transition:.15s}
+.sr-go-btn:hover{background:#0369a1}
 #mobile-menu{position:absolute;right:16px;top:80px;width:min(360px,calc(100vw - 32px));max-height:calc(100vh - 100px);overflow:auto;border:1px solid #e2e8f0;border-radius:16px}
 /* Nút Chat: đứng yên (đã bỏ hiệu ứng nhấp nháy cho giao diện gọn, chuyên nghiệp) */
 .nav-chat{position:relative;width:auto!important;padding:0 14px;gap:8px;font-weight:700;font-size:.9rem}
 .nav-chat .nav-chat-t{display:none}
-@media(min-width:640px){.sr-btn{display:none}.nav-chat .nav-chat-t{display:inline}}
-@media(max-width:639px){.sr-nav{display:none}.sr-right{margin-left:auto}}
+@media(min-width:640px){.nav-chat .nav-chat-t{display:inline}}
+@media(max-width:639px){.sr-nav{height:40px;margin:0 6px;padding-left:14px}.sr-nav kbd{display:none}.sr-go-btn{width:30px;height:30px}}
 @media(max-width:420px){.sr-logo>div{display:none}.sr-logo{margin-right:0}}
 .sr-sug{position:fixed;z-index:60;background:#fff;border:1px solid #e2e8f0;border-radius:18px;box-shadow:0 18px 40px rgba(15,23,42,.18);padding:6px;max-height:min(70vh,520px);overflow-y:auto}
 .sr-sug[hidden]{display:none}
@@ -337,7 +338,38 @@
 .sr-sg small{display:block;font-size:.78rem;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sr-sug mark{background:#fde68a;color:inherit;border-radius:3px;padding:0 1px}
 .sr-sg-all{margin-top:4px;border-top:1px solid #e2e8f0;border-radius:0 0 12px 12px}.sr-sg-all b{color:#0284c7}
-.sr-sg-none{padding:14px;color:#64748b;font-size:.88rem}`;
+.sr-sg-none{padding:14px;color:#64748b;font-size:.88rem}
+/* --- Giao diện tối: ô tìm kiếm / kết quả (trước đây ô nhập bị nền đen + chữ trắng nằm trong khung trắng) --- */
+html[data-theme=dark] .sr-nav,html[data-theme=dark] .sr-pform,html[data-theme=dark] .sr-bar{background:#111c31;border-color:#26364f;box-shadow:none}
+html[data-theme=dark] .sr-bar{background:rgba(15,23,42,.97)}
+html[data-theme=dark] .sr-nav:hover,html[data-theme=dark] .sr-nav:focus-within,html[data-theme=dark] .sr-pform:focus-within{background:#16233b;border-color:#38bdf8}
+html[data-theme=dark] .sr-nav input,html[data-theme=dark] .sr-pform input,html[data-theme=dark] .sr-bar input{background:transparent!important;color:#e2e8f0!important;border:0!important;box-shadow:none!important;outline:0!important}
+html[data-theme=dark] .sr-nav input::placeholder,html[data-theme=dark] .sr-pform input::placeholder{color:#64748b}
+html[data-theme=dark] .sr-nav>i,html[data-theme=dark] .sr-pform>i{color:#94a3b8}
+html[data-theme=dark] .sr-nav kbd{background:#1e293b;color:#94a3b8;border-color:#334155}
+html[data-theme=dark] .sr-go-btn,html[data-theme=dark] .sr-pform button{background:#0284c7;color:#fff}
+html[data-theme=dark] .sr-x{background:#1e293b;color:#e2e8f0}
+html[data-theme=dark] .sr-page{color:#e2e8f0}
+html[data-theme=dark] .sr-sum,html[data-theme=dark] .sr-gh span,html[data-theme=dark] .sr-hint{color:#94a3b8}
+html[data-theme=dark] .sr-chips button{background:#111c31;border-color:#26364f;color:#cbd5e1}
+html[data-theme=dark] .sr-chips button.on{background:#0284c7;border-color:#0284c7;color:#fff}
+html[data-theme=dark] .sr-gh{border-color:#0c4a6e}
+html[data-theme=dark] .sr-gh a{color:#7dd3fc}
+html[data-theme=dark] .sr-item{background:#111c31;border-color:#26364f}
+html[data-theme=dark] .sr-item:hover{border-color:#38bdf8;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+html[data-theme=dark] .sr-item b{color:#f1f5f9}
+html[data-theme=dark] .sr-item span{color:#a7b4c7}
+html[data-theme=dark] .sr-more{border-color:#334155;color:#7dd3fc}
+html[data-theme=dark] .sr-none,html[data-theme=dark] .sr-none p{color:#cbd5e1}
+html[data-theme=dark] .sr-quick a{background:#0c2a43;border-color:#0c4a6e;color:#bae6fd}
+html[data-theme=dark] .sr-quick a:hover{background:#0c4a6e}
+html[data-theme=dark] .sr-sug{background:#0f172a;border-color:#26364f;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+html[data-theme=dark] .sr-sg:hover,html[data-theme=dark] .sr-sg.on{background:#16233b}
+html[data-theme=dark] .sr-sg b{color:#f1f5f9}
+html[data-theme=dark] .sr-sg small,html[data-theme=dark] .sr-sg-none{color:#94a3b8}
+html[data-theme=dark] .sr-sg>i{background:#0c4a6e;color:#7dd3fc}
+html[data-theme=dark] .sr-sg-all{border-color:#26364f}
+html[data-theme=dark] .sr-page mark,html[data-theme=dark] .sr-mark,html[data-theme=dark] .sr-sug mark{color:#0f172a}`;
     document.head.appendChild(css);
 
     const bar = document.createElement('div');
