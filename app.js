@@ -55,6 +55,7 @@ function renderAuth() {
   $('#authSlotM').innerHTML = me
     ? `<a href="#/profile" onclick="toggleMobileMenu(true)" class="navuser flex items-center gap-3 py-2 text-slate-700 font-semibold border-b border-slate-100">${Avatar.html(me, 'sm')}<span class="navname">${esc(me.name)}</span><span class="text-xs text-sky-600 font-medium">Đổi avatar</span></a><button data-out class="block w-full text-center py-2 text-slate-500 font-medium">Thoát</button>`
     : `<a href="#/login" onclick="toggleMobileMenu(true)" class="block text-center bg-sky-600 text-white py-3 rounded-xl font-bold mt-2 shadow-lg shadow-sky-600/30">Đăng nhập</a>`;
+  const mb = $('#mbAuth'); if (mb) { mb.href = me ? '#/profile' : '#/login'; mb.innerHTML = (me ? Avatar.html(me, 'sm') : '<i class="fa-solid fa-user"></i>') + '<span>' + (me ? esc(String(me.name).split(' ').pop().slice(0, 9)) : 'Đăng nhập') + '</span>'; }
   document.querySelectorAll('[data-out]').forEach(b => b.onclick = () => { Store.setMe(null); me = null; location.hash = '#/'; route(); });
 }
 function setActive(key) {
@@ -204,9 +205,13 @@ const Notify = (() => {
     } catch (x) { /* một số trình duyệt di động chỉ cho thông báo qua service worker */ }
   }
   function paint() {
-    const b = $('#notifyTxt'), btn = $('#notifyBtn'); if (!b || !btn) return;
-    btn.querySelector('i').className = on() ? 'fa-solid fa-bell text-sky-500 mr-2' : 'fa-regular fa-bell-slash text-slate-400 mr-2';
-    b.textContent = !can() ? 'Trình duyệt chưa hỗ trợ thông báo' : on() ? 'Tắt thông báo' : (Notification.permission === 'denied' ? 'Thông báo đang bị chặn' : 'Bật thông báo');
+    const isOn = on(), txt = !can() ? 'Trình duyệt chưa hỗ trợ thông báo' : isOn ? 'Tắt thông báo' : (Notification.permission === 'denied' ? 'Thông báo đang bị chặn' : 'Bật thông báo');
+    document.querySelectorAll('[data-notify]').forEach(btn => {
+      const i = btn.querySelector('i'), row = btn.classList.contains('nt-row');
+      if (i) i.className = (isOn ? 'fa-solid fa-bell' : 'fa-regular fa-bell-slash') + (row ? (isOn ? ' text-sky-500' : ' text-slate-400') + ' mr-2' : '');
+      btn.title = txt; btn.setAttribute('aria-label', txt); btn.classList.toggle('nt-on', isOn);
+      const s = btn.querySelector('.nt-t'); if (s) s.textContent = txt;
+    });
   }
   // theo dõi cập nhật tiến độ mới (updates): lần đầu chỉ ghi mốc, không báo dồn
   function watchUpdates() {
@@ -290,7 +295,7 @@ function drawChat(busy) {
     log.innerHTML = '<div class="pp-empty">Đăng nhập để nhắn tin cho admin.<br><a class="pp-btn" href="#/login" data-chat-close>Đăng nhập</a></div>'; return;
   }
   inp.disabled = btn.disabled = false; inp.placeholder = 'Nhắn cho admin…';
-  log.innerHTML = Chat.render(msgs.map(m => ({ id: m.id, who: m.from === 'user' ? 'me' : 'them', mine: m.from === 'user', ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, list: Msgx.get(m.id), uid: me.id, av: Avatar.admin('sm') }))) || '<div class="pp-empty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
+  log.innerHTML = Chat.render(msgs.map(m => ({ id: m.id, who: m.from === 'user' ? 'me' : 'them', mine: m.from === 'user', ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, edited: m.edited, list: Msgx.get(m.id), uid: me.id, av: Avatar.admin('sm') }))) || '<div class="pp-empty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
   if (stick) log.scrollTop = log.scrollHeight;
   Chat.paint(log);
 }
@@ -488,4 +493,61 @@ const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off
   } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
   hideSplash(); askNotify();
   if (!/^#\/(login|privacy)/.test(location.hash) && !(me && me.agreed === false)) setTimeout(showWelcome, 350);   // banner chào nhiều bước: hiện 1 lần mỗi phiên khi vào web
+})();
+
+
+/* ===== v19: nút trên thanh dưới (điện thoại), tự nối lại Firebase, ô chọn bo góc ===== */
+(function () {
+  // Giao diện tối / ngôn ngữ trên thanh dưới điện thoại
+  const paintMb = () => {
+    const th = window.I18N && I18N.theme && I18N.theme() === 'dark', lg = window.I18N && I18N.lang && I18N.lang();
+    document.querySelectorAll('[data-mb-theme] i').forEach(i => { i.className = 'fa-solid ' + (th ? 'fa-sun' : 'fa-moon'); });
+    document.querySelectorAll('[data-mb-lang] b').forEach(b => { b.textContent = String(lg || 'vi').toUpperCase(); });
+  };
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-mb-theme]')) { I18N.setTheme(I18N.theme() === 'dark' ? 'light' : 'dark'); paintMb(); }
+    else if (e.target.closest('[data-mb-lang]')) { I18N.set(I18N.lang() === 'en' ? 'vi' : 'en'); paintMb(); }
+  });
+  addEventListener('pt-lang', paintMb); paintMb();
+
+  // Điện thoại hay mất mạng lúc mới vào: khi có mạng lại / quay lại tab thì tự kết nối lại Firebase, không cần tải lại trang
+  let trying = false;
+  const reconnect = async () => {
+    if (trying || !Store.wantsFirebase || Store.mode === 'firebase') return;
+    trying = true;
+    try { if (await Store.retry()) { msgFor = undefined; ensureMsgs(); Notify.watchUpdates(); route(); } } catch (x) { /* thử lại lần sau */ }
+    trying = false;
+  };
+  addEventListener('online', reconnect);
+  addEventListener('pageshow', e => { if (e.persisted) reconnect(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) reconnect(); });
+  setTimeout(reconnect, 3000);
+})();
+
+/* --- Ô chọn (select) tự vẽ: danh sách thả xuống bo góc, nối liền với ô phía trên --- */
+(function () {
+  const d = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  if (d && d.set) Object.defineProperty(HTMLSelectElement.prototype, 'value', { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, v); if (this._psSync) this._psSync(); } });
+  const closeAll = except => document.querySelectorAll('.ps.open').forEach(w => { if (w !== except) { w.classList.remove('open'); w.querySelector('.ps-list').hidden = true; w.querySelector('.ps-btn').setAttribute('aria-expanded', 'false'); } });
+  function mk(sel) {
+    if (sel.dataset.ps || sel.multiple || sel.size > 1 || sel.closest('[data-native]')) return;
+    sel.dataset.ps = '1';
+    const w = document.createElement('div'), b = document.createElement('button'), l = document.createElement('div');
+    w.className = 'ps'; b.type = 'button'; b.className = 'ps-btn'; b.setAttribute('aria-haspopup', 'listbox'); b.setAttribute('aria-expanded', 'false');
+    l.className = 'ps-list'; l.setAttribute('role', 'listbox'); l.hidden = true;
+    sel.parentNode.insertBefore(w, sel); w.append(sel, b, l);
+    sel.classList.add('ps-native'); sel.tabIndex = -1; sel.setAttribute('aria-hidden', 'true');
+    const label = () => { const o = sel.options[sel.selectedIndex]; b.innerHTML = '<span></span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i>'; b.firstChild.textContent = o ? o.text : ''; b.disabled = sel.disabled; };
+    const fill = () => { l.innerHTML = ''; [...sel.options].forEach((o, i) => { const it = document.createElement('button'); it.type = 'button'; it.setAttribute('role', 'option'); it.dataset.i = i; it.textContent = o.text; it.disabled = o.disabled; if (i === sel.selectedIndex) { it.className = 'on'; it.setAttribute('aria-selected', 'true'); } l.appendChild(it); }); };
+    const open = () => { closeAll(w); fill(); label(); l.hidden = false; w.classList.add('open'); b.setAttribute('aria-expanded', 'true'); const on = l.querySelector('.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' }); };
+    b.onclick = () => (l.hidden ? open() : closeAll());
+    l.onclick = e => { const it = e.target.closest('[data-i]'); if (!it || it.disabled) return; sel.selectedIndex = +it.dataset.i; sel.dispatchEvent(new Event('input', { bubbles: true })); sel.dispatchEvent(new Event('change', { bubbles: true })); label(); closeAll(); b.focus(); };
+    w.addEventListener('keydown', e => { if (e.key === 'Escape') { closeAll(); b.focus(); } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && l.hidden) { e.preventDefault(); open(); } });
+    sel.addEventListener('change', label); if (sel.form) sel.form.addEventListener('reset', () => setTimeout(label, 0));
+    sel._psSync = label; label();
+  }
+  document.addEventListener('click', e => { if (!e.target.closest('.ps')) closeAll(); });
+  let tm = 0; const scan = () => document.querySelectorAll('#app select').forEach(mk);
+  new MutationObserver(() => { clearTimeout(tm); tm = setTimeout(scan, 20); }).observe(document.getElementById('app'), { childList: true, subtree: true });
+  scan();
 })();
