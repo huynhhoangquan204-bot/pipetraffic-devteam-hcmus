@@ -364,9 +364,11 @@ async function comments() {
 async function messages() {
   app.innerHTML = '<h1>Tin nhắn</h1><p class="sub">Tin mới hiện ngay, không cần tải lại. Cuộc trò chuyện đang chờ bạn trả lời được đánh dấu.</p><div id="mbox"><div class="loading">Đang tải…</div></div>';
   let last = [], built = null; const U = {};
-  Msgx.ctx = { uid: () => (Store.uid && Store.uid()) || 'admin', th: id => (last.find(m => m.id === id) || {}).uid, find: id => last.find(m => m.id === id), redraw: () => draw() };
+  const myCtx = { uid: () => (Store.uid && Store.uid()) || 'admin', th: id => (last.find(m => m.id === id) || {}).uid, find: id => last.find(m => m.id === id), redraw: () => draw() };
+  Msgx.ctx = myCtx;
+  $('#mbox').addEventListener('click', () => { Msgx.ctx = myCtx; }, true);   // popup chat của admin cũng dùng Msgx: gán lại khi bấm để không bị ghi đè
   try { (await Store.list('users')).forEach(u => { U[u.id] = u; }); } catch (e) {}   // để hiện avatar người dùng
-  const bubbles = ms => Chat.render(ms.map(m => { const ad = m.from === 'admin'; return { id: m.id, who: ad ? 'me' : 'them', mine: ad, ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, list: Msgx.get(m.id), uid: Msgx.ctx.uid(), av: Avatar.html(U[m.uid] || { name: m.userName }, 'sm') }; }));
+  const bubbles = ms => Chat.render(ms.map(m => { const ad = m.from === 'admin'; return { id: m.id, who: ad ? 'me' : 'them', mine: ad, ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, edited: m.edited, list: Msgx.get(m.id), uid: Msgx.ctx.uid(), av: Avatar.html(U[m.uid] || { name: m.userName }, 'sm') }; }));
   const draw = () => {
     const box = $('#mbox'); if (!box) return;
     const by = {}; last.forEach(m => (by[m.uid] = by[m.uid] || []).push(m));
