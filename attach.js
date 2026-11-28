@@ -2,7 +2,7 @@
    Dùng chung cho khung chat người dùng và trang admin.
    Lưu trữ (không cần Firebase Storage):
    - Hình ảnh: nén còn ~260KB, lưu thẳng trong tin nhắn (trường "media").
-   - Video (25MB), tệp (4MB), tin nhắn thoại (3MB / 2 phút): cắt thành mảnh ~500KB lưu ở bộ sưu tập "chunks",
+   - Video (25MB), tệp (4MB), tin nhắn thoại (3MB / 2 phút): cắt thành mảnh ~700KB lưu ở bộ sưu tập "chunks",
      chỉ tải về khi người nhận bấm xem / nghe / tải.
    - Cảm xúc: bộ sưu tập "reacts" (mỗi người 1 cảm xúc / tin nhắn). Thu hồi: tin nhắn bị xoá nội dung, đánh dấu recalled.
    - Chat với AI: mọi thứ chỉ hiện tại máy này; AI CHƯA xem / nghe được tệp. */
@@ -12,8 +12,8 @@
   const ATT_TXT = '📎 Tệp đính kèm';
   const PH_TXT = { img: '🖼️ Hình ảnh', video: '🎬 Video', audio: '🎤 Tin nhắn thoại', file: '📄 Tệp đính kèm' };
   const PH = new Set([ATT_TXT, ...Object.values(PH_TXT)]);
-  const MAX_FILES = 4, CHUNK = 500000, MAX_INLINE = 880000, MAX_REC = 120;
-  const MAX_CHUNKS = 80;                               // 80 mảnh x 500KB (base64) ≈ 29MB dữ liệu gốc (đủ cho video 25MB); muốn tăng video thì tăng cả maxVideo() lẫn số này
+  const MAX_FILES = 4, CHUNK = 700000, MAX_INLINE = 880000, MAX_REC = 120;
+  const MAX_CHUNKS = 50;                               // 50 mảnh x 700KB (base64) ≈ 25MB dữ liệu gốc; muốn tăng video thì tăng cả maxVideo() lẫn số này
   const demo = () => !!(window.Store && Store.mode === 'demo');
   const maxVideo = () => demo() ? 1200000 : 25 * 1024 * 1024;   // chế độ thật: 25MB (trước là 6MB)
   const maxFile = () => demo() ? 1200000 : 4 * 1024 * 1024;
@@ -57,14 +57,14 @@
     if (n > MAX_CHUNKS) throw new Error('Tệp quá lớn để gửi trong chat. Hãy đưa lên YouTube/Drive rồi dán link.');
     const mid = 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), done = [];
     let next = 0, fin = 0, fail = null;
-    const worker = async () => {                      // 2 mảnh ghi song song (mạng yếu không bị nghẽn); mỗi mảnh đã được Store.put thử lại 3 lần
+    const worker = async () => {                      // 3 mảnh được ghi song song cho nhanh; lỗi ở mảnh nào thì dừng cả tệp
       while (!fail && next < n) {
         const i = next++, id = mid + '_' + i;
         try { await Store.put('chunks', { id, mid, i, uid, by, data: b64.slice(i * CHUNK, (i + 1) * CHUNK), ts: Date.now() + i }); done.push(id); if (prog) prog(++fin, n); }
         catch (x) { fail = fail || x; }
       }
     };
-    await Promise.all(Array.from({ length: Math.min(2, n) }, worker));
+    await Promise.all(Array.from({ length: Math.min(3, n) }, worker));
     if (fail) { for (const id of done) { try { await Store.del('chunks', id); } catch (_) { /* không xoá được thì bỏ qua */ } } throw fail; }
     if (it.t === 'video') return { t: 'video', mid, n, mime: it.mime, size: it.size, name: safeName(it.name) };
     if (it.t === 'audio') return { t: 'audio', mid, n, mime: it.mime, size: it.size, dur: it.dur };
@@ -133,15 +133,54 @@
       const canRec = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
       const micBtn = canRec ? mk(ICON.mic, 'Ghi âm tin nhắn thoại') : null;
       const clipBtn = mk(ICON.plus, 'Đính kèm hình ảnh, tệp hoặc video (cũng có thể kéo thả hoặc Ctrl+V)');
+      const imgBtn = mk(ICON.image, 'Gửi hình ảnh');
       const submit = form.querySelector('button[type=submit], button:not([type])');
-      // Bố cục: [＋ 🎤] [ ô nhập + 😊 ] [👍 / gửi]  (＋ mở menu Hình ảnh / Tệp / Video)
+      // Bố cục: [＋ 🖼 🎤] [ ô nhập + 😊 ] [👍 / gửi]
       form.classList.add('ms-form'); if (submit) submit.classList.add('ms-send');
       const tools = document.createElement('div'); tools.className = 'ms-tools';
-      [clipBtn, micBtn].forEach(b => { if (b) tools.appendChild(b); });
+      [clipBtn, imgBtn, micBtn].forEach(b => { if (b) tools.appendChild(b); });
       const field = document.createElement('div'); field.className = 'ms-field';
       if (text) { text.parentNode.insertBefore(field, text); field.appendChild(text); if (emoBtn) field.appendChild(emoBtn); }
       form.insertBefore(tools, text ? field : submit);
       form.appendChild(file);
+      // Giữ nút 👍: biểu tượng phóng to dần trên đầu ngón tay / con trỏ, thả ra thì gửi 👍 cỡ đó (chạm nhanh = 👍 thường)
+      if (submit && !submit._hold) {
+        submit._hold = 1;
+        if (!document.getElementById('ms-lk-css')) {
+          const st = document.createElement('style'); st.id = 'ms-lk-css';
+          st.textContent = 'form.ms-form button.ms-like{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}'
+            + '.ms-lkpop{position:fixed;z-index:9999;pointer-events:none;line-height:1;transform:translate(-50%,-100%);filter:drop-shadow(0 6px 10px rgba(15,23,42,.3));animation:mslk .5s ease-in-out infinite alternate}'
+            + '@keyframes mslk{from{rotate:-6deg}to{rotate:6deg}}@media(prefers-reduced-motion:reduce){.ms-lkpop{animation:none}}';
+          document.head.appendChild(st);
+        }
+        const HOLD_MS = 260, FULL_MS = 1500, MIN = 30, MAX = 150;   // sau 0,26s bắt đầu to lên, đầy cỡ ở ~1,5s
+        let t0 = 0, timer = 0, raf = 0, pop = null, lvl = 1, swallow = false;
+        const stop = () => { clearTimeout(timer); cancelAnimationFrame(raf); timer = raf = 0; if (pop) { pop.remove(); pop = null; } };
+        const frame = () => {
+          if (!pop) return;
+          const p = Math.min(1, (performance.now() - t0 - HOLD_MS) / FULL_MS), r = submit.getBoundingClientRect();
+          lvl = 1 + 2 * p;                                            // 1× … 3× (lưu vào tin nhắn)
+          pop.style.fontSize = Math.round(MIN + (MAX - MIN) * p) + 'px';
+          pop.style.left = (r.left + r.width / 2) + 'px'; pop.style.top = (r.top - 6) + 'px';
+          raf = requestAnimationFrame(frame);
+        };
+        submit.addEventListener('pointerdown', ev => {
+          if (ev.button > 0 || !submit.classList.contains('ms-like') || submit.disabled) return;
+          t0 = performance.now(); lvl = 1;
+          try { submit.setPointerCapture(ev.pointerId); } catch (x) { /* bỏ qua */ }
+          timer = setTimeout(() => { pop = document.createElement('div'); pop.className = 'ms-lkpop'; pop.textContent = '👍'; document.body.appendChild(pop); frame(); }, HOLD_MS);
+        });
+        const release = ev => {
+          const held = !!pop; stop();
+          if (!held || ev.type === 'pointercancel') return;
+          swallow = true; setTimeout(() => { swallow = false; }, 400);   // nuốt cú click tự sinh sau khi thả
+          form._lk = Math.round(lvl * 10) / 10;
+          if (form.requestSubmit) form.requestSubmit(submit); else submit.click();
+        };
+        submit.addEventListener('pointerup', release); submit.addEventListener('pointercancel', release);
+        submit.addEventListener('click', ev => { if (swallow) { ev.preventDefault(); ev.stopImmediatePropagation(); swallow = false; } }, true);
+        submit.addEventListener('contextmenu', ev => ev.preventDefault());
+      }
       // Nút bên phải: 👍 khi chưa gõ gì, mũi tên gửi khi đã có chữ / tệp
       function sync() {
         if (!submit) return;
@@ -207,6 +246,7 @@
         openFloat(m, clipBtn);
       };
       file.onchange = () => { add(file.files); file.value = ''; };
+      imgBtn.onclick = () => { if (text && text.disabled) return; closeFloat(); file.accept = 'image/*'; file.click(); };
       tray.addEventListener('click', ev => { const r = ev.target.closest('[data-rm]'); if (!r) return; const it = items.splice(+r.dataset.rm, 1)[0]; if (it && it.url) URL.revokeObjectURL(it.url); draw(); });
 
       if (text) {                                           // Enter gửi (Shift+Enter xuống dòng); ô trống thì Enter không gửi 👍
@@ -293,9 +333,9 @@
     },
     get: mid => Msgx.reacts[mid] || [],
     // Phần nội dung trong bong bóng: chữ + tệp, hoặc dòng "đã thu hồi"
-    body(text, media, recalled, edited) {
+    body(text, media, recalled) {
       if (recalled) return '<span class="rc">Tin nhắn đã được thu hồi</span>';
-      return (media && media.length && Attach.isPh(text) ? '' : `<span>${e(text)}</span>`) + Attach.html(media) + (edited ? '<small class="ed-tag">đã chỉnh sửa</small>' : '');
+      return (media && media.length && Attach.isPh(text) ? '' : `<span>${e(text)}</span>`) + Attach.html(media);
     },
     // Hàng cảm xúc + nút ☺ dưới bong bóng
     foot(id, list, uid, mine, recalled) {
@@ -312,43 +352,15 @@
         return `<button type="button" class="rx-chip${c.some(r => r.uid === uid) ? ' on' : ''}" data-react="${k}" data-mid="${e(id)}" title="${KLABEL[k]}">${KINDS[k]}${c.length > 1 ? ' ' + c.length : ''}</button>`;
       }).join('');
     },
-    actbtn(id, mine) {                                  // nút ☺ (thả cảm xúc) + ⋮ (chỉnh sửa / thu hồi, chỉ tin của mình) cạnh bong bóng
-      return `<button type="button" class="rx-btn" data-rx="${e(id)}" data-mine="0" aria-label="Thả cảm xúc" title="Thả cảm xúc">☺</button>`
-        + (mine ? `<button type="button" class="rx-btn rx-more" data-more="${e(id)}" aria-label="Tuỳ chọn tin nhắn" title="Chỉnh sửa / thu hồi"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg></button>` : '');
-    },
-    more(btn) {                                         // menu ⋮: Chỉnh sửa / Thu hồi
-      if (toggled(btn)) return;
-      const mid = btn.dataset.more, c = this.ctx || {}, m = !isAi(mid) && c.find && c.find(mid);
-      const canEdit = !!m && !m.recalled && !(m.media && m.media.length && Attach.isPh(m.text));
-      const p = document.createElement('div'); p.id = 'msgMenu'; p.setAttribute('role', 'menu');
-      p.innerHTML = (canEdit ? `<button type="button" data-edit="${e(mid)}" role="menuitem">✏️ Chỉnh sửa</button>` : '') + `<button type="button" class="mm-del" data-recall="${e(mid)}" role="menuitem">↩ Thu hồi</button>`;
-      openFloat(p, btn);
-    },
-    edit(mid) {
-      const c = this.ctx || {}; if (isAi(mid)) return say('Tin nhắn gửi trợ lý chưa chỉnh sửa được, bạn có thể thu hồi.');
-      const m = c.find && c.find(mid); if (!m || m.recalled) return;
-      const old = document.getElementById('msgEdit'); if (old) old.remove();
-      const ov = document.createElement('div'); ov.id = 'msgEdit'; ov.className = 'me-ov';
-      ov.innerHTML = '<div class="me-card" role="dialog" aria-label="Chỉnh sửa tin nhắn"><h4>Chỉnh sửa tin nhắn</h4><textarea maxlength="1000" rows="4"></textarea><div class="me-act"><button type="button" class="me-no">Huỷ</button><button type="button" class="me-ok">Lưu</button></div></div>';
-      document.body.appendChild(ov);
-      const ta = ov.querySelector('textarea'), ok = ov.querySelector('.me-ok'), close = () => ov.remove();
-      ta.value = Attach.isPh(m.text) ? '' : (m.text || ''); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
-      ov.addEventListener('click', ev => { if (ev.target === ov || ev.target.closest('.me-no')) close(); });
-      ta.addEventListener('keydown', ev => { if (ev.key === 'Escape') close(); else if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) ok.click(); });
-      ok.onclick = async () => {
-        const txt = ta.value.trim();
-        if (!txt) return say('Nội dung không được để trống. Muốn xoá tin hãy chọn Thu hồi.');
-        if (txt === m.text) return close();
-        ok.disabled = true; ok.textContent = 'Đang lưu…';
-        try { await Store.put('messages', { id: m.id, uid: m.uid, userName: m.userName || '', from: m.from, ts: m.ts, text: txt, edited: true, ...(m.media && m.media.length ? { media: m.media } : {}), projectId: m.projectId || '', projectName: m.projectName || '' }); close(); }
-        catch (x) { ok.disabled = false; ok.textContent = 'Lưu'; say(x.message || 'Chưa lưu được'); }
-      };
+    actbtn(id, mine) {                                  // nút ☺ (thả cảm xúc) + ↩ (thu hồi, chỉ tin của mình) cạnh bong bóng
+      return `<button type="button" class="rx-btn" data-rx="${e(id)}" data-mine="${mine ? 1 : 0}" aria-label="Thả cảm xúc${mine ? ' hoặc thu hồi' : ''}" title="Thả cảm xúc${mine ? ' / thu hồi' : ''}">☺</button>`
+        + (mine ? `<button type="button" class="rx-btn rx-undo" data-recall="${e(id)}" aria-label="Thu hồi tin nhắn" title="Thu hồi tin nhắn">↩</button>` : '');
     },
     pop(btn) {
       if (toggled(btn)) return;
       const mid = btn.dataset.rx, p = document.createElement('div'); p.id = 'rxPop'; p.setAttribute('role', 'menu');
       p.innerHTML = Object.keys(KINDS).map(k => `<button type="button" data-react="${k}" data-mid="${e(mid)}" title="${KLABEL[k]}">${KINDS[k]}</button>`).join('')
-;
+        + (btn.dataset.mine === '1' ? `<button type="button" class="rx-rc" data-recall="${e(mid)}">↩ Thu hồi</button>` : '');
       openFloat(p, btn);
     },
     async react(mid, k) {
@@ -378,8 +390,6 @@
   document.addEventListener('click', async ev => {
     const t = ev.target; if (!t.closest) return;
     const rxb = t.closest('[data-rx]'); if (rxb) { Msgx.pop(rxb); return; }
-    const mb = t.closest('[data-more]'); if (mb) { Msgx.more(mb); return; }
-    const ed = t.closest('[data-edit]'); if (ed) { closeFloat(); Msgx.edit(ed.dataset.edit); return; }
     const rk = t.closest('[data-react]'); if (rk) { closeFloat(); Msgx.react(rk.dataset.mid, rk.dataset.react); return; }
     const rc = t.closest('[data-recall]'); if (rc) { closeFloat(); Msgx.recall(rc.dataset.recall); return; }
     if (floatEl && !floatEl.contains(t) && !t.closest('.at-btn')) closeFloat();
@@ -438,41 +448,6 @@ button.at-rm{position:absolute;top:2px;right:2px;width:20px;height:20px;padding:
 .at-load[data-kind=video]{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;box-shadow:0 2px 8px rgba(99,102,241,.35)}   /* luôn nhìn thấy, kể cả khi bong bóng không có nền (tin chỉ có video) */
 .at-load[data-kind=video]:hover{filter:brightness(1.08)}
 .rx-btn.rx-undo:hover{color:#be123c}
-.rx-btn.rx-more{display:inline-flex;align-items:center;justify-content:center}
-#msgMenu{position:fixed;z-index:90;display:flex;flex-direction:column;min-width:160px;padding:6px;border-radius:14px;background:#fff;border:1px solid #e2e8f0;box-shadow:0 14px 34px rgba(15,23,42,.22)}
-#msgMenu button{border:0;background:none;text-align:left;padding:9px 12px;border-radius:9px;font:inherit;font-size:.9rem;color:#0f172a;cursor:pointer}
-#msgMenu button:hover{background:#f0f9ff}
-#msgMenu button.mm-del{color:#be123c}#msgMenu button.mm-del:hover{background:#fff1f2}
-.ed-tag{display:block;margin-top:2px;font-size:.68rem;opacity:.7}
-.me-ov{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.55)}
-.me-card{width:100%;max-width:420px;padding:18px;border-radius:16px;background:#fff;color:#0f172a;box-shadow:0 24px 60px rgba(2,6,23,.4)}
-.me-card h4{margin:0 0 10px;font-size:1.02rem;font-weight:800}
-.me-card textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:12px;resize:vertical;min-height:90px;background:#fff;color:#0f172a;outline:0}
-.me-card textarea:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.2)}
-.me-act{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
-.me-act button{border:0;border-radius:99px;padding:9px 20px;font:inherit;font-weight:700;cursor:pointer;background:#f1f5f9;color:#334155}
-.me-act .me-ok{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff}
-.me-act button:disabled{opacity:.6;cursor:default}
-/* --- giao diện tối cho các menu nổi / khay đính kèm --- */
-html[data-theme=dark] .at-menu,html[data-theme=dark] .emo-panel,html[data-theme=dark] #rxPop,html[data-theme=dark] #msgMenu{background:#111c31;border-color:#26364f;box-shadow:0 14px 34px rgba(0,0,0,.55)}
-html[data-theme=dark] .at-menu button,html[data-theme=dark] #msgMenu button{color:#e2e8f0}
-html[data-theme=dark] .at-menu button:hover,html[data-theme=dark] .emo-panel button:hover,html[data-theme=dark] #msgMenu button:hover{background:#1e293b}
-html[data-theme=dark] #msgMenu button.mm-del{color:#fca5a5}
-html[data-theme=dark] #rxPop button.rx-rc{background:#3b1220;color:#fda4af}
-html[data-theme=dark] .at-tray{background:#0f1a2e;border-color:#26364f}
-html[data-theme=dark] .at-th{border-color:#334155}
-html[data-theme=dark] .at-th.at-fl{background:#0c3a4a;border-color:#155e75}
-html[data-theme=dark] .rx-chip{background:#1e293b;border-color:#334155;color:#e2e8f0}
-html[data-theme=dark] .rx-chip.on{background:#0c4a6e;border-color:#38bdf8;color:#e0f2fe}
-html[data-theme=dark] .vc-bar{background:#0f1a2e}
-html[data-theme=dark] .vc-t{color:#e2e8f0}
-html[data-theme=dark] .vc-hint{color:#94a3b8}
-html[data-theme=dark] .vc-bar button.vc-x{background:#1e293b;color:#e2e8f0}
-html[data-theme=dark] .at-load{background:rgba(255,255,255,.1);color:#e2e8f0}
-html[data-theme=dark] .me-card{background:#111c31;color:#e2e8f0}
-html[data-theme=dark] .me-card textarea{background:#0b1220;color:#e2e8f0;border-color:#334155}
-html[data-theme=dark] .me-act button{background:#1e293b;color:#e2e8f0}
-html[data-theme=dark] .me-act .me-ok{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff}
 .vc-bar{position:absolute;inset:0;z-index:6;display:flex;align-items:center;gap:10px;padding:6px 12px;background:#fff;border-radius:inherit}
 .vc-bar[hidden]{display:none}
 .vc-dot{flex:none;width:10px;height:10px;border-radius:50%;background:#ef4444;animation:vcp 1s ease-in-out infinite}
