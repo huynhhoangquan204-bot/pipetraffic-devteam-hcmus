@@ -29,6 +29,7 @@
   function fitSideMenu() {
     const m = $('#mobile-menu'), f = document.querySelector('footer');
     if (!m || !f) return;
+    const nv = document.querySelector('nav.glass-card'); if (nv) m.style.top = Math.max(0, nv.getBoundingClientRect().bottom) + 'px';   // luôn bám đúng đáy thanh trên, dù cửa sổ hẹp
     m.style.bottom = Math.max(0, window.innerHeight - f.getBoundingClientRect().top) + 'px';
   }
   window.addEventListener('scroll', fitSideMenu, { passive: true });
@@ -82,6 +83,12 @@
     t.value += (t.value && !t.value.endsWith(' ') ? ' ' : '') + e + ' '; updateCharCount(); t.focus();
   }
 
+  // Enter = gửi, Shift+Enter = xuống dòng
+  document.addEventListener('keydown', e => {
+    if (e.target.id !== 'commentText' || e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+    e.preventDefault(); const f = e.target.closest('form'); if (f) f.requestSubmit ? f.requestSubmit() : handleCommentSubmit(e);
+  });
+
   function renderComments() {
     const box = $('#commentsContainer'); if (!box) return;
     const list = [...commentList].reverse();
@@ -117,7 +124,6 @@
 
   async function handleCommentSubmit(ev) {
     ev.preventDefault();
-    const btn = $('#submitBtn');
     const anon = document.querySelector('input[name="identityMode"]:checked').value === 'anonymous';
     const name = (anon ? 'Ẩn danh' : $('#commenterName').value.trim()).slice(0, 80);
     const role = (anon ? '' : $('#commenterRole').value.trim()).slice(0, 80);
@@ -125,7 +131,7 @@
     if (!name) return toast('Vui lòng nhập họ tên hoặc chọn Ẩn danh');
     if (text.length < 2) return toast('Hãy nhập nội dung bình luận');
     if (Date.now() - (+localStorage.getItem('pt_last_comment') || 0) < 15000) return toast('Bạn gửi hơi nhanh, đợi vài giây nhé');
-    const html = btn.innerHTML; btn.disabled = true; btn.style.opacity = .6; btn.textContent = 'Đang gửi…';
+    const ta = $('#commentText'); if (ta) ta.disabled = true;
     try {
       // approved:false => chỉ hiện trên web sau khi admin duyệt (Rules cũng bắt buộc điều này)
       await Store.put('comments', { name, role, rating, text: text.slice(0, 700), ts: Date.now(), approved: false });
@@ -133,7 +139,7 @@
       $('#commentText').value = ''; updateCharCount();
       toast('Đã gửi! Bình luận sẽ hiện sau khi quản trị viên duyệt.');
     } catch (e) { toast('Gửi chưa được. ' + (debugOn() ? e.message : 'Vui lòng thử lại sau ít phút.')); }
-    btn.disabled = false; btn.style.opacity = 1; btn.innerHTML = html;
+    if (ta) { ta.disabled = false; ta.focus(); }
   }
 
   /* --- Banner Cookie: nhớ lựa chọn trong localStorage (khoá pt_cookie) --- */   // <--- THÊM MỚI
