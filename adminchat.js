@@ -43,6 +43,7 @@ html[data-theme=dark] .ac-form textarea{background:#111c31;border-color:#26364f}
 `;
   document.head.appendChild(css);
 
+  const useCtx = () => { Msgx.ctx = { uid: () => (Store.uid && Store.uid()) || 'admin', th: id => (msgs.find(m => m.id === id) || {}).uid, find: id => msgs.find(m => m.id === id), redraw: () => draw() }; };
   const byUser = () => { const by = {}; msgs.forEach(m => (by[m.uid] = by[m.uid] || []).push(m)); Object.values(by).forEach(l => l.sort((a, b) => a.ts - b.ts)); return by; };
   const user = (id, l) => U[id] || { name: l && l.userName };
 
@@ -50,6 +51,7 @@ html[data-theme=dark] .ac-form textarea{background:#111c31;border-color:#26364f}
     if (box) return box;
     box = document.createElement('div'); box.id = 'admChat'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Chat với người dùng');
     document.body.appendChild(box);
+    box.addEventListener('click', () => useCtx(), true);   // luôn dùng đúng ngữ cảnh của popup khi bấm ☺ / ⋮ trong popup
     box.addEventListener('click', e => {
       if (e.target.closest('[data-ac-close]')) return AdminChat.close();
       if (e.target.closest('[data-ac-back]')) { cur = null; built = null; draw(); return; }
@@ -94,14 +96,14 @@ html[data-theme=dark] .ac-form textarea{background:#111c31;border-color:#26364f}
     }
     const log = box.querySelector('#acLog'); if (!log) return;
     const stick = !log.children.length || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
-    log.innerHTML = Chat.render(list.map(m => { const ad = m.from === 'admin'; return { id: m.id, who: ad ? 'me' : 'them', mine: ad, ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, list: Msgx.get(m.id), uid: Msgx.ctx.uid(), av: Avatar.html(user(m.uid, m), 'sm') }; }));
+    log.innerHTML = Chat.render(list.map(m => { const ad = m.from === 'admin'; return { id: m.id, who: ad ? 'me' : 'them', mine: ad, ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, edited: m.edited, list: Msgx.get(m.id), uid: Msgx.ctx.uid(), av: Avatar.html(user(m.uid, m), 'sm') }; }));
     if (stick) log.scrollTop = log.scrollHeight;
     Chat.paint(log);
   }
 
   function draw() {
     if (!box || !box.classList.contains('open')) return;
-    Msgx.ctx = { uid: () => (Store.uid && Store.uid()) || 'admin', th: id => (msgs.find(m => m.id === id) || {}).uid, find: id => msgs.find(m => m.id === id), redraw: () => draw() };
+    useCtx();
     if (cur) return drawThread();
     if (!box.querySelector('.ac-list')) {
       built = null;
