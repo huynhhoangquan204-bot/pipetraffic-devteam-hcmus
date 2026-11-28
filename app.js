@@ -52,68 +52,115 @@ function renderAuth() {
   $('#authSlot').innerHTML = me
     ? `<a href="#/u/${me.id}" title="Trang cá nhân" class="navuser flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-sky-600">${Avatar.html(me, 'sm')}<span class="navname">${esc(me.name)}</span></a><button data-out class="text-sm font-medium text-slate-500 hover:text-sky-600">Thoát</button>`
     : `<a href="#/login" class="${btn}"><i class="fa-solid fa-right-to-bracket text-xs"></i> Đăng nhập</a>`;
-  $('#authSlotM').innerHTML = me
+  ($('#authSlotM') || {}).innerHTML = me
     ? `<a href="#/u/${me.id}" onclick="toggleMobileMenu(true)" class="navuser flex items-center gap-3 py-2 text-slate-700 font-semibold border-b border-slate-100">${Avatar.html(me, 'sm')}<span class="navname">${esc(me.name)}</span><span class="text-xs text-sky-600 font-medium">Trang cá nhân</span></a><button data-out class="block w-full text-center py-2 text-slate-500 font-medium">Thoát</button>`
     : `<a href="#/login" onclick="toggleMobileMenu(true)" class="block text-center bg-sky-600 text-white py-3 rounded-xl font-bold mt-2 shadow-lg shadow-sky-600/30">Đăng nhập</a>`;
+  const mb = $('#mbAuth'); if (mb) { mb.href = me ? '#/u/' + me.id : '#/login'; mb.innerHTML = (me ? Avatar.html(me, 'sm') : '<i class="fa-solid fa-user"></i>') + '<span>' + (me ? esc(String(me.name).split(' ').pop().slice(0, 9)) : 'Đăng nhập') + '</span>'; }
   document.querySelectorAll('[data-out]').forEach(b => b.onclick = () => { Store.setMe(null); me = null; location.hash = '#/'; route(); });
 }
 function setActive(key) {
   document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('nav-on', a.dataset.r === key));
 }
 
-/* --- Trang chủ: danh sách dự án + CTA (phần giới thiệu đã gom thành banner popup, xem showWelcome) --- */
-const imgOkP = p => /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(p.bgImg || '') && p.bgImg.length < 900000;
-function pcard(p, us, byId) {   // thẻ dự án (trang chủ + trang cá nhân)
-  const last = (us || []).filter(u => u.projectId === p.id).pop();
-  const par = p.kind === 'sub' && p.parentId && byId && byId[p.parentId] ? `<small class="muted">Thuộc dự án: ${esc(byId[p.parentId].name)}</small>` : '';
-  const by = p.ownerUid ? `<small class="muted">Bởi ${esc(p.ownerName || p.owner || '')}</small>` : '';
-  return `<a class="card" href="#/p/${p.id}">${imgOkP(p) ? `<img class="pcover" src="${p.bgImg}" alt="${esc(p.name)}" loading="lazy">` : ''}<div class="row"><h2>${esc(p.name)}</h2>${badge(p.status)}</div>${par}${by}
-      <p class="muted" style="margin:0">${esc(p.desc)}</p>
-      <div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small>
-      ${last ? `<p style="margin:10px 0 0;font-size:.9rem"><b>${esc(last.week)}:</b> ${esc(last.title)}</p>` : ''}</a>`;
+/* --- Số liệu dự án (lượt thích, bình luận, hồ sơ chủ dự án) cho danh sách kiểu YouTube --- */
+let stCache = null;
+async function projStats(force) {
+  const u = me ? me.id : '';
+  if (!force && stCache && stCache.u === u && Date.now() - stCache.t < 15000) return stCache.v;
+  const [lk, cm, pf] = await Promise.all([Store.list('plikes').catch(() => []), Store.list('comments', { where: ['approved', '==', true] }).catch(() => []), Social.profiles().catch(() => ({}))]);
+  const likes = {}, mine = new Set(), cmt = {};
+  lk.forEach(x => { likes[x.pid] = (likes[x.pid] || 0) + 1; if (me && x.uid === me.id) mine.add(x.pid); });
+  cm.forEach(c => { const sc = String(c.scope || ''); if (sc.startsWith('p:')) { const k = sc.slice(2); cmt[k] = (cmt[k] || 0) + 1; } });
+  stCache = { t: Date.now(), u, v: { likes, mine, cmt, profs: pf } }; return stCache.v;
 }
+const imgOkP = p => /^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(p.bgImg || '') && p.bgImg.length < 900000;
+const ago = t => {
+  if (!t) return '';
+  const m = Math.floor((Date.now() - t) / 60000); if (m < 1) return 'vừa xong'; if (m < 60) return m + ' phút trước';
+  const h = Math.floor(m / 60); if (h < 24) return h + ' giờ trước'; const d = Math.floor(h / 24); if (d < 30) return d + ' ngày trước';
+  const mo = Math.floor(d / 30); return mo < 12 ? mo + ' tháng trước' : Math.floor(mo / 12) + ' năm trước';
+};
+function ycard(p, st, byId) {   // thẻ dự án kiểu YouTube: ảnh 16:9, avatar + tên chủ dự án, lượt thích, bình luận, thời gian
+  st = st || { likes: {}, cmt: {}, profs: {} };
+  const owner = p.ownerUid ? (st.profs[p.ownerUid] || { id: p.ownerUid, name: p.ownerName || p.owner || '?' }) : null;
+  const av = owner ? Avatar.html(owner, 'sm') : Avatar.admin('sm'), by = owner ? (owner.pageName || owner.name) : (p.owner || 'Pipe Traffic');
+  const par = p.kind === 'sub' && p.parentId && byId && byId[p.parentId] ? ' · thuộc ' + esc(byId[p.parentId].name) : '';
+  const th = imgOkP(p) ? `<img src="${p.bgImg}" alt="${esc(p.name)}" loading="lazy">` : `<span class="yc-ph">${esc(String(p.name || '?').trim().charAt(0).toUpperCase())}</span>`;
+  const n = Math.min(100, Math.max(0, +p.progress || 0));
+  return `<a class="yc" href="#/p/${esc(p.id)}"><div class="yc-th">${th}<span class="yc-k">${p.kind === 'sub' ? 'Phụ' : 'Chính'}</span><span class="yc-pct">${n}%</span><div class="yc-bar"><i style="width:${n}%"></i></div></div>
+    <div class="yc-meta">${av}<div class="yc-tx"><b class="yc-t">${esc(p.name)}</b><span class="yc-o">${esc(by)}${par}</span><span class="yc-s">♥ ${st.likes[p.id] || 0} · 💬 ${st.cmt[p.id] || 0} · ${esc(ago(p.ts))} · ${esc(p.status || '')}</span></div></div></a>`;
+}
+/* Trang chủ Pipe Traffic: TẤT CẢ dự án (của nhóm và của mọi người dùng) như YouTube. Lọc Dự án chính / phụ, tìm kiếm, sắp xếp theo gần nhất / lượt thích / bình luận */
 async function home() {
-  app.innerHTML = tpl('tpl-cta') + `<section id="projects" class="pt-10 pb-20 bg-white"><div class="pt-app max-w-5xl mx-auto px-4">
+  app.innerHTML = tpl('tpl-cta') + `<section id="projects" class="pt-10 pb-20 bg-white"><div class="pt-app max-w-6xl mx-auto px-4">
   <h2 class="sec">Các dự án</h2>
-  <p class="sub" style="margin-bottom:16px">Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) nghiên cứu và phát triển.</p>
-  <div class="home-cta">
-    <a href="#/problems" class="btn">Xem Đồ Án Chi Tiết</a>
-    <a href="#" data-contact class="btn ghost">Liên Hệ Nhóm Dự Án</a>
-  </div>
-  <div id="projBox"><div class="loading">Đang tải dự án…</div></div></div></section>`;
+  <p class="sub" style="margin-bottom:16px">Dự án Pipe Traffic do nhóm sinh viên Trường Đại học Khoa học Tự nhiên (HCMUS) và cộng đồng người dùng cùng phát triển.</p>
+  <div class="yh-bar"><div class="home-cta" role="group" aria-label="Loại dự án"><button type="button" class="btn ghost" data-pk="main" aria-pressed="false">Dự án chính</button><button type="button" class="btn ghost" data-pk="sub" aria-pressed="false">Dự án phụ</button></div>
+    <div class="psearch yh-q" role="search"><i class="fa-solid fa-magnifying-glass"></i><input id="yhq" type="search" placeholder="Tìm dự án hoặc tác giả…" autocomplete="off" maxlength="100" aria-label="Tìm dự án"></div></div>
+  <div class="yh-chips" role="group" aria-label="Sắp xếp"><button type="button" class="yh-chip on" data-sort="new">Gần nhất</button><button type="button" class="yh-chip" data-sort="likes">Nhiều lượt thích</button><button type="button" class="yh-chip" data-sort="cmt">Nhiều bình luận</button></div>
+  <div id="projBox" data-autotr><div class="loading">Đang tải dự án…</div></div></div></section>`;
   const box = $('#projBox');
   try {
-    const [ps, us] = await Promise.all([Store.list('projects'), Store.list('updates')]);
+    const [ps, st] = await Promise.all([Store.list('projects'), projStats().catch(() => null)]);
     if (!document.body.contains(box)) return;   // người dùng đã sang trang khác
-    const byId = Object.fromEntries(ps.map(p => [p.id, p])), team = ps.filter(p => !p.ownerUid), comm = ps.filter(p => p.ownerUid);
-    const mains = team.filter(p => p.kind !== 'sub'), subs = team.filter(p => p.kind === 'sub');
-    const sec = (t, list, empty) => `<h3 class="psec">${t} <small>(${list.length})</small></h3>` + (list.length ? `<div class="pgrid">${list.map(p => pcard(p, us, byId)).join('')}</div>` : `<p class="muted">${empty}</p>`);
-    box.innerHTML = (Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : '') +
-      sec('Dự án chính', mains, 'Chưa có dự án chính.') + (subs.length ? sec('Dự án phụ', subs, '') : '') +
-      (comm.length ? sec('Dự án từ cộng đồng', [...comm].reverse().slice(0, 12), '') : '');
+    const S = st || { likes: {}, cmt: {}, profs: {} }, byId = Object.fromEntries(ps.map(p => [p.id, p]));
+    let kind = '', sort = 'new', q = '';
+    const ownerOf = p => p.ownerUid ? ((S.profs[p.ownerUid] || {}).pageName || (S.profs[p.ownerUid] || {}).name || p.ownerName || '') : (p.owner || '');
+    const draw = () => {
+      const terms = Search.termsOf(q);
+      const list = ps.filter(p => (!kind || (kind === 'sub') === (p.kind === 'sub')) && (!terms.length || terms.every(t => Search.fold([p.name, p.desc, ownerOf(p)].join(' ')).includes(t))));
+      list.sort((a, b) => sort === 'likes' ? (S.likes[b.id] || 0) - (S.likes[a.id] || 0) || (b.ts || 0) - (a.ts || 0)
+        : sort === 'cmt' ? (S.cmt[b.id] || 0) - (S.cmt[a.id] || 0) || (b.ts || 0) - (a.ts || 0) : (b.ts || 0) - (a.ts || 0));
+      box.innerHTML = (Store.mode === 'demo' ? '<div class="banner">Chế độ thử: tài khoản, dự án và tin nhắn chỉ lưu trên trình duyệt này. Điền Firebase trong config.js để dùng chung (xem README).</div>' : '')
+        + (list.length ? `<div class="yt-grid">${list.map(p => ycard(p, S, byId)).join('')}</div>` : `<p class="muted">${ps.length ? 'Không có dự án nào phù hợp.' : 'Chưa có dự án nào.'}</p>`);
+    };
+    const nMain = ps.filter(p => p.kind !== 'sub').length, nSub = ps.length - nMain;
+    const bm = document.querySelector('[data-pk="main"]'), bs = document.querySelector('[data-pk="sub"]');
+    if (bm) bm.textContent = `Dự án chính (${nMain})`; if (bs) bs.textContent = `Dự án phụ (${nSub})`;
+    document.querySelectorAll('[data-pk]').forEach(b => { b.onclick = () => { kind = kind === b.dataset.pk ? '' : b.dataset.pk; document.querySelectorAll('[data-pk]').forEach(x => { const on = x.dataset.pk === kind; x.classList.toggle('ghost', !on); x.setAttribute('aria-pressed', String(on)); }); draw(); }; });
+    document.querySelectorAll('[data-sort]').forEach(b => { b.onclick = () => { sort = b.dataset.sort; document.querySelectorAll('[data-sort]').forEach(x => x.classList.toggle('on', x === b)); draw(); }; });
+    $('#yhq').oninput = e => { q = e.target.value; draw(); };
+    draw();
   } catch (e) { if (document.body.contains(box)) box.innerHTML = '<p class="err">Chưa tải được dự án: ' + esc(e.message) + '</p>'; }
 }
 async function project(id) {
-  const p = (await Store.list('projects')).find(x => x.id === id);
+  const [ps, ups, st] = await Promise.all([Store.list('projects'), Store.list('updates'), projStats(true).catch(() => null)]);
+  const p = ps.find(x => x.id === id);
   if (!p) { wrap('<p>Không tìm thấy dự án. <a class="plink" href="#/">Quay lại</a></p>'); return; }
-  const all = (await Store.list('updates')).filter(u => u.projectId === id).reverse();
-  const mine = !!me && !!p.ownerUid && p.ownerUid === me.id;
-  const ownerHtml = p.ownerUid ? `<a class="plink" href="#/u/${esc(p.ownerUid)}">${esc(p.ownerName || p.owner)}</a>` : esc(p.owner);
-  const kindTag = `<span class="tag">${p.kind === 'sub' ? 'Dự án phụ' : 'Dự án chính'}</span>`;
+  const all = ups.filter(u => u.projectId === id).reverse(), S = st || { likes: {}, mine: new Set(), cmt: {}, profs: {} };
+  const mineP = !!me && !!p.ownerUid && p.ownerUid === me.id;
+  const ow = p.ownerUid ? (S.profs[p.ownerUid] || { id: p.ownerUid, name: p.ownerName || p.owner || '?' }) : null;
+  const ownerHtml = ow ? `<a class="plink" href="#/u/${esc(p.ownerUid)}">${esc(ow.pageName || ow.name)}</a>` : esc(p.owner);
+  let liked = S.mine && S.mine.has(id), nLike = S.likes[id] || 0;
+  const likeHtml = () => `<i class="fa-${liked ? 'solid' : 'regular'} fa-heart"></i> <span>${nLike}</span>`;
   const tl = (list, ts) => {
-    const h = x => ts && ts.length && window.Search ? Search.markHtml(String(x ?? ''), ts) : esc(x);
+    const h = x => ts && ts.length ? Search.markHtml(String(x ?? ''), ts) : esc(x);
     return list.map(u => `<div class="it"><div class="wk">${h(u.week)}</div><b>${h(u.title)}</b><p>${h(u.content)}</p>${Media.html(Media.list(u))}</div>`).join('') || `<p class="muted">${ts && ts.length ? 'Không có cập nhật nào khớp với từ khoá.' : 'Chưa có cập nhật.'}</p>`;
   };
   wrap(`<a href="#/" class="plink">&larr; Tất cả dự án</a>
-  <div class="row" style="margin-top:12px"><h1>${esc(p.name)}</h1>${badge(p.status)} ${kindTag}</div>
+  <div class="row" style="margin-top:12px"><h1>${esc(p.name)}</h1>${badge(p.status)} <span class="tag">${p.kind === 'sub' ? 'Dự án phụ' : 'Dự án chính'}</span></div>
   ${imgOkP(p) ? `<img class="pcover pcover-hero" src="${p.bgImg}" alt="${esc(p.name)}">` : ''}
-  <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${ownerHtml}${mine ? ' · <a class="plink" href="#" id="pjEdit">Chỉnh sửa dự án</a>' : ''}</p>
+  <p class="sub">${esc(p.desc)}<br>Chủ dự án: ${ownerHtml}${mineP ? ' · <a class="plink" href="#" id="pjEdit">Chỉnh sửa dự án</a>' : ''}</p>
+  <div class="row" style="justify-content:flex-start;gap:10px;margin:0 0 12px"><button type="button" class="lk-btn${liked ? ' on' : ''}" id="pjLike" aria-pressed="${liked}" aria-label="Thích dự án">${likeHtml()}</button><small class="muted">💬 ${S.cmt[id] || 0} bình luận</small></div>
   <div class="card"><div class="pipe"><i style="width:${+p.progress || 0}%"></i></div><small class="muted">${+p.progress || 0}% hoàn thành</small></div>
   <div class="row" style="margin:28px 0 0"><h2>Cập nhật theo tuần</h2></div>
   <div class="psearch" role="search"><i class="fa-solid fa-magnifying-glass"></i><input id="pjq" type="search" placeholder="Tìm trong dự án này (tuần, tiêu đề, nội dung)…" autocomplete="off" maxlength="100" aria-label="Tìm trong dự án"></div>
   <small class="muted" id="pjn" style="display:block;margin:0 0 8px 6px">${all.length} cập nhật</small>
-  <div class="tl" id="pjtl">${tl(all)}</div>`);
+  <div class="tl" id="pjtl" data-autotr>${tl(all)}</div>
+  <div id="cmtProj" style="margin-top:44px;padding-top:8px;border-top:1px solid var(--line,#e2e8f0)"></div>`);
+  const first = app.firstElementChild; if (first) first.setAttribute('data-autotr', '');   // tên / mô tả dự án cũng được tự dịch sang tiếng Anh
+  Cmt.mount($('#cmtProj'), 'p:' + id);                                                   // bình luận gọn ở cuối MỌI dự án
   const ed = $('#pjEdit'); if (ed) ed.onclick = e => { e.preventDefault(); Social.openManage(me.id); };
+  $('#pjLike').onclick = async () => {
+    if (!me) { location.hash = '#/login'; return; }
+    const b = $('#pjLike'); b.disabled = true;
+    try {
+      if (liked) await Store.del('plikes', id + '_' + me.id); else await Store.put('plikes', { id: id + '_' + me.id, pid: id, uid: me.id });
+      liked = !liked; nLike += liked ? 1 : -1; stCache = null;
+      b.classList.toggle('on', liked); b.setAttribute('aria-pressed', String(liked)); b.innerHTML = likeHtml();
+    } catch (x) { toast('Chưa thích được: ' + (x.message || x.code)); }
+    b.disabled = false;
+  };
   const q = $('#pjq');
   q.oninput = () => {
     const ts = Search.termsOf(q.value), txt = u => Search.fold([u.week, u.title, u.content, ...Media.list(u).map(m => m.name || '')].join(' '));
@@ -225,9 +272,13 @@ const Notify = (() => {
     } catch (x) { /* một số trình duyệt di động chỉ cho thông báo qua service worker */ }
   }
   function paint() {
-    const b = $('#notifyTxt'), btn = $('#notifyBtn'); if (!b || !btn) return;
-    btn.querySelector('i').className = on() ? 'fa-solid fa-bell text-sky-500 mr-2' : 'fa-regular fa-bell-slash text-slate-400 mr-2';
-    b.textContent = !can() ? 'Trình duyệt chưa hỗ trợ thông báo' : on() ? 'Tắt thông báo' : (Notification.permission === 'denied' ? 'Thông báo đang bị chặn' : 'Bật thông báo');
+    const isOn = on(), txt = !can() ? 'Trình duyệt chưa hỗ trợ thông báo' : isOn ? 'Tắt thông báo' : (Notification.permission === 'denied' ? 'Thông báo đang bị chặn' : 'Bật thông báo');
+    document.querySelectorAll('[data-notify]').forEach(btn => {
+      const i = btn.querySelector('i'), row = btn.classList.contains('nt-row');
+      if (i) i.className = (isOn ? 'fa-solid fa-bell' : 'fa-regular fa-bell-slash') + (row ? (isOn ? ' text-sky-500' : ' text-slate-400') + ' mr-2' : '');
+      btn.title = txt; btn.setAttribute('aria-label', txt); btn.classList.toggle('nt-on', isOn);
+      const s = btn.querySelector('.nt-t'); if (s) s.textContent = txt;
+    });
   }
   // theo dõi cập nhật tiến độ mới (updates): lần đầu chỉ ghi mốc, không báo dồn
   function watchUpdates() {
@@ -270,8 +321,8 @@ function askNotify() {
 }
 
 /* --- Thông báo xã hội: có người theo dõi, gửi lời mời kết bạn, chấp nhận lời mời ---
-   Hiện thông báo nhỏ trên trang (toast) + thông báo trình duyệt khi tab ở nền (nếu đã bật "Bật thông báo" trong menu ☰).
-   Thông báo đến lúc bạn offline sẽ hiện khi bạn mở lại web. Chấm đỏ trên avatar = số lời mời kết bạn đang chờ. */
+   Hiện thông báo nhỏ trên trang + thông báo trình duyệt khi tab ở nền (nếu đã bật "Bật thông báo"). Thông báo đến lúc offline hiện khi mở lại web.
+   Chấm đỏ trên avatar = số lời mời kết bạn đang chờ. */
 let socOff = [], socFor = null, socPending = 0;
 function ensureSocial() {
   const id = me ? me.id : null;
@@ -290,8 +341,8 @@ function ensureSocial() {
       for (const x of fresh.slice(-3)) {
         const who = x.from === id ? x.to : x.from; let name = 'Một người dùng';
         try { const p = await Store.get('profiles', who); if (p && p.name) name = p.name; } catch (e) { /* giữ tên mặc định */ }
-        const msg = name + ' ' + text, go = '#/u/' + who;
-        if (document.hidden) Notify.show('Pipe Traffic', msg, go); else toast(msg);
+        const msg = name + ' ' + text;
+        if (document.hidden) Notify.show('Pipe Traffic', msg, '#/u/' + who); else toast(msg);
       }
       if (fresh.length > 3) toast('Và ' + (fresh.length - 3) + ' thông báo khác');
     }, () => {}));
@@ -303,7 +354,8 @@ function ensureSocial() {
 
 /* Chấm đỏ trên nút Chat khi admin vừa trả lời; tin nhắn của người đăng nhập cập nhật ngay (thời gian thực) */
 const paintBadge = () => {
-  document.querySelectorAll('[data-chat-open]').forEach(a => a.classList.toggle('has-dot', !!me && unread > 0));
+  const dm = window.DM ? DM.unread() : 0;
+  document.querySelectorAll('[data-chat-open]').forEach(a => a.classList.toggle('has-dot', !!me && (unread > 0 || dm > 0)));
   document.querySelectorAll('.navuser').forEach(a => { a.classList.toggle('so-dot', !!me && socPending > 0); if (socPending > 0) a.dataset.n = socPending > 9 ? '9+' : socPending; else delete a.dataset.n; });
 };
 const markSeen = () => { if (me) localStorage.setItem('pt_seen_' + me.id, Date.now()); unread = 0; paintBadge(); };
@@ -331,6 +383,8 @@ function ensureMsgs() {
 
 function drawChat(busy) {
   const log = $('#chatLog'), form = $('#chatForm'); if (!log || !form) return;
+  if (chatTab === 'dm') { DM.show(); document.querySelectorAll('[data-ct]').forEach(b => b.classList.toggle('on', b.dataset.ct === 'dm')); return; }   // tab Mọi người: khung riêng (dm.js)
+  DM.hide();
   Chat.header(chatTab, msgs);
   document.querySelectorAll('[data-ct]').forEach(b => b.classList.toggle('on', b.dataset.ct === chatTab));
   const inp = form.t, btn = form.querySelector('button[type=submit]'), stick = !log.children.length || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
@@ -346,7 +400,7 @@ function drawChat(busy) {
     log.innerHTML = '<div class="pp-empty">Đăng nhập để nhắn tin cho admin.<br><a class="pp-btn" href="#/login" data-chat-close>Đăng nhập</a></div>'; return;
   }
   inp.disabled = btn.disabled = false; inp.placeholder = 'Nhắn cho admin…';
-  log.innerHTML = Chat.render(msgs.map(m => ({ id: m.id, who: m.from === 'user' ? 'me' : 'them', mine: m.from === 'user', ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, lk: m.lk, list: Msgx.get(m.id), uid: me.id, av: Avatar.admin('sm') }))) || '<div class="pp-empty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
+  log.innerHTML = Chat.render(msgs.map(m => ({ id: m.id, who: m.from === 'user' ? 'me' : 'them', mine: m.from === 'user', ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, edited: m.edited, lk: m.lk, list: Msgx.get(m.id), uid: me.id, av: Avatar.admin('sm') }))) || '<div class="pp-empty">Chưa có tin nhắn. Hãy gửi tin đầu tiên.</div>';
   if (stick) log.scrollTop = log.scrollHeight;
   Chat.paint(log);
 }
@@ -399,14 +453,32 @@ const closeContact = () => { const m = $('#contact-modal'); if (m) m.hidden = tr
 /* --- Banner giới thiệu (popup): hiện 1 lần mỗi phiên khi vào trang chủ, tắt bằng ×, nút "Xem các dự án", bấm ra ngoài hoặc Esc.
    Nội dung sửa trong index.html, <template id="tpl-hero">. Hiện không còn tự mở khi vào web (xem cuối file); muốn bật lại thì gọi showWelcome(). --- */
 function closeWelcome() { const m = $('#welcome-modal'); if (m) m.hidden = true; }
+/* Banner nhiều bước: giới thiệu -> tính năng kỹ thuật -> bảng so sánh hạ tầng. Bấm "Tiếp theo" để xem tiếp; bước nào cũng đóng được. */
+const WB_STEPS = ['tpl-hero', 'tpl-hero-features', 'tpl-hero-compare'];
+let wbI = 0;
+function wbDraw() {
+  const m = $('#welcome-modal'), body = $('#welcomeBody'); if (!m || !body) return;
+  const last = wbI === WB_STEPS.length - 1, vi = (a, b) => (window.I18N ? I18N.t(a, b) : a);
+  body.innerHTML = `<div class="wb-step">${tpl(WB_STEPS[wbI])}</div><div class="wb-nav">
+    ${wbI ? '<button type="button" class="wb-btn" data-wb-prev>← Quay lại</button>' : '<button type="button" class="wb-btn" data-welcome-close>Bỏ qua</button>'}
+    <span class="wb-dots" aria-hidden="true">${WB_STEPS.map((_, i) => `<i${i === wbI ? ' class="on"' : ''}></i>`).join('')}</span>
+    ${last ? '<button type="button" class="wb-btn wb-p" data-welcome-close>Xem các dự án</button>' : '<button type="button" class="wb-btn wb-p" data-wb-next>Tiếp theo →</button>'}</div>`;
+  const card = m.querySelector('.wb-card'); if (card) card.classList.toggle('wb-wide', wbI > 0);
+  const st = body.querySelector('.wb-step'); if (st) st.scrollTop = 0;
+}
+function openWelcome(i) {   // mở lại banner ở bước i (dùng cho link #/intro/<bước> và kết quả tìm kiếm)
+  const m = $('#welcome-modal'); if (!m) return; wbI = Math.max(0, Math.min(WB_STEPS.length - 1, +i || 0)); wbDraw(); m.hidden = false;
+}
 function showWelcome() {
-  const m = $('#welcome-modal'), body = $('#welcomeBody'), html = tpl('tpl-hero'); if (!m || !body || !html) return;
+  const m = $('#welcome-modal'), body = $('#welcomeBody'); if (!m || !body || !tpl('tpl-hero')) return;
   try { if (sessionStorage.getItem('pt_welcome')) return; sessionStorage.setItem('pt_welcome', '1'); } catch (x) { /* không lưu được thì vẫn hiện */ }
-  body.innerHTML = html; m.hidden = false;
+  wbI = 0; wbDraw(); m.hidden = false;
 }
 
 document.addEventListener('click', e => {
   if (e.target.closest('[data-welcome-close]') || e.target.id === 'welcome-modal') { closeWelcome(); return; }
+  if (e.target.closest('[data-wb-next]')) { wbI = Math.min(WB_STEPS.length - 1, wbI + 1); wbDraw(); return; }
+  if (e.target.closest('[data-wb-prev]')) { wbI = Math.max(0, wbI - 1); wbDraw(); return; }
   if (e.target.closest('#welcome-modal a, #welcome-modal [data-chat-open]')) closeWelcome();   // bấm link / nút chat trong banner: đóng banner rồi đi tiếp
   const qb = e.target.closest('[data-q]'); if (qb) { const f = $('#chatForm'); if (f && !f.t.disabled) { f.t.value = qb.dataset.q; f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event('submit', { cancelable: true })); } return; }
   const ct = e.target.closest('[data-ct]'); if (ct) { if (chatAt && chatTab !== ct.dataset.ct) chatAt.clear(); chatTab = ct.dataset.ct; if (chatTab === 'admin') markSeen(); drawChat(); return; }
@@ -415,7 +487,10 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-contact]')) { e.preventDefault(); openContact(); return; }
   if (e.target.closest('[data-contact-close]') || e.target.id === 'contact-modal') closeContact();
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeWelcome(); closeContact(); closeChat(); } });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeWelcome(); closeContact(); closeChat(); }
+  const wm = $('#welcome-modal'); if (wm && !wm.hidden && !/^(INPUT|TEXTAREA|SELECT)$/.test((e.target || {}).tagName || '')) { if (e.key === 'ArrowRight' && wbI < WB_STEPS.length - 1) { wbI++; wbDraw(); } else if (e.key === 'ArrowLeft' && wbI > 0) { wbI--; wbDraw(); } }
+});
 
 /* --- Hồ sơ: đổi avatar. Ảnh cắt vuông, thu nhỏ 160px, lưu vào hồ sơ người dùng (users) và hiện cạnh tin nhắn trong chat --- */
 async function setAvatar(get) {
@@ -434,7 +509,7 @@ async function profile() {
   if (!me) { location.hash = '#/login'; return; }
   const v = k => esc(me[k] || '');
   const sel = g => (me.gender === g ? ' selected' : '');
-  wrap(`<a href="#/" class="plink">&larr; Trang chính</a> · <a href="#/u/${me.id}" class="plink">Xem trang cá nhân của tôi</a>
+  wrap(`<a href="#/" class="plink">&larr; Trang chính</a>
   <div class="card narrow pf">
     <div id="pfAv">${Avatar.html(me, 'lg')}</div>
     <h1>${esc(me.name)}</h1><p class="muted">${esc(me.email)}</p>
@@ -486,14 +561,16 @@ async function profile() {
 /* --- Điều hướng (hash), mỗi mục trên menu là một TRANG RIÊNG nhưng vẫn là một file SPA ---
    #/  ·  #/p/<id>  ·  #/login  ·  #/profile  ·  #/specs  #/journey  #/problems  #/team  #/video  #/faq  #/comments */
 const PAGES = ['specs', 'journey', 'problems', 'team', 'video', 'faq'];   // bỏ 'comments' (đã gộp vào video)
-const routes = { '': home, p: project, u: id => Social.page(id, { wrap, card: pcard }), login, profile, privacy, search: id => Search.page(id) };
+const routes = { '': home, p: project, u: id => Social.page(id, { wrap, card: ycard, stats: projStats }), login, profile, privacy, search: id => Search.page(id) };
 async function route() {
   const [r, id] = location.hash.replace(/^#\/?/, '').split('/');
   if (r === 'about') { location.replace('#/' + (id || '')); return; }       // link cũ #/about/team -> #/team
+  if (r === 'intro') { location.replace('#/'); setTimeout(() => openWelcome(id), 150); return; }   // link #/intro/1 -> về trang chủ và mở banner ở bước đó
   if (r === 'chat') { location.replace('#/'); setTimeout(() => openChat(), 100); return; }   // link cũ #/chat -> về trang chủ và mở popup chat
   if (r === 'comments') { location.replace('#/video'); return; }            // link cũ #/comments -> trang Video
   if (me && me.agreed === false && r !== 'privacy') { location.replace('#/privacy'); return; }   // chưa đồng ý cam kết thì chỉ vào được trang này
-  stopLive(); renderAuth(); ensureMsgs(); ensureSocial(); paintBadge(); toggleMobileMenu(true);
+  if (r !== 'u') Social.restoreMenu();   // rời trang cá nhân thì trả lại menu của Pipe Traffic
+  stopLive(); renderAuth(); ensureMsgs(); ensureSocial(); DM.sync(); paintBadge(); toggleMobileMenu(true);
   setActive(PAGES.includes(r) ? r : (r === '' || r === 'p' ? 'projects' : ''));
   window.scrollTo(0, 0);
   try {
@@ -501,10 +578,10 @@ async function route() {
       app.dataset.view = r;
       // trang video = video bên trái + bình luận bên phải (kiểu YouTube)
       app.innerHTML = r === 'video'
-        ? `<div class="pt-20"><div class="yt-wrap"><div class="yt-main">${tpl('tpl-video')}</div><aside class="yt-side">${tpl('tpl-comments')}</aside></div></div>`
-        : `<div class="pt-20">${tpl('tpl-' + r)}</div>`;
+        ? `<div class="pt-20"><section id="video" class="bg-white w-full" data-autotr style="padding:40px 0 28px">${Content.video(null)}</section><div id="cmtVideo" class="px-4" style="padding-bottom:72px"></div></div>`
+        : `<div class="pt-20"${['journey', 'team', 'faq'].includes(r) ? ' data-autotr' : ''}>${tpl('tpl-' + r)}</div>`;
       const jobs = [fillContent(r)];
-      if (r === 'video') { setRating(5); jobs.push(loadCommentsFromSheet()); }
+      if (r === 'video') jobs.push(Cmt.mount($('#cmtVideo'), 'video'));
       Promise.allSettled(jobs).then(() => Search.applyFind());   // tìm kiếm: tô từ khoá + cuộn tới đoạn được chọn
     } else {
       app.dataset.view = r || 'home';
@@ -520,10 +597,69 @@ const hideSplash = () => { const s = $('#splash'); if (s) { s.classList.add('off
   try {
     await Store.init(); me = Store.me(); applyLinks(); addEventListener('hashchange', route);
     if (me) Store.profile(me.id).then(pr => { if (me && pr && Avatar.ok(pr.avatar) && pr.avatar !== me.avatar) { me.avatar = pr.avatar; Store.setMe(me, true); renderAuth(); if (chatOpen()) drawChat(); } }).catch(() => {});
+    addEventListener('pt-badge', () => paintBadge());
     addEventListener('pt-me', () => { me = Store.me(); renderAuth(); if (chatOpen()) drawChat(); });   // trang cá nhân đổi tên / logo
     if (me) Social.ensureProfile(me);
     Notify.paint(); Notify.watchUpdates();
     await Promise.race([route(), new Promise(r => setTimeout(r, 4000))]);   // chờ tối đa 4 giây rồi mở trang
   } catch (e) { wrap('<p class="err">Trang chưa chạy được: ' + esc(e.message) + '. Nhấn Ctrl+Shift+R; nếu vẫn lỗi hãy báo lại dòng này.</p>'); }
-  hideSplash(); askNotify();   // (đã bỏ popup chào tự mở: màn hình đầu tiên chỉ còn thanh cookie)
+  hideSplash(); askNotify();
+  if (!/^#\/(login|privacy)/.test(location.hash) && !(me && me.agreed === false)) setTimeout(showWelcome, 350);   // banner chào nhiều bước: hiện 1 lần mỗi phiên khi vào web
+})();
+
+
+/* ===== v19: nút trên thanh dưới (điện thoại), tự nối lại Firebase, ô chọn bo góc ===== */
+(function () {
+  // Giao diện tối / ngôn ngữ trên thanh dưới điện thoại
+  const paintMb = () => {
+    const th = window.I18N && I18N.theme && I18N.theme() === 'dark', lg = window.I18N && I18N.lang && I18N.lang();
+    document.querySelectorAll('[data-mb-theme] i').forEach(i => { i.className = 'fa-solid ' + (th ? 'fa-sun' : 'fa-moon'); });
+    document.querySelectorAll('[data-mb-lang] b').forEach(b => { b.textContent = String(lg || 'vi').toUpperCase(); });
+  };
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-mb-theme]')) { I18N.setTheme(I18N.theme() === 'dark' ? 'light' : 'dark'); paintMb(); }
+    else if (e.target.closest('[data-mb-lang]')) { I18N.set(I18N.lang() === 'en' ? 'vi' : 'en'); paintMb(); }
+  });
+  addEventListener('pt-lang', paintMb); paintMb();
+
+  // Điện thoại hay mất mạng lúc mới vào: khi có mạng lại / quay lại tab thì tự kết nối lại Firebase, không cần tải lại trang
+  let trying = false;
+  const reconnect = async () => {
+    if (trying || !Store.wantsFirebase || Store.mode === 'firebase') return;
+    trying = true;
+    try { if (await Store.retry()) { msgFor = undefined; ensureMsgs(); Notify.watchUpdates(); route(); } } catch (x) { /* thử lại lần sau */ }
+    trying = false;
+  };
+  addEventListener('online', reconnect);
+  addEventListener('pageshow', e => { if (e.persisted) reconnect(); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) reconnect(); });
+  setTimeout(reconnect, 3000);
+})();
+
+/* --- Ô chọn (select) tự vẽ: danh sách thả xuống bo góc, nối liền với ô phía trên --- */
+(function () {
+  const d = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+  if (d && d.set) Object.defineProperty(HTMLSelectElement.prototype, 'value', { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, v); if (this._psSync) this._psSync(); } });
+  const closeAll = except => document.querySelectorAll('.ps.open').forEach(w => { if (w !== except) { w.classList.remove('open'); w.querySelector('.ps-list').hidden = true; w.querySelector('.ps-btn').setAttribute('aria-expanded', 'false'); } });
+  function mk(sel) {
+    if (sel.dataset.ps || sel.multiple || sel.size > 1 || sel.closest('[data-native]')) return;
+    sel.dataset.ps = '1';
+    const w = document.createElement('div'), b = document.createElement('button'), l = document.createElement('div');
+    w.className = 'ps'; b.type = 'button'; b.className = 'ps-btn'; b.setAttribute('aria-haspopup', 'listbox'); b.setAttribute('aria-expanded', 'false');
+    l.className = 'ps-list'; l.setAttribute('role', 'listbox'); l.hidden = true;
+    sel.parentNode.insertBefore(w, sel); w.append(sel, b, l);
+    sel.classList.add('ps-native'); sel.tabIndex = -1; sel.setAttribute('aria-hidden', 'true');
+    const label = () => { const o = sel.options[sel.selectedIndex]; b.innerHTML = '<span></span><i class="fa-solid fa-chevron-down" aria-hidden="true"></i>'; b.firstChild.textContent = o ? o.text : ''; b.disabled = sel.disabled; };
+    const fill = () => { l.innerHTML = ''; [...sel.options].forEach((o, i) => { const it = document.createElement('button'); it.type = 'button'; it.setAttribute('role', 'option'); it.dataset.i = i; it.textContent = o.text; it.disabled = o.disabled; if (i === sel.selectedIndex) { it.className = 'on'; it.setAttribute('aria-selected', 'true'); } l.appendChild(it); }); };
+    const open = () => { closeAll(w); fill(); label(); l.hidden = false; w.classList.add('open'); b.setAttribute('aria-expanded', 'true'); const on = l.querySelector('.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' }); };
+    b.onclick = () => (l.hidden ? open() : closeAll());
+    l.onclick = e => { const it = e.target.closest('[data-i]'); if (!it || it.disabled) return; sel.selectedIndex = +it.dataset.i; sel.dispatchEvent(new Event('input', { bubbles: true })); sel.dispatchEvent(new Event('change', { bubbles: true })); label(); closeAll(); b.focus(); };
+    w.addEventListener('keydown', e => { if (e.key === 'Escape') { closeAll(); b.focus(); } else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && l.hidden) { e.preventDefault(); open(); } });
+    sel.addEventListener('change', label); if (sel.form) sel.form.addEventListener('reset', () => setTimeout(label, 0));
+    sel._psSync = label; label();
+  }
+  document.addEventListener('click', e => { if (!e.target.closest('.ps')) closeAll(); });
+  let tm = 0; const scan = () => document.querySelectorAll('#app select').forEach(mk);
+  new MutationObserver(() => { clearTimeout(tm); tm = setTimeout(scan, 20); }).observe(document.getElementById('app'), { childList: true, subtree: true });
+  scan();
 })();
