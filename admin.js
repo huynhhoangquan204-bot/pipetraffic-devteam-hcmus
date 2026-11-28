@@ -1,11 +1,11 @@
 const $ = s => document.querySelector(s), app = $('#app');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmt = t => new Date(t).toLocaleString(window.I18N && I18N.lang() === 'en' ? 'en-GB' : 'vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+const fmt = t => new Date(t).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 const toast = m => { const t = $('#toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 2000); };
 let tab = 'projects', editing = null, thread = null;
 
 function login() {
-  $('#nav').innerHTML = '<button type="button" id="langBtn" class="nav-ico lang"><span aria-hidden="true">🌐</span><b></b></button><button type="button" id="themeBtn" class="nav-ico theme">🌙</button>'; if (window.I18N && I18N.bind) I18N.bind(); admToggle(true); $('#admMenu').innerHTML = ''; $('#admBtn').hidden = true;
+  $('#nav').innerHTML = ''; admToggle(true); $('#admMenu').innerHTML = ''; $('#admBtn').hidden = true;
   const fb = Store.mode === 'firebase', noMail = fb && !(window.APP_CONFIG || {}).adminEmail, inf = Store.info();
   const status = fb
     ? `<p class="muted" style="font-size:.8rem;margin:8px 0 0">Kết nối: Firebase ✓ · Dự án: ${esc(inf.project)} · Email admin: ${esc(inf.email || '(chưa điền)')}</p>`
@@ -35,12 +35,11 @@ const live = [];                       // theo dõi của tab đang mở, huỷ 
 const stopLive = () => live.splice(0).forEach(f => f());
 let pendCmt = 0, waitMsg = 0, pendBot = 0; const badgeOff = [];
 function startBadges() {
-  AdminChat.start();
-  badgeOff.push(Store.listen('comments', null, cs => { pendCmt = cs.filter(c => !c.approved).length; if ($('#out')) nav(); }));
-  badgeOff.push(Store.listen('messages', null, ms => { const last = {}; ms.forEach(m => last[m.uid] = m); waitMsg = Object.values(last).filter(m => m.from === 'user').length; if ($('#out')) nav(); }));
-  badgeOff.push(Store.listen('botlogs', null, ls => { pendBot = ls.length; if ($('#out')) nav(); }));
+  badgeOff.push(Store.listen('comments', null, cs => { pendCmt = cs.filter(c => !c.approved).length; if ($('#nav').children.length) nav(); }));
+  badgeOff.push(Store.listen('messages', null, ms => { const last = {}; ms.forEach(m => last[m.uid] = m); waitMsg = Object.values(last).filter(m => m.from === 'user').length; if ($('#nav').children.length) nav(); }));
+  badgeOff.push(Store.listen('botlogs', null, ls => { pendBot = ls.length; if ($('#nav').children.length) nav(); }));
 }
-const stopBadges = () => { AdminChat.stop(); badgeOff.splice(0).forEach(f => f()); pendCmt = waitMsg = pendBot = 0; };
+const stopBadges = () => { badgeOff.splice(0).forEach(f => f()); pendCmt = waitMsg = pendBot = 0; };
 
 /* --- Menu ☰ bên trái (giống trang chính): dừng ở mép trên footer --- */
 const admMenu = $('#admMenu'), admBtn = $('#admBtn');
@@ -55,29 +54,17 @@ function admToggle(force) {   // true = đóng, false = mở, bỏ trống = đ�
   admBtn.setAttribute('aria-expanded', String(open));
   if (open) admFit();
 }
-/* Rê chuột vào ☰ là menu tự trượt xuống (máy tính); điện thoại vẫn chạm để mở */
-let admOpenedAt = 0, admTimer = 0;
-const admHover = matchMedia('(hover:hover) and (pointer:fine)').matches;
-const admOpenNow = () => { clearTimeout(admTimer); if (!admMenu.classList.contains('open')) { admToggle(false); admOpenedAt = Date.now(); } };
-const admCloseSoon = () => { clearTimeout(admTimer); admTimer = setTimeout(() => admToggle(true), 280); };
-admBtn.onclick = () => { if (admHover && Date.now() - admOpenedAt < 700) return; admToggle(); };   // bấm ngay sau khi rê chuột thì không đóng lại
-if (admHover) [admBtn, admMenu].forEach(el => { el.addEventListener('mouseenter', admOpenNow); el.addEventListener('mouseleave', admCloseSoon); });
+admBtn.onclick = () => admToggle();
 addEventListener('scroll', admFit, { passive: true }); addEventListener('resize', admFit);
 addEventListener('keydown', e => { if (e.key === 'Escape') admToggle(true); });
 document.addEventListener('click', e => { if (admMenu.classList.contains('open') && !e.target.closest('#admMenu, #admBtn')) admToggle(true); });
 
 function nav() {
   const old = Date.now() - (+localStorage.getItem('pt_last_backup') || 0) > 7 * 864e5;
-  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬'], ['comments', 'Bình luận', '💬', pendCmt], ['bot', 'Dạy Bot', '🤖', pendBot], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
+  const t = [['projects', 'Dự án', '📁'], ['updates', 'Cập nhật tuần', '🗓️'], ['content', 'Nội dung', '📝'], ['site', 'Video & Liên hệ', '🎬'], ['comments', 'Bình luận', '💬', pendCmt], ['messages', 'Tin nhắn', '✉️', waitMsg], ['bot', 'Dạy Bot', '🤖', pendBot], ['users', 'Người dùng', '👤'], ['backup', old ? 'Sao lưu ⚠' : 'Sao lưu', '💾']];
   admBtn.hidden = false;   // các tab chuyển vào menu ☰, trên thanh chỉ còn nút Thoát
   admMenu.innerHTML = t.map(([k, v, ic, n]) => `<a href="#" data-t="${k}" class="${tab === k ? 'on' : ''}"><span>${ic}</span><span>${v}</span>${n ? `<span class="nbadge">${n}</span>` : ''}</a>`).join('');
-  // Thanh trên: Chat với người dùng (popup, số hội thoại chờ trả lời) · Ngôn ngữ · Giao diện tối · Thoát
-  $('#nav').innerHTML = `<button type="button" id="cmtBtn" class="nav-ico cmt${window.AdminChat && AdminChat.isOpen() ? ' on' : ''}" title="Chat với người dùng" aria-label="Chat với người dùng">💬${waitMsg ? `<span class="nbadge">${waitMsg}</span>` : ''}<span class="lbl">Chat</span></button>`
-    + '<button type="button" id="langBtn" class="nav-ico lang"><span aria-hidden="true">🌐</span><b></b></button>'
-    + '<button type="button" id="themeBtn" class="nav-ico theme">🌙</button>'
-    + '<button id="out">Thoát</button>';
-  if (window.I18N && I18N.bind) I18N.bind();
-  $('#cmtBtn').onclick = () => { admToggle(true); AdminChat.toggle(); nav(); };
+  $('#nav').innerHTML = '<button id="out">Thoát</button>';
   admMenu.querySelectorAll('[data-t]').forEach(x => x.onclick = e => { e.preventDefault(); tab = x.dataset.t; editing = null; thread = null; admToggle(true); render(); });
   $('#out').onclick = async () => { admToggle(true); stopLive(); stopBadges(); await Store.adminLogout(); login(); };
 }
@@ -161,16 +148,24 @@ async function projects() {
   const ps = await Store.list('projects'), e = ps.find(p => p.id === editing) || {};
   let bg = /^data:image\/(jpeg|png|webp|gif);base64,/.test(e.bgImg || '') ? e.bgImg : '';
   const pct = v => Math.min(100, Math.max(0, Math.round(+v || 0))), P = pct(e.progress);
-  app.innerHTML = `<h1>Dự án</h1><p class="sub">Thêm, sửa hoặc xoá dự án hiển thị trên trang chính.</p>
+  const team = ps.filter(p => !p.ownerUid), comm = ps.filter(p => p.ownerUid);
+  const mains = team.filter(p => p.kind !== 'sub'), subs = team.filter(p => p.kind === 'sub');
+  const nameOf = id => (ps.find(p => p.id === id) || {}).name || '';
+  const row = (p, own) => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${pct(p.progress)}%${p.bgImg ? ' · có ảnh nền' : ''}${p.kind === 'sub' && p.parentId && nameOf(p.parentId) ? ' · thuộc: ' + esc(nameOf(p.parentId)) : ''}${own ? ' · bởi ' + esc(p.ownerName || p.owner || '?') : ''}</small></div>
+    <div>${own ? `<a class="btn ghost sm" href="index.html#/p/${p.id}" target="_blank" rel="noopener">Xem</a> ` : `<button class="btn ghost sm" data-e="${p.id}">Sửa</button> <button class="btn ghost sm" data-k="${p.id}">${p.kind === 'sub' ? '→ Chính' : '→ Phụ'}</button> `}<button class="btn danger" data-d="${p.id}">Xoá</button></div></div>`;
+  const grp = (t, list, own) => `<h3 style="margin:14px 0 6px">${t} (${list.length})</h3>` + (list.map(p => row(p, own)).join('') || '<p class="muted">Chưa có.</p>');
+  app.innerHTML = `<h1>Dự án</h1><p class="sub">Chia thành <b>dự án chính</b> và <b>dự án phụ</b>; thêm, sửa, đổi loại hoặc xoá dự án hiển thị trên trang chính.</p>
   <div class="card"><h2>${e.id ? 'Sửa dự án' : 'Thêm dự án'}</h2><form id="f"><label>Tên</label><input name="name" required value="${esc(e.name)}">
   <label>Mô tả</label><textarea name="desc">${esc(e.desc)}</textarea>
+  <div class="two"><div><label>Loại dự án</label><select name="kind"><option value="main" ${e.kind !== 'sub' ? 'selected' : ''}>Dự án chính</option><option value="sub" ${e.kind === 'sub' ? 'selected' : ''}>Dự án phụ</option></select></div>
+  <div><label>Thuộc dự án chính (chỉ áp dụng cho dự án phụ)</label><select name="parentId"><option value="">— Không —</option>${mains.filter(m => m.id !== e.id).map(m => `<option value="${m.id}" ${e.parentId === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select></div></div>
   <div class="two"><div><label>Trạng thái</label><select name="status">${['Kế hoạch', 'Đang làm', 'Tạm dừng', 'Hoàn thành'].map(s => `<option ${e.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
   <div><label>Tiến độ (%)</label><div class="prog"><input type="range" id="pr" min="0" max="100" step="1" value="${P}" aria-label="Kéo để chỉnh tiến độ"><input type="text" id="pn" name="progress" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" value="${P}" aria-label="Tiến độ (%)"></div></div></div>
   <label>Chủ dự án</label><input name="owner" value="${esc(e.owner || 'Admin')}">
   <label>Ảnh bìa dự án (hiện giữa đầu thẻ; ảnh tĩnh tự thu nhỏ, hỗ trợ GIF động ≤ 650KB)</label><input type="file" id="pbg" accept="image/*"><div class="pthumbs" id="pbgPrev"></div>
   <button class="btn">${e.id ? 'Lưu thay đổi' : 'Thêm dự án'}</button>${e.id ? ' <button type="button" class="btn ghost" id="x">Huỷ</button>' : ''}</form></div>
-  <div class="card" style="margin-top:14px">${ps.map(p => `<div class="item"><div><b>${esc(p.name)}</b> <span class="tag">${esc(p.status)}</span> <small class="muted">${pct(p.progress)}%${p.bgImg ? ' · có ảnh nền' : ''}</small></div>
-  <div><button class="btn ghost sm" data-e="${p.id}">Sửa</button> <button class="btn danger" data-d="${p.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Chưa có dự án.</p>'}</div>`;
+  <div class="card" style="margin-top:14px">${grp('Dự án chính', mains)}${grp('Dự án phụ', subs)}</div>
+  ${comm.length ? `<div class="card" style="margin-top:14px">${grp('Dự án do người dùng đăng', comm, true)}<small class="muted">Người dùng tự quản lý dự án của họ ở trang cá nhân. Admin chỉ xem và xoá khi cần kiểm duyệt.</small></div>` : ''}`;
   // Ô tiến độ: ô chữ (không dùng type=number nên lăn chuột / phím mũi tên không làm đổi số) + thanh kéo, luôn giữ trong 0–100
   const drawBg = () => { $('#pbgPrev').innerHTML = bg ? `<div class="pth" style="width:120px"><img src="${esc(bg)}" alt="Ảnh nền"><button type="button" id="pbgRm" aria-label="Bỏ ảnh nền">×</button></div>` : ''; if ($('#pbgRm')) $('#pbgRm').onclick = () => { bg = ''; drawBg(); }; };
   drawBg();
@@ -185,15 +180,22 @@ async function projects() {
     const progress = pct(f.progress);
     try {
       // Dự án không còn lưu ảnh / video / PDF: stripMedia xoá luôn các trường tệp cũ của bản ghi này
-      const o = { ...stripMedia(e), name: f.name.trim(), desc: f.desc, status: f.status, progress, owner: f.owner };
+      const o = { ...stripMedia(e), name: f.name.trim(), desc: f.desc, status: f.status, progress, owner: f.owner, kind: f.kind === 'sub' ? 'sub' : 'main' };
+      if (o.kind === 'sub' && f.parentId) o.parentId = f.parentId; else delete o.parentId;
       if (bg) o.bgImg = bg; else delete o.bgImg;
       await Store.put('projects', o);
     } catch (x) { return toast(x.message); }
-    editing = null; toast('Đã lưu · tiến độ ' + progress + '%'); render();
+    editing = null; toast('Đã lưu · ' + (f.kind === 'sub' ? 'dự án phụ' : 'dự án chính') + ' · tiến độ ' + progress + '%'); render();
   };
   if ($('#x')) $('#x').onclick = () => { editing = null; render(); };
   document.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { editing = b.dataset.e; render(); window.scrollTo(0, 0); });
-  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá dự án này và các cập nhật của nó?')) { const id = b.dataset.d; for (const u of (await Store.list('updates')).filter(u => u.projectId === id)) await Store.del('updates', u.id); await Store.del('projects', id); render(); } });
+  document.querySelectorAll('[data-k]').forEach(b => b.onclick = async () => {   // đổi nhanh giữa dự án chính / phụ
+    const p = ps.find(x => x.id === b.dataset.k); if (!p) return;
+    const o = { ...p, kind: p.kind === 'sub' ? 'main' : 'sub' }; delete o.parentId;
+    try { await Store.put('projects', o); } catch (x) { return toast(x.message); }
+    toast(o.kind === 'sub' ? 'Đã chuyển thành dự án phụ' : 'Đã chuyển thành dự án chính'); render();
+  });
+  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá dự án này và các cập nhật của nó?')) { const id = b.dataset.d; for (const u of (await Store.list('updates')).filter(u => u.projectId === id)) await Store.del('updates', u.id); for (const c of ps.filter(x => x.parentId === id)) { const o = { ...c }; delete o.parentId; await Store.put('projects', o); } await Store.del('projects', id); render(); } });
 }
 
 async function updates() {
@@ -341,7 +343,6 @@ let cfilter = 'pending';
 async function comments() {
   app.innerHTML = '<h1>Bình luận</h1><p class="sub" id="csub"></p><div class="row" style="justify-content:flex-start;gap:8px;margin-bottom:14px" id="cf"></div><div class="card" id="clist"><div class="loading">Đang tải…</div></div>';
   let all = [];
-  try { window.__projNames = {}; (await Store.list('projects')).forEach(p => { window.__projNames[p.id] = p.name; }); } catch (e) { /* không có thì hiện mã dự án */ }
   const draw = () => {
     if (!$('#clist')) return;
     const wait = all.filter(c => !c.approved).length, ok = all.length - wait;
@@ -349,7 +350,7 @@ async function comments() {
     $('#cf').innerHTML = [['pending', `Chờ duyệt (${wait})`], ['approved', `Đã duyệt (${ok})`], ['all', `Tất cả (${all.length})`]].map(([k, v]) => `<button class="btn ${cfilter === k ? '' : 'ghost'} sm" data-f="${k}">${v}</button>`).join('') + (wait ? `<button class="btn sm" id="apall">Duyệt tất cả (${wait})</button>` : '');
     const list = [...all].reverse().filter(c => cfilter === 'all' || (cfilter === 'approved') === !!c.approved);
     $('#clist').innerHTML = list.map(c => `<div class="item" style="align-items:flex-start"><div style="min-width:0"><b>${esc(c.name)}</b> ${c.role ? `<span class="tag">${esc(c.role)}</span>` : ''}
-      <span class="tag ${c.approved ? 'done' : 'run'}">${c.approved ? 'Đã duyệt' : 'Chờ duyệt'}</span> <span class="tag">${c.scope && c.scope.startsWith('p:') ? 'Dự án ' + esc((window.__projNames || {})[c.scope.slice(2)] || c.scope.slice(2)) : 'Video'}</span> <small class="muted">${+c.rating ? '⭐' + (+c.rating) + ' · ' : ''}${fmt(c.ts)}</small><br>
+      <span class="tag ${c.approved ? 'done' : 'run'}">${c.approved ? 'Đã duyệt' : 'Chờ duyệt'}</span> <small class="muted">⭐${+c.rating || 0} · ${fmt(c.ts)}</small><br>
       <span style="white-space:pre-wrap;word-break:break-word">${esc(c.text)}</span></div>
       <div style="display:flex;gap:6px;flex-shrink:0"><button class="btn ghost sm" data-a="${c.id}">${c.approved ? 'Bỏ duyệt' : 'Duyệt'}</button><button class="btn danger" data-d="${c.id}">Xoá</button></div></div>`).join('') || '<p class="muted">Không có bình luận nào ở mục này.</p>';
     document.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { cfilter = b.dataset.f; draw(); });
@@ -364,11 +365,9 @@ async function comments() {
 async function messages() {
   app.innerHTML = '<h1>Tin nhắn</h1><p class="sub">Tin mới hiện ngay, không cần tải lại. Cuộc trò chuyện đang chờ bạn trả lời được đánh dấu.</p><div id="mbox"><div class="loading">Đang tải…</div></div>';
   let last = [], built = null; const U = {};
-  const myCtx = { uid: () => (Store.uid && Store.uid()) || 'admin', th: id => (last.find(m => m.id === id) || {}).uid, find: id => last.find(m => m.id === id), redraw: () => draw() };
-  Msgx.ctx = myCtx;
-  $('#mbox').addEventListener('click', () => { Msgx.ctx = myCtx; }, true);   // popup chat của admin cũng dùng Msgx: gán lại khi bấm để không bị ghi đè
+  Msgx.ctx = { uid: () => (Store.uid && Store.uid()) || 'admin', th: id => (last.find(m => m.id === id) || {}).uid, find: id => last.find(m => m.id === id), redraw: () => draw() };
   try { (await Store.list('users')).forEach(u => { U[u.id] = u; }); } catch (e) {}   // để hiện avatar người dùng
-  const bubbles = ms => Chat.render(ms.map(m => { const ad = m.from === 'admin'; return { id: m.id, who: ad ? 'me' : 'them', mine: ad, ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, edited: m.edited, list: Msgx.get(m.id), uid: Msgx.ctx.uid(), av: Avatar.html(U[m.uid] || { name: m.userName }, 'sm') }; }));
+  const bubbles = ms => Chat.render(ms.map(m => { const ad = m.from === 'admin'; return { id: m.id, who: ad ? 'me' : 'them', mine: ad, ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, lk: m.lk, list: Msgx.get(m.id), uid: Msgx.ctx.uid(), av: Avatar.html(U[m.uid] || { name: m.userName }, 'sm') }; }));
   const draw = () => {
     const box = $('#mbox'); if (!box) return;
     const by = {}; last.forEach(m => (by[m.uid] = by[m.uid] || []).push(m));
@@ -380,10 +379,10 @@ async function messages() {
         const at = Attach.composer({ form: $('#f'), text: $('#f').elements.t, zone: $('#f').closest('.card'), label: 'Đính kèm' });
         $('#f').onsubmit = async e => {
           e.preventDefault(); const t = e.target.elements.t.value.trim() || (!at.has() && e.submitter && e.submitter.classList.contains('ms-like') ? '👍' : ''); if (!t && !at.has()) return;
-          const th = thread, u = last.find(m => m.uid === th), btn = e.target.querySelector('button.ms-send'); btn.disabled = true;
+          const th = thread, u = last.find(m => m.uid === th), btn = e.target.querySelector('button.ms-send'), lk = +e.target._lk || 0; e.target._lk = 0; btn.disabled = true;
           try {
             const media = at.has() ? await at.build({ uid: th, by: 'admin', progress: (i, n) => { btn.innerHTML = '<small class="ms-prog">' + i + '/' + n + '</small>'; } }) : [];
-            await Store.put('messages', { uid: th, userName: u ? u.userName : '', from: 'admin', text: t || Attach.txt(media), ...(media.length ? { media } : {}), projectId: '', projectName: '' });
+            await Store.put('messages', { uid: th, userName: u ? u.userName : '', from: 'admin', text: t || Attach.txt(media), ...(media.length ? { media } : {}), ...(lk > 1 && t === '👍' && !media.length ? { lk } : {}), projectId: '', projectName: '' });
             e.target.elements.t.value = ''; at.clear();
           } catch (x) { toast(x.message); }
           btn.disabled = false; at.sync();
@@ -406,8 +405,13 @@ async function messages() {
 
 async function users() {
   const us = await Store.list('users');
-  app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký.</p><div class="card">${us.map(u => `<div class="item"><div style="display:flex;gap:10px;align-items:center">${Avatar.html(u)}<div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small>${u.phone || u.dob || u.job ? `<br><small>${esc(u.dob || '')} · ${esc(u.phone || '')} · ${esc(u.job || '')}</small>` : ''}${u.privacyAgreed === false ? '<br><small class="err">Chưa đồng ý cam kết quyền riêng tư</small>' : ''}</div></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
-  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này?')) { await Store.del('users', b.dataset.d); render(); } });
+  app.innerHTML = `<h1>Người dùng</h1><p class="sub">${us.length} tài khoản đã đăng ký. <button class="btn ghost sm" id="mkpf">Tạo trang công khai cho mọi tài khoản</button></p><div class="card">${us.map(u => `<div class="item"><div style="display:flex;gap:10px;align-items:center">${Avatar.html(u)}<div><b>${esc(u.name)}</b> <span class="tag">${esc(u.gender)}</span><br><small class="muted">${esc(u.email)} · ${fmt(u.ts)}</small>${u.phone || u.dob || u.job ? `<br><small>${esc(u.dob || '')} · ${esc(u.phone || '')} · ${esc(u.job || '')}</small>` : ''}${u.privacyAgreed === false ? '<br><small class="err">Chưa đồng ý cam kết quyền riêng tư</small>' : ''}</div></div><button class="btn danger" data-d="${u.id}">Xoá</button></div>`).join('') || '<p class="muted">Chưa có người dùng.</p>'}</div>`;
+  $('#mkpf').onclick = async () => {   // để tài khoản cũ cũng hiện trong ô tìm kiếm người dùng
+    let n = 0; const have = new Set((await Store.list('profiles').catch(() => [])).map(p => p.id));
+    for (const u of us) if (!have.has(u.id)) { try { await Store.put('profiles', { id: u.id, name: u.name, avatar: Avatar.ok(u.avatar) ? u.avatar : '', cover: '', bio: '', pageName: '', accent: 'sky' }); n++; } catch (x) { return toast(x.message); } }
+    toast('Đã tạo ' + n + ' trang công khai');
+  };
+  document.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => { if (confirm('Xoá người dùng này?')) { await Store.del('users', b.dataset.d); await Store.del('profiles', b.dataset.d).catch(() => {}); render(); } });
 }
 
 /* ===== Dạy trợ lý ảo: câu hỏi bot chưa biết (botlogs) + câu trả lời do admin dạy (botkb) ===== */
