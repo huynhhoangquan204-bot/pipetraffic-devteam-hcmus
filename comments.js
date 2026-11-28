@@ -29,7 +29,7 @@
       box.innerHTML = `<div class="cmt-h"><h3>Bình luận <span class="cmt-n">0</span></h3></div>
         <form class="cmt-f" autocomplete="off">
           ${me ? '' : '<input class="cmt-name" maxlength="60" placeholder="Tên của bạn (để trống = Ẩn danh)">'}
-          <div class="cmt-r"><textarea rows="2" maxlength="500" placeholder="Viết bình luận…" required></textarea><button type="submit" class="cmt-send">Gửi</button></div>
+          <div class="cmt-r"><textarea rows="2" maxlength="500" placeholder="Viết bình luận… (Enter để gửi, Shift+Enter xuống dòng)" required></textarea></div>
         </form>
         <div class="cmt-list" data-autotr><p class="cmt-empty">Đang tải bình luận…</p></div>`;
       const list = box.querySelector('.cmt-list'), n = box.querySelector('.cmt-n'), form = box.querySelector('.cmt-f');
@@ -47,19 +47,23 @@
       };
       box.addEventListener('click', e => { if (e.target.closest('.cmt-retry')) { e.preventDefault(); load(); } });
 
+      form.querySelector('textarea').addEventListener('keydown', e => {
+        if (e.key !== 'Enter' || e.shiftKey || e.isComposing) return;
+        e.preventDefault(); form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { cancelable: true }));
+      });
       form.onsubmit = async e => {
         e.preventDefault();
-        const ta = form.querySelector('textarea'), btn = form.querySelector('.cmt-send'), nm = form.querySelector('.cmt-name');
+        const ta = form.querySelector('textarea'), nm = form.querySelector('.cmt-name');
         const text = ta.value.trim(), name = ((me && me.name) || (nm && nm.value.trim()) || 'Ẩn danh').slice(0, 80);
         if (text.length < 2) return say(T('Hãy nhập nội dung bình luận', 'Please write a comment'));
         if (Date.now() - (+localStorage.getItem('pt_last_comment') || 0) < 15000) return say(T('Bạn gửi hơi nhanh, đợi vài giây nhé', 'You are sending too fast, please wait a few seconds'));
-        btn.disabled = true; const old = btn.textContent; btn.textContent = '…';
+        ta.disabled = true;
         try {
           await Store.put('comments', { name, role: '', rating: 0, text: text.slice(0, 700), ts: Date.now(), approved: false, scope });
           localStorage.setItem('pt_last_comment', Date.now()); ta.value = '';
           say(T('Đã gửi! Bình luận sẽ hiện sau khi quản trị viên duyệt.', 'Sent! Your comment will appear after the admin approves it.'));
         } catch (x) { say(T('Gửi chưa được: ', 'Could not send: ') + (x.message || 'thử lại sau ít phút')); }
-        btn.disabled = false; btn.textContent = old;
+        ta.disabled = false; ta.focus();
       };
       await load();
     }
@@ -73,7 +77,7 @@
 .cmt-f{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
 .cmt-f input,.cmt-f textarea{width:100%;font:inherit;font-size:16px;color:#0f172a;background:#fff;border:1px solid #cbd5e1;border-radius:14px;padding:10px 14px;outline:0;resize:vertical}
 .cmt-f input:focus,.cmt-f textarea:focus{border-color:#38bdf8;box-shadow:0 0 0 3px rgba(56,189,248,.25)}
-.cmt-r{display:flex;gap:8px;align-items:flex-end}
+.cmt-r{display:flex}
 .cmt-r textarea{flex:1;min-height:46px;max-height:160px}
 .cmt-send{flex:none;height:46px;padding:0 22px;border:0;border-radius:14px;background:#0284c7;color:#fff;font:inherit;font-weight:700;cursor:pointer}
 .cmt-send:disabled{opacity:.5;cursor:default}
