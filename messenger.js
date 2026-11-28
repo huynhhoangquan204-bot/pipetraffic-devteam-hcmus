@@ -31,9 +31,10 @@
     const mo = !rc && !!(m.media && m.media.length) && Attach.isPh(m.text) && m.media.every(x => x && (x.t === 'img' || x.t === 'video'));
     const chips = rc ? '' : Msgx.chips(m.id, m.list, m.uid);
     const cls = ['ms-b', big && 'ms-big', mo && 'ms-mo', rc && 'ms-rc'].filter(Boolean).join(' ');
+    const lk = big && +m.lk > 1 ? Math.min(5.6, 2.4 + (Math.min(3, +m.lk) - 1) * 1.6) : 0;   // 👍 giữ lâu thì to hơn
     return `<div class="ms-row ${me ? 'me' : 'them'}${m.who === 'ai' ? ' ai' : ''} p-${pos}${isNew ? ' new' : ''}${chips ? ' has-rx' : ''}">`
       + (me ? '' : `<div class="ms-av">${pos === 'last' || pos === 'single' ? (m.av || '') : ''}</div>`)
-      + `<div class="ms-col"><div class="${cls}" title="${esc(m.ts ? new Date(m.ts).toLocaleString('vi-VN') : '')}">${Msgx.body(m.text, m.media, rc, m.edited)}${chips ? `<div class="ms-rx">${chips}</div>` : ''}</div></div>`
+      + `<div class="ms-col"><div class="${cls}"${lk ? ` style="font-size:${lk.toFixed(2)}rem"` : ''} title="${esc(m.ts ? new Date(m.ts).toLocaleString('vi-VN') : '')}">${Msgx.body(m.text, m.media, rc)}${chips ? `<div class="ms-rx">${chips}</div>` : ''}</div></div>`
       + (rc ? '' : `<div class="ms-act">${Msgx.actbtn(m.id, m.mine)}</div>`) + '</div>';
   }
 
@@ -83,7 +84,7 @@
   const css = document.createElement('style');
   css.textContent = `
 /* ---------- khung chat (popup) ---------- */
-#chatPop.pp-chat{border:0;border-radius:14px;background:#fff;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.3)}
+#chatPop.pp-chat{border:0;border-radius:18px;background:#fff;overflow:hidden;box-shadow:0 12px 48px rgba(0,0,0,.3)}
 #chatPop .ms-head{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border-bottom:1px solid #eceef0}
 .ms-hav{position:relative;flex:none;width:42px;height:42px}
 .ms-hav .av{width:42px;height:42px;font-size:.9rem}
@@ -100,7 +101,7 @@
 /* ---------- vùng tin nhắn ---------- */
 .ms-log{display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin}
 #chatPop .ms-log{flex:1;gap:0;padding:8px 10px 6px;background:#fff}
-.pt-app .ms-log,.adm .ms-log{gap:0;padding:12px 12px 8px;background:#fff;border:1px solid #e4e6eb;border-radius:12px;min-height:300px;max-height:60vh;margin:0 0 10px}
+.pt-app .ms-log,.adm .ms-log{gap:0;padding:12px 12px 8px;background:#fff;border:1px solid #e4e6eb;border-radius:14px;min-height:300px;max-height:60vh;margin:0 0 10px}
 .ms-sep{align-self:center;margin:14px 0 6px;font-size:.72rem;font-weight:600;color:#8a8d91}
 .ms-row{position:relative;display:flex;align-items:flex-end;gap:8px;margin-top:2px}
 .ms-row.new{margin-top:10px}
@@ -110,19 +111,19 @@
 .ms-av .av{width:28px;height:28px;font-size:.7rem}
 .ms-col{display:flex;flex-direction:column;min-width:0;max-width:72%}
 .ms-row.me .ms-col{align-items:flex-end}
-.ms-b{position:relative;max-width:100%;padding:8px 12px;border-radius:14px;background:#f0f0f0;color:#050505;font-size:.95rem;line-height:1.35;word-break:break-word}
+.ms-b{position:relative;max-width:100%;padding:8px 12px;border-radius:18px;background:#f0f0f0;color:#050505;font-size:.95rem;line-height:1.35;word-break:break-word}
 .ms-b>span{white-space:pre-wrap}
 .ms-row.me .ms-b{background-image:linear-gradient(180deg,#2f80ff 0%,#7a46f0 55%,#d6358f 100%);background-repeat:no-repeat;color:#fff}
-.ms-row.them.p-first .ms-b{border-bottom-left-radius:4px}
-.ms-row.them.p-mid .ms-b{border-top-left-radius:4px;border-bottom-left-radius:4px}
-.ms-row.them.p-last .ms-b{border-top-left-radius:4px}
-.ms-row.me.p-first .ms-b{border-bottom-right-radius:4px}
-.ms-row.me.p-mid .ms-b{border-top-right-radius:4px;border-bottom-right-radius:4px}
-.ms-row.me.p-last .ms-b{border-top-right-radius:4px}
+.ms-row.them.p-first .ms-b{border-bottom-left-radius:5px}
+.ms-row.them.p-mid .ms-b{border-top-left-radius:5px;border-bottom-left-radius:5px}
+.ms-row.them.p-last .ms-b{border-top-left-radius:5px}
+.ms-row.me.p-first .ms-b{border-bottom-right-radius:5px}
+.ms-row.me.p-mid .ms-b{border-top-right-radius:5px;border-bottom-right-radius:5px}
+.ms-row.me.p-last .ms-b{border-top-right-radius:5px}
 .ms-b.ms-big,.ms-row.me .ms-b.ms-big{background:none;padding:0;font-size:2.4rem;line-height:1.15;color:inherit}
-.ms-b.ms-mo,.ms-row.me .ms-b.ms-mo{background:none;padding:0;overflow:visible;border-radius:14px}
+.ms-b.ms-mo,.ms-row.me .ms-b.ms-mo{background:none;padding:0;overflow:visible;border-radius:18px}
 .ms-mo .at-media{margin:0}
-.ms-mo .at-img,.ms-mo .at-vid{border-radius:14px;max-width:240px}
+.ms-mo .at-img,.ms-mo .at-vid{border-radius:18px;max-width:240px}
 .ms-b.ms-rc,.ms-row.me .ms-b.ms-rc{background:none;border:1px solid #d0d3d8;color:#8a8d91;font-size:.85rem;font-style:italic}
 .ms-b .rc{opacity:1}
 .ms-b .at-media{margin-top:0}
@@ -151,7 +152,7 @@ form.ms-form .ms-tools{display:flex;align-items:center;flex:none;align-self:flex
 form.ms-form button.at-btn{flex:none;width:34px;height:34px;padding:0;margin:0;border:0;border-radius:50%;background:none;color:#0866ff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
 form.ms-form button.at-btn:hover{background:#f0f2f5;border-color:transparent}
 form.ms-form button.at-btn svg{width:24px;height:24px;fill:currentColor}
-form.ms-form .ms-field{flex:1;min-width:0;display:flex;align-items:center;background:#f0f2f5;border-radius:16px;padding:0 4px 0 14px}
+form.ms-form .ms-field{flex:1;min-width:0;display:flex;align-items:center;background:#f0f2f5;border-radius:20px;padding:0 4px 0 14px}
 form.ms-form .ms-field input,form.ms-form .ms-field textarea{flex:1;min-width:0;width:auto;margin:0;border:0;border-radius:0;background:none;box-shadow:none;outline:0;padding:9px 0;font:inherit;font-size:16px;line-height:1.3;color:#050505;resize:none;max-height:120px;min-height:0;height:auto;overflow-y:auto}
 form.ms-form .ms-field input:disabled,form.ms-form .ms-field textarea:disabled{background:none}
 form.ms-form:has(input:disabled) .ms-tools,form.ms-form:has(input:disabled) .ms-field{opacity:.45;pointer-events:none}
@@ -186,33 +187,12 @@ form.ms-form{border-top:1px solid #e0e7ff}
 form.ms-form .ms-field{background:#eef2ff;transition:box-shadow .15s,background .15s}
 form.ms-form .ms-field:focus-within{background:#e0e7ff;box-shadow:0 0 0 2px #a5b4fc}
 form.ms-form .ms-tools button.at-btn:nth-child(1){color:#6366f1}
-form.ms-form .ms-tools button.at-btn:nth-child(2){color:#f97316}
+form.ms-form .ms-tools button.at-btn:nth-child(2){color:#22c55e}
+form.ms-form .ms-tools button.at-btn:nth-child(3){color:#f97316}
 form.ms-form button.at-btn.at-emo{color:#f59e0b}
 form.ms-form button.at-btn:hover{background:#eef2ff}
 form.ms-form button.ms-send{color:#6366f1!important}
 form.ms-form button.ms-send:hover{background:#eef2ff!important}
-.vc-bar button.vc-send{background:linear-gradient(135deg,#0ea5e9,#6366f1)}
-/* ---------- GIAO DIỆN TỐI: khung chat, bong bóng, ô nhập ---------- */
-html[data-theme=dark] #chatPop.pp-chat{background:#0f1a2e;border:1px solid #26364f}
-html[data-theme=dark] #chatPop .ms-log,html[data-theme=dark] .pt-app .ms-log,html[data-theme=dark] .adm .ms-log{background:radial-gradient(circle at 12% 0%,rgba(14,165,233,.14) 0,rgba(14,165,233,0) 46%),radial-gradient(circle at 100% 100%,rgba(217,70,239,.12) 0,rgba(217,70,239,0) 46%),#0b1424;border-color:#26364f}
-html[data-theme=dark] #chatPop .pp-tabs{background:#0f1a2e}
-html[data-theme=dark] #chatPop .pp-tabs button{background:#16233b;color:#a5b4fc;box-shadow:none}
-html[data-theme=dark] #chatPop .pp-tabs button.on{background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff}
-html[data-theme=dark] .ms-sep{background:#1e293b;color:#a5b4fc}
-html[data-theme=dark] .ms-row.them .ms-b:not(.ms-mo):not(.ms-big):not(.ms-rc){background:#1e293b;color:#e2e8f0;box-shadow:none}
-html[data-theme=dark] .ms-row.them.ai .ms-b:not(.ms-mo):not(.ms-big):not(.ms-rc){background:#10303a}
-html[data-theme=dark] .ms-b.ms-rc,html[data-theme=dark] .ms-row.me .ms-b.ms-rc{border-color:#334155;color:#94a3b8}
-html[data-theme=dark] .ms-b.ms-big{color:#e2e8f0}
-html[data-theme=dark] .ms-rx .rx-chip{background:#1e293b;color:#e2e8f0}
-html[data-theme=dark] .ms-act .rx-btn{color:#94a3b8}
-html[data-theme=dark] .ms-act .rx-btn:hover{background:#1e293b}
-html[data-theme=dark] .ms-typing i{background:#a5b4fc}
-html[data-theme=dark] form.ms-form{background:#0f1a2e;border-color:#26364f}
-html[data-theme=dark] form.ms-form .ms-field{background:#16233b}
-html[data-theme=dark] form.ms-form .ms-field:focus-within{background:#1c2c48;box-shadow:0 0 0 2px #4f46e5}
-html[data-theme=dark] form.ms-form .ms-field input,html[data-theme=dark] form.ms-form .ms-field textarea{background:none;color:#e2e8f0;border:0}
-html[data-theme=dark] form.ms-form .ms-field input::placeholder,html[data-theme=dark] form.ms-form .ms-field textarea::placeholder{color:#64748b}
-html[data-theme=dark] form.ms-form button.at-btn:hover,html[data-theme=dark] form.ms-form button.ms-send:hover{background:#1e293b!important}
-html[data-theme=dark] .ms-hav .dot{border-color:#6366f1}`;
+.vc-bar button.vc-send{background:linear-gradient(135deg,#0ea5e9,#6366f1)}`;
   document.head.appendChild(css);
 })();
