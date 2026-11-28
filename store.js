@@ -6,20 +6,34 @@
   const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
   const sha = async s => [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))]
     .map(b => b.toString(16).padStart(2, '0')).join('');
-  const load = src => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); setTimeout(no, cfg.timeoutMs || 12000); });
-  // Chỉ tải Firebase khi đã điền cấu hình => trang nhẹ hơn ở chế độ thử
-  const ready = (async () => {
-    if (!wantFb) return;
+  // Tải thư viện Firebase: tải SONG SONG nhưng chạy ĐÚNG THỨ TỰ (async=false), mỗi tệp thử lại tối đa 3 lần (điện thoại / 4G hay rớt tệp đầu tiên)
+  const libMs = Math.max(cfg.timeoutMs || 12000, 20000);
+  const loadOnce = (src, bust) => new Promise((ok, no) => {
+    const s = document.createElement('script'); s.async = false; s.src = src + (bust ? (src.includes('?') ? '&' : '?') + 'r=' + bust : '');
+    const t = setTimeout(() => { s.remove(); no(new Error('timeout ' + src)); }, libMs);
+    s.onload = () => { clearTimeout(t); ok(); };
+    s.onerror = () => { clearTimeout(t); s.remove(); no(new Error('không tải được ' + src)); };
+    document.head.appendChild(s);
+  });
+  const load = async src => { let err; for (let k = 0; k < 3; k++) { try { return await loadOnce(src, k ? Date.now() : 0); } catch (e) { err = e; await new Promise(r => setTimeout(r, 600 * (k + 1))); } } throw err; };
+  const BASE = 'https://www.gstatic.com/firebasejs/10.12.2/';
+  let ready = null;
+  // Chỉ tải Firebase khi đã điền cấu hình => trang nhẹ hơn ở chế độ thử. Lỗi mạng KHÔNG còn kẹt vĩnh viễn: gọi Store.retry() (tự gọi khi có mạng lại) để kết nối lại mà không cần tải lại trang.
+  const connect = () => ready = (async () => {
+    if (!wantFb || useFb) return;
     try {
-      const b = 'https://www.gstatic.com/firebasejs/10.12.2/';
-      await load(b + 'firebase-app-compat.js');
-      await Promise.all([load(b + 'firebase-auth-compat.js'), load(b + 'firebase-firestore-compat.js')]);
-      firebase.initializeApp(cfg.firebase); fdb = firebase.firestore();
-      // Mạng nhà / trường / proxy hay chặn kết nối WebChannel của Firestore -> ghi treo tới hết giờ dù mạng vẫn tốt. Cho SDK tự chuyển sang long-polling khi cần.
-      try { fdb.settings({ experimentalAutoDetectLongPolling: true, merge: true }); } catch (x) { console.warn('Không đặt được long-polling', x); }
-      fauth = firebase.auth(); useFb = true;
+      if (!window.firebase || !firebase.firestore) {
+        const jobs = [load(BASE + 'firebase-app-compat.js'), load(BASE + 'firebase-auth-compat.js'), load(BASE + 'firebase-firestore-compat.js')];
+        await Promise.all(jobs);
+      }
+      if (!firebase.apps.length) firebase.initializeApp(cfg.firebase);
+      fdb = firebase.firestore();
+      // Mạng nhà / trường / 4G / proxy hay chặn WebChannel của Firestore -> treo rất lâu. Ép dùng long-polling để kết nối ngay, không phải chờ dò.
+      try { fdb.settings({ experimentalForceLongPolling: true, useFetchStreams: false, merge: true }); } catch (x) { console.warn('Không đặt được long-polling', x); }
+      fauth = firebase.auth(); useFb = true; fbFail = '';
     } catch (e) { fbFail = (e && e.message) || 'không tải được thư viện Firebase (mạng, trình chặn quảng cáo, hoặc firebase.com bị chặn)'; console.warn('Không tải được Firebase, dùng chế độ thử.', e); }
   })();
+  connect();
   const authUser = () => new Promise(res => { const un = fauth.onAuthStateChanged(u => { un(); res(u); }); });
   const hasPw = u => !!u && u.providerData.some(p => p.providerId === 'password');
   const lc = s => String(s || '').toLowerCase();
@@ -63,6 +77,9 @@
     info() { return { mode: useFb ? 'firebase' : 'demo', project: (cfg.firebase || {}).projectId || '', email: cfg.adminEmail ? cfg.adminEmail.replace(/^(.).*(@.+)$/, '$1***$2') : '' }; },
     sha,
     // Gọi một lần khi mở web: nếu phiên Google đã hết/đổi người thì xoá phiên đăng nhập cũ
+    // Kết nối lại Firebase sau khi lỗi mạng (không cần tải lại trang). Trả về true nếu đã nối được.
+    async retry() { if (!wantFb) return false; if (!useFb) await connect(); return useFb; },
+    get wantsFirebase() { return wantFb; },
     async init() {
       await ready;
       const m = this.me();
@@ -75,7 +92,9 @@
       try {
         if (useFb) {
           let q = fdb.collection(col); if (opt.where) q = q.where(...opt.where);
-          a = (await tmo(q.get())).docs.map(x => ({ ...x.data(), id: x.id }));
+          const run = () => tmo(q.get(), 15000);
+          let sn; try { sn = await run(); } catch (e) { if (e && e.code === 'timeout') sn = await run(); else throw e; }   // quá giờ: thử lại 1 lần trước khi báo lỗi
+          a = sn.docs.map(x => ({ ...x.data(), id: x.id }));
         } else {
           a = db()[col] || [];
           if (opt.where) { const [f, , v] = opt.where; a = a.filter(x => x[f] === v); }
