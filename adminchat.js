@@ -83,12 +83,13 @@ html[data-theme=dark] .ac-form textarea{background:#111c31;border-color:#26364f}
       at = Attach.composer({ form: f, text: f.elements.t, zone: box, label: 'Đính kèm' });
       f.onsubmit = async e => {
         e.preventDefault();
-        const th = cur, t = e.target.elements.t.value.trim() || (!at.has() && e.submitter && e.submitter.classList.contains('ms-like') ? '👍' : '');
+        const th = cur, lk = +f._lk || 0, t = e.target.elements.t.value.trim() || (!at.has() && e.submitter && e.submitter.classList.contains('ms-like') ? '👍' : '');
+        f._lk = 0;
         if (!t && !at.has()) return;
         const u = msgs.find(m => m.uid === th), btn = e.target.querySelector('button.ms-send'); if (btn) btn.disabled = true;
         try {
           const media = at.has() ? await at.build({ uid: th, by: 'admin', progress: (i, n) => { if (btn) btn.innerHTML = '<small class="ms-prog">' + i + '/' + n + '</small>'; } }) : [];
-          await Store.put('messages', { uid: th, userName: u ? u.userName : '', from: 'admin', text: t || Attach.txt(media), ...(media.length ? { media } : {}), projectId: '', projectName: '' });
+          await Store.put('messages', { uid: th, userName: u ? u.userName : '', from: 'admin', text: t || Attach.txt(media), ...(media.length ? { media } : {}), ...(lk > 1 && t === '👍' && !media.length ? { lk } : {}), projectId: '', projectName: '' });
           e.target.elements.t.value = ''; at.clear();
         } catch (x) { if (typeof toast === 'function') toast(x.message); else alert(x.message); }
         if (btn) btn.disabled = false; at.sync();
@@ -96,7 +97,7 @@ html[data-theme=dark] .ac-form textarea{background:#111c31;border-color:#26364f}
     }
     const log = box.querySelector('#acLog'); if (!log) return;
     const stick = !log.children.length || log.scrollHeight - log.scrollTop - log.clientHeight < 80;
-    log.innerHTML = Chat.render(list.map(m => { const ad = m.from === 'admin'; return { id: m.id, who: ad ? 'me' : 'them', mine: ad, ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, edited: m.edited, list: Msgx.get(m.id), uid: Msgx.ctx.uid(), av: Avatar.html(user(m.uid, m), 'sm') }; }));
+    log.innerHTML = Chat.render(list.map(m => { const ad = m.from === 'admin'; return { id: m.id, who: ad ? 'me' : 'them', mine: ad, ts: m.ts, text: m.text, media: m.media, recalled: m.recalled, edited: m.edited, lk: m.lk, list: Msgx.get(m.id), uid: Msgx.ctx.uid(), av: Avatar.html(user(m.uid, m), 'sm') }; }));
     if (stick) log.scrollTop = log.scrollHeight;
     Chat.paint(log);
   }
